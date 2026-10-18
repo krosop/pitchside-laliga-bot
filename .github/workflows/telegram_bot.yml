@@ -32,6 +32,10 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run Simulation & Availability Test Suite
+        run: |
+          python -m tests.run_all
+
       - name: Run Interactive Telegram Bot (5.5h Cloud Cycle with Daily Auto-Sync)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

@@ -741,6 +741,17 @@ class PitchsideTelegramBot:
         h_fat = (home.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
         a_fat = (away.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
 
+        h_missing = (home.get("tactics") or {}).get("missing_players") or []
+        a_missing = (away.get("tactics") or {}).get("missing_players") or []
+        missing_lines = []
+        if h_missing:
+            hm_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in h_missing[:4])
+            missing_lines.append(f"• <b>{self._esc(h_name)} Out:</b> {self._esc(hm_str)}")
+        if a_missing:
+            am_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in a_missing[:4])
+            missing_lines.append(f"• <b>{self._esc(a_name)} Out:</b> {self._esc(am_str)}")
+        missing_block = ("\n🚫 <b>SUSPENSIONS &amp; INJURIES</b>\n" + "\n".join(missing_lines) + "\n") if missing_lines else ""
+
         text = (
             f"🏟️ <b>LA LIGA MATCH CENTER · ROUND {fx.get('matchday')}</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -749,7 +760,8 @@ class PitchsideTelegramBot:
             f"📍 <i>{self._esc(home.get('stadium', 'Estadio Oficial'))}</i>\n\n"
             f"📊 <b>FORM &amp; CONDITION</b>\n"
             f"• <b>{self._esc(h_name)}:</b> {h_form} · {self._esc(h_fat)}\n"
-            f"• <b>{self._esc(a_name)}:</b> {a_form} · {self._esc(a_fat)}\n\n"
+            f"• <b>{self._esc(a_name)}:</b> {a_form} · {self._esc(a_fat)}\n"
+            f"{missing_block}\n"
             f"🎲 <b>DIXON-COLES PROBABILITY &amp; ODDS</b>\n"
             f"{prob_bar}\n"
             f"🟩 <b>{self._esc(h_name)}:</b> <code>{h_prob}%</code> (Odds <code>{o1:.2f}</code>)\n"
@@ -941,6 +953,14 @@ class PitchsideTelegramBot:
                 out.append(
                     f"  <code>{slot:<3}</code> #{num:<2} <b>{self._esc(name)}</b> — OVR <code>{ovr}{mod_str}</code> {ico}"
                 )
+            missing = tac.get("missing_players") or []
+            if missing:
+                out.append("  🚫 <b>Unavailable / Out:</b>")
+                for mp in missing[:4]:
+                    m_ico = mp.get("status_icon", "🚫")
+                    m_name = mp.get("nickname") or mp.get("name")
+                    m_rsn = mp.get("availability_reason", "Unavailable")
+                    out.append(f"    {m_ico} <s>{self._esc(m_name)}</s> (OVR {mp.get('overall_rating', 75)}) — <i>{self._esc(m_rsn)}</i>")
             return "\n".join(out)
 
         text = (
@@ -949,7 +969,7 @@ class PitchsideTelegramBot:
             + fmt_xi(home.get("name", "Home"), h_tac)
             + "\n\n"
             + fmt_xi(away.get("name", "Away"), a_tac)
-            + "\n\n💡 <i>🔥 Hot Streak (+4) · ⚡ In Form (+2) · 🛡️ Defensive Wall · ❄️ Cold Dip</i>"
+            + "\n\n💡 <i>🔥 Hot Streak (+4) · ⚡ In Form (+2) · 🟥 Suspended · 🏥 Injured</i>"
         )
 
         kb = [

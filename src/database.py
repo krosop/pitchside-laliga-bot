@@ -180,6 +180,9 @@ class Database:
                 ("bio_summary", "TEXT"),
                 ("market_value", "TEXT"),
                 ("wage", "TEXT"),
+                ("availability_status", "TEXT DEFAULT 'available'"),
+                ("availability_reason", "TEXT"),
+                ("suspended_matchday", "INTEGER"),
             ]:
                 try:
                     cursor.execute(f"ALTER TABLE players ADD COLUMN {col_name} {col_type}")
@@ -219,6 +222,7 @@ class Database:
                     xg REAL DEFAULT 0, xa REAL DEFAULT 0,
                     goals INTEGER DEFAULT 0, assists INTEGER DEFAULT 0,
                     shots INTEGER DEFAULT 0, key_passes INTEGER DEFAULT 0,
+                    yellow_cards INTEGER DEFAULT 0, red_cards INTEGER DEFAULT 0,
                     UNIQUE(player_key, fixture_date)
                 )
             """)
@@ -241,21 +245,45 @@ class Database:
                     status TEXT
                 )
             """)
-            # season column on fixtures (legacy rows backfilled to 2024).
-            # The index lives in the same guard: a fresh Database() on an
-            # empty file must not crash when the bootstrap script has not
-            # created `fixtures` yet.
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS fixtures (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    matchday INTEGER,
+                    home_team_id INTEGER,
+                    away_team_id INTEGER,
+                    home_score INTEGER,
+                    away_score INTEGER,
+                    status TEXT,
+                    kickoff_time TEXT,
+                    goals_json TEXT,
+                    cards_json TEXT,
+                    season INTEGER
+                )
+            """)
+            # season & cards_json columns on fixtures (legacy rows backfilled to 2024).
             try:
                 cursor.execute("ALTER TABLE fixtures ADD COLUMN season INTEGER")
                 cursor.execute("UPDATE fixtures SET season = 2024 WHERE season IS NULL")
+            except sqlite3.OperationalError:
+                pass
+            try:
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_fixtures_season ON fixtures(season, matchday)")
             except sqlite3.OperationalError:
                 pass
             try:
-                cursor.execute("ALTER TABLE player_match_stats ADD COLUMN player_key TEXT")
-                cursor.execute("ALTER TABLE player_match_stats ADD COLUMN player_name TEXT")
+                cursor.execute("ALTER TABLE fixtures ADD COLUMN cards_json TEXT")
             except sqlite3.OperationalError:
                 pass
+            for col_name, col_type in [
+                ("player_key", "TEXT"),
+                ("player_name", "TEXT"),
+                ("yellow_cards", "INTEGER DEFAULT 0"),
+                ("red_cards", "INTEGER DEFAULT 0"),
+            ]:
+                try:
+                    cursor.execute(f"ALTER TABLE player_match_stats ADD COLUMN {col_name} {col_type}")
+                except sqlite3.OperationalError:
+                    pass
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_pms_player ON player_match_stats(player_id, season)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_pms_club ON player_match_stats(club_slug, season)")
 
@@ -517,7 +545,8 @@ class Database:
             cursor.execute("""
                 SELECT pp.profile_json, p.cutout_url, p.date_of_birth, p.height, p.weight,
                        p.place_of_birth, p.country_code, p.photo_url, p.bio_summary,
-                       p.market_value, p.wage, c.slug AS club_slug
+                       p.market_value, p.wage, p.availability_status, p.availability_reason,
+                       p.suspended_matchday, c.slug AS club_slug
                 FROM players p
                 JOIN player_profiles pp ON p.id = pp.player_id
                 LEFT JOIN clubs c ON p.club_id = c.id
@@ -533,14 +562,254 @@ class Database:
                 # blob can be stale. Fresh column values win when present.
                 for k in ("cutout_url", "date_of_birth", "height", "weight",
                           "place_of_birth", "country_code", "photo_url",
-                          "bio_summary", "market_value", "wage"):
-                    if row[k]:
+                          "bio_summary", "market_value", "wage",
+                          "availability_status", "availability_reason", "suspended_matchday"):
+                    if row[k] is not None:
                         bio[k] = row[k]
                 momentum = self._player_enrichment(profile.get("bio", {}), row["club_slug"])
                 if momentum:
                     profile["momentum"] = momentum
                 return profile
             return None
+
+    def set_player_availability(self, player_id_or_slug: Any, status: str = "available",
+                                reason: Optional[str] = None, suspended_matchday: Optional[int] = None) -> bool:
+        """
+        Sets a player's availability status ('available', 'suspended', 'injured', 'doubtful')
+        and optional reason (e.g., 'Red Card Suspension', 'Hamstring Injury').
+        """
+        status_clean = (status or "available").strip().lower()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if isinstance(player_id_or_slug, int) or (isinstance(player_id_or_slug, str) and player_id_or_slug.isdigit()):
+                cursor.execute(
+                    "UPDATE players SET availability_status=?, availability_reason=?, suspended_matchday=? WHERE id=?",
+                    (status_clean, reason, suspended_matchday, int(player_id_or_slug)),
+                )
+            else:
+                s = str(player_id_or_slug).strip().lower()
+                cursor.execute(
+                    "UPDATE players SET availability_status=?, availability_reason=?, suspended_matchday=? "
+                    "WHERE LOWER(slug)=? OR LOWER(name)=? OR LOWER(nickname)=?",
+                    (status_clean, reason, suspended_matchday, s, s, s),
+                )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def record_match_red_card(self, fixture_id: int, player_id_or_slug: Any,
+                              minute: int = 75, card_type: str = "red_card") -> bool:
+        """
+        Records a red card for a player in a completed fixture (`fixtures.cards_json`
+        and `player_match_stats.red_cards = 1`), which automatically suspends the player
+        for their club's next league fixture.
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            fx = cursor.execute(
+                """
+                SELECT f.id, f.season, f.matchday, f.kickoff_time, f.cards_json,
+                       h.slug AS h_slug, a.slug AS a_slug
+                FROM fixtures f
+                JOIN clubs h ON f.home_team_id = h.id
+                JOIN clubs a ON f.away_team_id = a.id
+                WHERE f.id = ?
+                """,
+                (fixture_id,),
+            ).fetchone()
+            if not fx:
+                return False
+
+            if isinstance(player_id_or_slug, int) or (isinstance(player_id_or_slug, str) and str(player_id_or_slug).isdigit()):
+                prow = cursor.execute(
+                    "SELECT p.id, p.slug, p.name, p.nickname, c.slug AS club_slug "
+                    "FROM players p LEFT JOIN clubs c ON p.club_id = c.id WHERE p.id = ?",
+                    (int(player_id_or_slug),),
+                ).fetchone()
+            else:
+                s = str(player_id_or_slug).strip().lower()
+                prow = cursor.execute(
+                    "SELECT p.id, p.slug, p.name, p.nickname, c.slug AS club_slug "
+                    "FROM players p LEFT JOIN clubs c ON p.club_id = c.id "
+                    "WHERE LOWER(p.slug)=? OR LOWER(p.name)=? OR LOWER(p.nickname)=? LIMIT 1",
+                    (s, s, s),
+                ).fetchone()
+            if not prow:
+                return False
+
+            cards = []
+            if fx["cards_json"]:
+                try:
+                    cards = json.loads(fx["cards_json"])
+                except Exception:
+                    cards = []
+
+            pname = prow["name"] or prow["nickname"]
+            club_slug = prow["club_slug"] or fx["h_slug"]
+            cards.append({
+                "player": pname,
+                "player_id": prow["id"],
+                "player_slug": prow["slug"],
+                "club_slug": club_slug,
+                "minute": minute,
+                "type": card_type,
+            })
+            cursor.execute("UPDATE fixtures SET cards_json=? WHERE id=?", (json.dumps(cards), fixture_id))
+
+            fx_date = str(fx["kickoff_time"] or "2026-08-15")[:10]
+            opp_slug = fx["a_slug"] if club_slug == fx["h_slug"] else fx["h_slug"]
+            is_home = 1 if club_slug == fx["h_slug"] else 0
+            p_key = f"db-{prow['id']}"
+            cursor.execute(
+                """
+                INSERT INTO player_match_stats
+                    (player_id, player_key, player_name, club_slug, season, fixture_date,
+                     opponent_slug, is_home, xg, xa, goals, assists, shots, key_passes, yellow_cards, red_cards)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 1)
+                ON CONFLICT(player_key, fixture_date) DO UPDATE SET red_cards = 1, player_id = excluded.player_id
+                """,
+                (prow["id"], p_key, pname, club_slug, fx["season"] or self.get_current_season(), fx_date, opp_slug, is_home),
+            )
+            conn.commit()
+            return True
+
+    def get_unavailable_players_for_fixture(self, club_slug: str, matchday: Optional[int] = None,
+                                            season: Optional[int] = None) -> Dict[int, Dict[str, Any]]:
+        """
+        Determines all unavailable players for `club_slug` at `matchday`:
+        1. Players explicitly marked `suspended` or `injured` on `players.availability_status`
+           (matching `suspended_matchday` if specified).
+        2. Players who received a RED CARD in the club's immediately preceding finished league
+           fixture (`cards_json`, `goals_json`, or `player_match_stats.red_cards > 0`).
+        Returns a mapping of `player_id -> {status, reason, icon}`.
+        """
+        unavailable: Dict[int, Dict[str, Any]] = {}
+        c_slug = {"atletico-madrid": "atletico-de-madrid", "celta-vigo": "rc-celta"}.get(
+            (club_slug or "").strip().lower(), (club_slug or "").strip().lower()
+        )
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if season is None:
+                season = self._live_season(conn)
+
+            # 1. Explicit status on players table
+            rows = cursor.execute(
+                """
+                SELECT p.id, p.name, p.nickname, p.slug, p.availability_status,
+                       p.availability_reason, p.suspended_matchday
+                FROM players p
+                JOIN clubs c ON p.club_id = c.id
+                WHERE (c.slug = ? OR LOWER(c.nickname) = LOWER(?))
+                """,
+                (c_slug, c_slug),
+            ).fetchall()
+
+            squad_by_id = {r["id"]: dict(r) for r in rows}
+            for r in rows:
+                st = (r["availability_status"] or "available").strip().lower()
+                if st in ("suspended", "red_card"):
+                    susp_md = r["suspended_matchday"]
+                    if susp_md is None or matchday is None or int(susp_md) == int(matchday):
+                        unavailable[r["id"]] = {
+                            "status": "suspended",
+                            "reason": r["availability_reason"] or "Red Card Suspension",
+                            "icon": "🟥",
+                        }
+                elif st in ("injured", "injury", "out"):
+                    unavailable[r["id"]] = {
+                        "status": "injured",
+                        "reason": r["availability_reason"] or "Medical / Injury Absence",
+                        "icon": "🏥",
+                    }
+
+            # 2. Automatic previous-match red card detection
+            club_row = cursor.execute("SELECT id FROM clubs WHERE slug=?", (c_slug,)).fetchone()
+            if club_row and squad_by_id:
+                cid = club_row["id"]
+                if matchday is not None:
+                    prev_fx = cursor.execute(
+                        """
+                        SELECT id, matchday, kickoff_time, goals_json, cards_json
+                        FROM fixtures
+                        WHERE season=? AND status='FINISHED' AND (home_team_id=? OR away_team_id=?)
+                          AND matchday < ?
+                        ORDER BY matchday DESC, kickoff_time DESC, id DESC LIMIT 1
+                        """,
+                        (season, cid, cid, int(matchday)),
+                    ).fetchone()
+                else:
+                    prev_fx = cursor.execute(
+                        """
+                        SELECT id, matchday, kickoff_time, goals_json, cards_json
+                        FROM fixtures
+                        WHERE season=? AND status='FINISHED' AND (home_team_id=? OR away_team_id=?)
+                        ORDER BY matchday DESC, kickoff_time DESC, id DESC LIMIT 1
+                        """,
+                        (season, cid, cid),
+                    ).fetchone()
+
+                if prev_fx:
+                    prev_md = prev_fx["matchday"]
+                    prev_date = str(prev_fx["kickoff_time"] or "")[:10]
+                    red_names = set()
+                    red_ids = set()
+
+                    for raw_col in (prev_fx["cards_json"], prev_fx["goals_json"]):
+                        if not raw_col:
+                            continue
+                        try:
+                            ev_list = json.loads(raw_col)
+                        except Exception:
+                            ev_list = []
+                        for ev in ev_list:
+                            ev_type = (ev.get("type") or "").lower()
+                            if "red" in ev_type or "second_yellow" in ev_type:
+                                ev_club = ev.get("club_slug")
+                                if ev_club and ev_club != c_slug:
+                                    continue
+                                if ev.get("player_id") is not None:
+                                    try:
+                                        red_ids.add(int(ev["player_id"]))
+                                    except (TypeError, ValueError):
+                                        pass
+                                if ev.get("player"):
+                                    red_names.add(str(ev["player"]).strip().lower())
+
+                    if prev_date:
+                        pms_reds = cursor.execute(
+                            """
+                            SELECT player_id, player_name FROM player_match_stats
+                            WHERE club_slug=? AND fixture_date=? AND red_cards > 0
+                            """,
+                            (c_slug, prev_date),
+                        ).fetchall()
+                        for pr in pms_reds:
+                            if pr["player_id"]:
+                                try:
+                                    red_ids.add(int(pr["player_id"]))
+                                except (TypeError, ValueError):
+                                    pass
+                            if pr["player_name"]:
+                                red_names.add(str(pr["player_name"]).strip().lower())
+
+                    for pid, pinfo in squad_by_id.items():
+                        pname_l = (pinfo.get("name") or "").strip().lower()
+                        pnick_l = (pinfo.get("nickname") or "").strip().lower()
+                        pslug_l = (pinfo.get("slug") or "").strip().lower()
+                        matched = (pid in red_ids) or (pname_l and pname_l in red_names) or (pnick_l and pnick_l in red_names) or (pslug_l and pslug_l in red_names)
+                        if not matched and red_names:
+                            # Token match for e.g. ESPN display name vs DB name
+                            for rn in red_names:
+                                if (pname_l and (rn in pname_l or pname_l in rn)) or (pnick_l and len(pnick_l) > 3 and pnick_l in rn):
+                                    matched = True
+                                    break
+                        if matched:
+                            unavailable[pid] = {
+                                "status": "suspended",
+                                "reason": f"Red Card Suspension (MD {prev_md})",
+                                "icon": "🟥",
+                            }
+
+        return unavailable
 
     def search_players(self, query: str = "", position: str = "", club_slug: str = "",
                        min_rating: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
@@ -550,6 +819,7 @@ class Database:
                 SELECT p.id, p.slug, p.name, p.nickname, p.shirt_number, p.position_name,
                        p.country_code, p.photo_url, p.cutout_url, p.bio_summary, p.market_value, p.wage, p.date_of_birth,
                        p.archetype, p.overall_rating,
+                       p.availability_status, p.availability_reason, p.suspended_matchday,
                        c.name AS club_name, c.nickname AS club_nickname, c.slug AS club_slug, c.shield_url AS club_shield,
                        pp.scores_json, pp.stats_json, pp.profile_json
                 FROM players p
@@ -595,6 +865,8 @@ class Database:
             results = []
             for row in cursor.fetchall():
                 item = dict(row)
+                if not item.get("availability_status"):
+                    item["availability_status"] = "available"
                 if item.get("scores_json"):
                     item["scores"] = json.loads(item["scores_json"])
                     del item["scores_json"]
@@ -642,7 +914,7 @@ class Database:
             
             query = '''
                 SELECT 
-                    f.id, f.matchday, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.season,
+                    f.id, f.matchday, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json, f.season,
                     h.id as home_id, h.name as home_name, h.nickname as home_nickname, h.shield_url as home_shield, h.slug as home_slug,
                     a.id as away_id, a.name as away_name, a.nickname as away_nickname, a.shield_url as away_shield, a.slug as away_slug
                 FROM fixtures f
@@ -679,6 +951,14 @@ class Database:
                     del item["goals_json"]
                 else:
                     item["goals"] = []
+                if item.get("cards_json"):
+                    try:
+                        item["cards"] = json.loads(item["cards_json"])
+                    except Exception:
+                        item["cards"] = []
+                    del item["cards_json"]
+                else:
+                    item["cards"] = []
                 res.append(item)
             return res
             
@@ -1001,7 +1281,7 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT 
-                    f.id, f.matchday, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json,
+                    f.id, f.matchday, f.season, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json,
                     h.id as home_id, h.name as home_name, h.nickname as home_nickname, h.shield_url as home_shield, h.slug as home_slug,
                     h.stadium as home_stadium, h.stadium_name as home_stadium_name, h.position as home_position,
                     a.id as away_id, a.name as away_name, a.nickname as away_nickname, a.shield_url as away_shield, a.slug as away_slug,
@@ -1019,6 +1299,10 @@ class Database:
                 match["goals"] = json.loads(match["goals_json"]) if match.get("goals_json") else []
             except Exception:
                 match["goals"] = []
+            try:
+                match["cards"] = json.loads(match["cards_json"]) if match.get("cards_json") else []
+            except Exception:
+                match["cards"] = []
 
         sim_engine = SimulationEngine(self)
 
@@ -1137,11 +1421,37 @@ class Database:
                     return PlayerMomentum()
 
             all_club_players = self.search_players(club_slug=club_slug, limit=50)
-            
-            gks = [p for p in all_club_players if "goalkeeper" in (p.get("position_name") or "").lower()]
-            defs = [p for p in all_club_players if "defender" in (p.get("position_name") or "").lower()]
-            mids = [p for p in all_club_players if "midfielder" in (p.get("position_name") or "").lower()]
-            fwds = [p for p in all_club_players if "forward" in (p.get("position_name") or "").lower()]
+            unavailable_map = self.get_unavailable_players_for_fixture(
+                club_slug=club_slug,
+                matchday=match.get("matchday"),
+                season=match.get("season"),
+            )
+
+            available_players = []
+            missing_list = []
+            for p in all_club_players:
+                pid = p["id"]
+                unavail_info = unavailable_map.get(pid)
+                if unavail_info:
+                    missing_list.append({
+                        "id": pid,
+                        "name": p.get("name") or p.get("nickname"),
+                        "nickname": p.get("nickname") or p.get("name"),
+                        "shirt_number": p.get("shirt_number") or 99,
+                        "position": p.get("position_name"),
+                        "overall_rating": p.get("overall_rating", 75),
+                        "availability_status": unavail_info["status"],
+                        "availability_reason": unavail_info["reason"],
+                        "status_icon": unavail_info["icon"],
+                        "slug": p.get("slug"),
+                    })
+                else:
+                    available_players.append(p)
+
+            gks = [p for p in available_players if "goalkeeper" in (p.get("position_name") or "").lower()]
+            defs = [p for p in available_players if "defender" in (p.get("position_name") or "").lower()]
+            mids = [p for p in available_players if "midfielder" in (p.get("position_name") or "").lower()]
+            fwds = [p for p in available_players if "forward" in (p.get("position_name") or "").lower()]
 
             gks.sort(key=lambda x: x.get("overall_rating", 50), reverse=True)
             defs.sort(key=lambda x: x.get("overall_rating", 50), reverse=True)
@@ -1169,7 +1479,7 @@ class Database:
                     p = fwds[fwd_idx]; fwd_idx += 1
                 
                 if not p:
-                    for rem in all_club_players:
+                    for rem in available_players:
                         if rem["id"] not in used_ids:
                             p = rem
                             break
@@ -1198,10 +1508,11 @@ class Database:
                         "momentum": p_mom.to_dict(),
                         "archetype": p.get("archetype", "Tactical Player"),
                         "photo_url": p.get("photo_url") or p.get("cutout_url"),
-                        "slug": p.get("slug")
+                        "slug": p.get("slug"),
+                        "availability_status": "available",
                     })
 
-            bench = [p for p in all_club_players if p["id"] not in used_ids]
+            bench = [p for p in available_players if p["id"] not in used_ids]
             bench_list = []
             for p in bench:
                 p_form = sim_engine.calculate_player_form(p, club_slug, recent_3)
@@ -1220,7 +1531,8 @@ class Database:
                     "streak_icon": p_form["streak_icon"],
                     "archetype": p.get("archetype", "Squad Player"),
                     "photo_url": p.get("photo_url") or p.get("cutout_url"),
-                    "slug": p.get("slug")
+                    "slug": p.get("slug"),
+                    "availability_status": "available",
                 })
 
             return {
@@ -1229,6 +1541,7 @@ class Database:
                 "style": t_info["style"],
                 "starting_xi": starters,
                 "bench": bench_list,
+                "missing_players": missing_list,
                 "squad_total": len(all_club_players),
                 "all_players": all_club_players
             }

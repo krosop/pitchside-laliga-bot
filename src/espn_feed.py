@@ -199,10 +199,20 @@ def backfill_matchdays(season: int, conn: sqlite3.Connection) -> int:
 
 def sync_match_timeline(season: int, conn: sqlite3.Connection, limit: int = 20) -> Dict[str, int]:
     """
-    Builds goals_json for recent finished fixtures missing scorer data, and
-    records per-player goal rows (momentum raw material). Returns counters.
+    Builds goals_json and cards_json for recent finished fixtures missing scorer/card data,
+    and records per-player goal and red-card rows. Returns counters.
     """
-    counters = {"matches": 0, "goal_events": 0, "player_rows": 0}
+    counters = {"matches": 0, "goal_events": 0, "red_card_events": 0, "player_rows": 0}
+    try:
+        conn.execute("ALTER TABLE fixtures ADD COLUMN cards_json TEXT")
+    except sqlite3.OperationalError:
+        pass
+    for col_name in ("yellow_cards", "red_cards"):
+        try:
+            conn.execute(f"ALTER TABLE player_match_stats ADD COLUMN {col_name} INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
     pending = conn.execute(
         """
         SELECT f.id, f.kickoff_time, f.home_score, f.away_score,
@@ -211,7 +221,8 @@ def sync_match_timeline(season: int, conn: sqlite3.Connection, limit: int = 20) 
         JOIN clubs hs ON hs.id = f.home_team_id
         JOIN clubs aslug ON aslug.id = f.away_team_id
         WHERE f.season = ? AND f.status = 'FINISHED'
-          AND (f.goals_json IS NULL OR f.goals_json = '' OR f.goals_json = '[]')
+          AND (f.goals_json IS NULL OR f.goals_json = '' OR f.goals_json = '[]'
+               OR f.cards_json IS NULL)
         ORDER BY f.kickoff_time DESC LIMIT ?
         """,
         (season, limit),
@@ -232,27 +243,51 @@ def sync_match_timeline(season: int, conn: sqlite3.Connection, limit: int = 20) 
         except Exception:
             continue
 
+        h_slug, a_slug = fx["h_slug"], fx["a_slug"]
+        team_side = {  # ESPN team ids are opaque; map via summary header competitors
+            (c.get("team") or {}).get("id"): (h_slug if c.get("homeAway") == "home" else a_slug)
+            for c in (summary.get("header", {}).get("competitions", [{}])[0].get("competitors") or [])
+        }
+
         goals = []
+        red_cards = []
         seen_keys = set()
+        seen_card_keys = set()
         for k in summary.get("keyEvents", []) or []:
             t = ((k.get("type") or {}).get("text") or "").lower()
-            if "goal" not in t or "penalty - missed" in t or "shot" in t and "saved" in t:
-                continue
-            if not ("goal" in t):
-                continue
             ath = ((k.get("participants") or [{}])[0] or {}).get("athlete", {}) or {}
             team_id = ((k.get("participants") or [{}])[0] or {}).get("teamId") \
                 or ((k.get("team") or {}).get("id"))
             minute = _clock_to_minute((k.get("clock") or {}).get("displayValue"))
-            scorer = ath.get("displayName")
-            if not scorer or minute is None:
+            player_name = ath.get("displayName")
+            if not player_name or minute is None:
                 continue
-            key = (scorer, minute)
+
+            # Check for Red Card / Second Yellow Card
+            if "red card" in t or "second yellow" in t:
+                ckey = (player_name, minute)
+                if ckey not in seen_card_keys:
+                    seen_card_keys.add(ckey)
+                    c_slug = team_side.get(str(team_id)) or team_side.get(team_id) or h_slug
+                    red_cards.append({
+                        "player": player_name,
+                        "player_id": ath.get("id"),
+                        "team": team_id,
+                        "club_slug": c_slug,
+                        "minute": minute,
+                        "type": "red_card",
+                    })
+                    counters["red_card_events"] += 1
+                continue
+
+            if "goal" not in t or "penalty - missed" in t or ("shot" in t and "saved" in t):
+                continue
+            key = (player_name, minute)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
             goals.append({
-                "player": scorer,
+                "player": player_name,
                 "player_id": ath.get("id"),
                 "team": team_id,
                 "minute": minute,
@@ -260,30 +295,43 @@ def sync_match_timeline(season: int, conn: sqlite3.Connection, limit: int = 20) 
             })
             counters["goal_events"] += 1
 
-        if goals:
-            conn.execute("UPDATE fixtures SET goals_json=? WHERE id=?", (json.dumps(goals), fx["id"]))
+        conn.execute(
+            "UPDATE fixtures SET goals_json=COALESCE(?, goals_json), cards_json=? WHERE id=?",
+            (json.dumps(goals) if goals else None, json.dumps(red_cards), fx["id"]),
+        )
+        if goals or red_cards:
             counters["matches"] += 1
-            # player momentum rows: goals only (timeline-level data)
-            h_slug, a_slug = fx["h_slug"], fx["a_slug"]
-            team_side = {  # ESPN team ids are opaque; map via summary header competitors
-                (c.get("team") or {}).get("id"): (h_slug if c.get("homeAway") == "home" else a_slug)
-                for c in (summary.get("header", {}).get("competitions", [{}])[0].get("competitors") or [])
-            }
-            for g in goals:
-                club_slug = team_side.get(str(g["team"])) or team_side.get(g["team"]) or h_slug
-                conn.execute(
-                    """
-                    INSERT INTO player_match_stats
-                        (player_id, player_key, player_name, club_slug, season, fixture_date,
-                         opponent_slug, is_home, xg, xa, goals, assists, shots, key_passes)
-                    VALUES (?,?,?,?,?,?,?,?,0,0,?,0,0,0)
-                    ON CONFLICT(player_key, fixture_date) DO UPDATE SET goals=excluded.goals
-                    """,
-                    (g.get("player_id"), f"espn-{g.get('player_id')}", g["player"], club_slug,
-                     season, (fx["kickoff_time"] or "")[:10], a_slug if club_slug == h_slug else h_slug,
-                     1 if club_slug == h_slug else 0, 1),
-                )
-                counters["player_rows"] += 1
+        for g in goals:
+            club_slug = team_side.get(str(g["team"])) or team_side.get(g["team"]) or h_slug
+            conn.execute(
+                """
+                INSERT INTO player_match_stats
+                    (player_id, player_key, player_name, club_slug, season, fixture_date,
+                     opponent_slug, is_home, xg, xa, goals, assists, shots, key_passes)
+                VALUES (?,?,?,?,?,?,?,?,0,0,?,0,0,0)
+                ON CONFLICT(player_key, fixture_date) DO UPDATE SET goals=excluded.goals
+                """,
+                (g.get("player_id"), f"espn-{g.get('player_id')}", g["player"], club_slug,
+                 season, (fx["kickoff_time"] or "")[:10], a_slug if club_slug == h_slug else h_slug,
+                 1 if club_slug == h_slug else 0, 1),
+            )
+            counters["player_rows"] += 1
+
+        for rc in red_cards:
+            club_slug = rc.get("club_slug") or h_slug
+            conn.execute(
+                """
+                INSERT INTO player_match_stats
+                    (player_id, player_key, player_name, club_slug, season, fixture_date,
+                     opponent_slug, is_home, xg, xa, goals, assists, shots, key_passes, yellow_cards, red_cards)
+                VALUES (?,?,?,?,?,?,?,?,0,0,0,0,0,0,0,1)
+                ON CONFLICT(player_key, fixture_date) DO UPDATE SET red_cards=1
+                """,
+                (rc.get("player_id"), f"espn-{rc.get('player_id')}", rc["player"], club_slug,
+                 season, (fx["kickoff_time"] or "")[:10], a_slug if club_slug == h_slug else h_slug,
+                 1 if club_slug == h_slug else 0),
+            )
+            counters["player_rows"] += 1
         time.sleep(0.4)  # be polite to the free feed
     return counters
 
@@ -341,19 +389,23 @@ def _parse_weight_kg(raw: Optional[str]) -> Optional[int]:
 
 
 def sync_player_bios(db_path: Optional[str] = None, log=print) -> Dict[str, int]:
-    """Fill missing player bio facts (DOB, height cm, weight kg, headshot) from
-    ESPN club rosters — complete 30-athlete squads per request, unlike
-    TheSportsDB's partial listings. Fills NULLs only; ~1 request per club."""
+    """Fill missing player bio facts (DOB, height cm, weight kg, headshot) and
+    sync active injury/suspension statuses from ESPN club rosters."""
     from .tsdb_feed import best_player_match  # shared fuzzy name matcher
 
     conn = sqlite3.connect(db_path or DB_PATH)
     conn.row_factory = sqlite3.Row
-    stats = {"dob": 0, "height": 0, "weight": 0, "photo": 0, "clubs": 0}
+    stats = {"dob": 0, "height": 0, "weight": 0, "photo": 0, "injuries": 0, "clubs": 0}
     try:
-        try:
-            conn.execute("ALTER TABLE clubs ADD COLUMN espn_id TEXT")
-        except sqlite3.OperationalError:
-            pass
+        for col_sql in (
+            "ALTER TABLE clubs ADD COLUMN espn_id TEXT",
+            "ALTER TABLE players ADD COLUMN availability_status TEXT DEFAULT 'available'",
+            "ALTER TABLE players ADD COLUMN availability_reason TEXT",
+        ):
+            try:
+                conn.execute(col_sql)
+            except sqlite3.OperationalError:
+                pass
         ids = _espn_team_ids(conn)
         for slug, espn_id in sorted(ids.items()):
             club = conn.execute("SELECT id FROM clubs WHERE slug=?", (slug,)).fetchone()
@@ -402,6 +454,17 @@ def sync_player_bios(db_path: Optional[str] = None, log=print) -> Dict[str, int]
                         "photo_url=COALESCE(photo_url, ?) WHERE id=?",
                         (dob, h, w, shot, p["id"]),
                     )
+                injuries = a.get("injuries") or []
+                if injuries and isinstance(injuries, list):
+                    inj = injuries[0] if isinstance(injuries[0], dict) else {}
+                    inj_status = str(inj.get("status") or "Out").lower()
+                    inj_desc = str((inj.get("details") or {}).get("type") or inj.get("type") or "Medical Injury")
+                    status_val = "suspended" if "suspen" in inj_status or "red" in inj_desc.lower() else "injured"
+                    conn.execute(
+                        "UPDATE players SET availability_status=?, availability_reason=? WHERE id=?",
+                        (status_val, inj_desc, p["id"]),
+                    )
+                    stats["injuries"] += 1
             time.sleep(0.4)  # be polite; ESPN is generous but not infinite
         conn.commit()
         return stats

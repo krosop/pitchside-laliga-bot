@@ -22,6 +22,10 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run Simulation & Availability Test Suite
+        run: |
+          python -m tests.run_all
+
       - name: Refresh Daily La Liga Fixtures, Standings, Elo & Broadcast Today's Matches
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

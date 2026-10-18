@@ -286,28 +286,133 @@ class SimulationEngine:
         sorted_sub = sorted(sub.items(), key=lambda item: item[1], reverse=True)
         return sorted_sub[0][0]
 
+    @staticmethod
+    def _is_player_unavailable(p: Dict[str, Any]) -> bool:
+        st = str(p.get("availability_status") or p.get("status") or "available").strip().lower()
+        if st in ("suspended", "red_card", "injured", "injury", "out"):
+            return True
+        if p.get("red_card") is True or p.get("injured") is True or p.get("is_suspended") is True:
+            return True
+        return False
+
+    @classmethod
+    def _sanitize_available_lineup(cls, tactics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Ensures no suspended (red-carded) or injured player remains in starting_xi or bench.
+        If a starter is marked unavailable, promotes the highest-rated available bench player
+        of the same positional group into their slot and records them in `missing_players`.
+        """
+        raw_starters = [dict(p) for p in (tactics.get("starting_xi") or [])]
+        raw_bench = [dict(p) for p in (tactics.get("bench") or [])]
+        missing = [dict(p) for p in (tactics.get("missing_players") or [])]
+        missing_ids = {p.get("id") for p in missing if p.get("id") is not None}
+
+        def _record_missing(p: Dict[str, Any]):
+            pid = p.get("id")
+            if pid is not None and pid in missing_ids:
+                return
+            if pid is not None:
+                missing_ids.add(pid)
+            st = str(p.get("availability_status") or p.get("status") or "").strip().lower()
+            if p.get("red_card") or st in ("suspended", "red_card"):
+                status = "suspended"
+                reason = p.get("availability_reason") or "Red Card Suspension"
+                icon = "🟥"
+            else:
+                status = "injured"
+                reason = p.get("availability_reason") or "Medical / Injury Absence"
+                icon = "🏥"
+            missing.append({
+                "id": pid,
+                "name": p.get("name") or p.get("nickname"),
+                "nickname": p.get("nickname") or p.get("name"),
+                "shirt_number": p.get("shirt_number") or 99,
+                "position": p.get("position") or p.get("position_name"),
+                "overall_rating": p.get("overall_rating", 75),
+                "availability_status": status,
+                "availability_reason": reason,
+                "status_icon": icon,
+                "slug": p.get("slug"),
+            })
+
+        avail_bench = []
+        for bp in raw_bench:
+            if cls._is_player_unavailable(bp) or (bp.get("id") is not None and bp.get("id") in missing_ids):
+                _record_missing(bp)
+            else:
+                avail_bench.append(bp)
+
+        avail_bench.sort(key=lambda x: x.get("effective_rating", x.get("overall_rating", 70)), reverse=True)
+        used_bench_ids = set()
+        clean_starters = []
+
+        for sp in raw_starters:
+            if cls._is_player_unavailable(sp) or (sp.get("id") is not None and sp.get("id") in missing_ids):
+                _record_missing(sp)
+                req_pos = (sp.get("position") or sp.get("position_name") or "").lower()
+                replacement = next(
+                    (b for b in avail_bench if b.get("id") not in used_bench_ids and req_pos and req_pos in (b.get("position") or b.get("position_name") or "").lower()),
+                    None,
+                )
+                if not replacement:
+                    replacement = next((b for b in avail_bench if b.get("id") not in used_bench_ids), None)
+                if replacement:
+                    used_bench_ids.add(replacement.get("id"))
+                    rep_copy = dict(replacement)
+                    rep_copy["slot"] = sp.get("slot")
+                    rep_copy["x"] = sp.get("x")
+                    rep_copy["y"] = sp.get("y")
+                    rep_copy["replaced_player"] = sp.get("name")
+                    clean_starters.append(rep_copy)
+            else:
+                clean_starters.append(sp)
+
+        final_bench = [b for b in avail_bench if b.get("id") not in used_bench_ids]
+        return {
+            **tactics,
+            "starting_xi": clean_starters,
+            "bench": final_bench,
+            "missing_players": missing,
+        }
+
     def _team_strength_inputs(self, team: Dict[str, Any], fixture_date: Optional[str]) -> Dict[str, Any]:
         """
         Computes the strength signals for one team used by BOTH the forecast and
         the single-match simulation, so the two paths can never drift apart:
         - starting-XI effective ratings (already include per-player form modifiers)
+        - automatic exclusion of suspended (red-carded) and injured players + absence penalty
         - Elo club rating (5 seasons of real results) blended with squad quality
         - European fatigue modifier from the config-driven calendar
         - real recent form: weighted points-per-game over the last 3 finished
           fixtures (0.5 / 0.3 / 0.2 weights), derived from actual match results.
         - aggregated player momentum from real per-match goal data
         """
-        starters = team.get("tactics", {}).get("starting_xi", [])
-        ovrs = [p.get("effective_rating", p.get("overall_rating", 75)) for p in starters]
-        avg_ovr = (sum(ovrs) / len(ovrs) if ovrs else 78.0 if team is not None else 76.0) + self.calculate_match_fatigue(team.get("slug", ""), fixture_date)["fatigue_modifier"]
+        sanitized_tactics = self._sanitize_available_lineup(team.get("tactics", {}) if team else {})
+        starters = sanitized_tactics.get("starting_xi", [])
+        missing_players = sanitized_tactics.get("missing_players", [])
 
-        form = team.get("recent_form") or {}
+        # Absence penalty when key squad players (OVR >= 78) are out due to red card or injury
+        absence_penalty = 0.0
+        for mp in missing_players:
+            mp_ovr = mp.get("overall_rating", 75)
+            if mp_ovr >= 84:
+                absence_penalty += 0.65
+            elif mp_ovr >= 78:
+                absence_penalty += 0.35
+        absence_penalty = min(2.5, round(absence_penalty, 2))
+
+        ovrs = [p.get("effective_rating", p.get("overall_rating", 75)) for p in starters]
+        base_xi_ovr = sum(ovrs) / len(ovrs) if ovrs else (78.0 if team is not None else 76.0)
+        fatigue_info = self.calculate_match_fatigue(team.get("slug", "") if team else "", fixture_date)
+        avg_ovr = base_xi_ovr + fatigue_info["fatigue_modifier"] - absence_penalty
+
+        form = (team.get("recent_form") or {}) if team else {}
         if form.get("has_data"):
             form_pts = float(form.get("weighted_ppg", 1.35))
             form_label = f"{form.get('weighted_ppg', 0):.1f} ppg last {form.get('played', 3)}"
         else:
             # Fallback: single last-result badge when no history is available.
-            badge = (team.get("last_match", {}) or {}).get("res_badge")
+            badge = ((team.get("last_match", {}) if team else {}) or {}).get("res_badge")
             form_pts = 3.0 if badge == "W" else 1.0 if badge == "D" else 0.0
             form_label = "last result only"
 
@@ -316,7 +421,7 @@ class SimulationEngine:
         # 0..10 rating-points swing (~1.6 elo points per rating point).
         elo_term = 0.0
         elo_info = None
-        if self.db is not None:
+        if self.db is not None and team:
             try:
                 rating = RatingsEngine.get_or_none(self.db, team.get("slug", ""))
                 if rating:
@@ -327,7 +432,7 @@ class SimulationEngine:
 
         # Team-level momentum from real per-match player data
         mom_index, mom_hot = 50.0, []
-        if self.db is not None and starters:
+        if self.db is not None and starters and team:
             try:
                 mom = team_momentum(self.db, team.get("slug", ""), starters)
                 mom_index = float(mom.get("index", 50.0))
@@ -337,14 +442,16 @@ class SimulationEngine:
 
         return {
             "avg_ovr": avg_ovr,
-            "position": team.get("position") or 10,
+            "position": (team.get("position") if team else None) or 10,
             "form_pts": form_pts,
             "form_label": form_label,
-            "fatigue": self.calculate_match_fatigue(team.get("slug", ""), fixture_date),
+            "fatigue": fatigue_info,
             "elo": elo_info,
             "elo_term": elo_term,
             "momentum_index": mom_index,
             "momentum_hot": mom_hot,
+            "missing_players": missing_players,
+            "absence_penalty": absence_penalty,
         }
 
     def _match_strength_model(self, match_detail_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -461,13 +568,16 @@ class SimulationEngine:
         ]
 
         hs, as_ = model["home_strength"], model["away_strength"]
+        h_pct = round(h_win_p * 100, 1)
+        d_pct = round(draw_p * 100, 1)
+        a_pct = round(100.0 - h_pct - d_pct, 1)
         return {
             "runs": 0,
             "method": "closed_form_dixon_coles",
             "tactical_clash": clash,
-            "home_win_pct": round(h_win_p * 100, 1),
-            "draw_pct": round(draw_p * 100, 1),
-            "away_win_pct": round(a_win_p * 100, 1),
+            "home_win_pct": h_pct,
+            "draw_pct": d_pct,
+            "away_win_pct": a_pct,
             "top_scorelines": top_scorelines,
             "over_2_5_pct": round(over_2_5_p * 100, 1),
             "under_2_5_pct": round(under_2_5_p * 100, 1),
@@ -490,6 +600,12 @@ class SimulationEngine:
             "momentum_analysis": {
                 "home": {"index": round(hs["momentum_index"], 1), "hot": hs["momentum_hot"]},
                 "away": {"index": round(as_["momentum_index"], 1), "hot": as_["momentum_hot"]}
+            },
+            "availability_analysis": {
+                "home_missing": hs["missing_players"],
+                "away_missing": as_["missing_players"],
+                "home_absence_penalty": hs["absence_penalty"],
+                "away_absence_penalty": as_["absence_penalty"],
             },
             "model_components": model.get("components"),
             "fatigue_analysis": {
@@ -656,39 +772,58 @@ class SimulationEngine:
         """
         Generates cumulative xG step-ladder progression from 0' to 90'.
         """
-        h_goals = {e["minute"]: 0.65 for e in events if e.get("type") == "goal" and e.get("team") == "home"}
-        a_goals = {e["minute"]: 0.65 for e in events if e.get("type") == "goal" and e.get("team") == "away"}
-        h_saves = {e["minute"]: 0.25 for e in events if e.get("type") == "save" and e.get("team") == "home"}
-        a_saves = {e["minute"]: 0.25 for e in events if e.get("type") == "save" and e.get("team") == "away"}
-        
-        h_residual = max(0.05, home_xg - sum(h_goals.values()) - sum(h_saves.values()))
-        a_residual = max(0.05, away_xg - sum(a_goals.values()) - sum(a_saves.values()))
-        
+        h_spikes: Dict[int, float] = {}
+        a_spikes: Dict[int, float] = {}
+        for e in events:
+            m_clamped = max(1, min(90, int(e.get("minute") or 45)))
+            etype = e.get("type")
+            if etype == "goal":
+                if e.get("team") == "home":
+                    h_spikes[m_clamped] = h_spikes.get(m_clamped, 0.0) + 0.65
+                else:
+                    a_spikes[m_clamped] = a_spikes.get(m_clamped, 0.0) + 0.65
+            elif etype == "save":
+                # A save by the away GK is a shot on target by the home team, and vice versa
+                if e.get("team") == "away":
+                    h_spikes[m_clamped] = h_spikes.get(m_clamped, 0.0) + 0.22
+                else:
+                    a_spikes[m_clamped] = a_spikes.get(m_clamped, 0.0) + 0.22
+
+        h_spike_sum = sum(h_spikes.values())
+        a_spike_sum = sum(a_spikes.values())
+
+        # Scale spikes down proportionally if they exceed 85% of total xG
+        if h_spike_sum > home_xg * 0.85 and h_spike_sum > 0:
+            scale = (home_xg * 0.85) / h_spike_sum
+            h_spikes = {k: v * scale for k, v in h_spikes.items()}
+            h_spike_sum = sum(h_spikes.values())
+        if a_spike_sum > away_xg * 0.85 and a_spike_sum > 0:
+            scale = (away_xg * 0.85) / a_spike_sum
+            a_spikes = {k: v * scale for k, v in a_spikes.items()}
+            a_spike_sum = sum(a_spikes.values())
+
+        h_residual = max(0.0, home_xg - h_spike_sum)
+        a_residual = max(0.0, away_xg - a_spike_sum)
+
         h_step = h_residual / 90.0
         a_step = a_residual / 90.0
-        
+
         h_cum = 0.0
         a_cum = 0.0
-        trend = []
-        for m in range(0, 91):
-            if m in h_goals:
-                h_cum += h_goals[m]
-            elif m in h_saves:
-                h_cum += h_saves[m]
+        trend = [{"minute": 0, "home_xg": 0.0, "away_xg": 0.0}]
+        for m in range(1, 91):
+            h_cum += h_step + h_spikes.get(m, 0.0)
+            a_cum += a_step + a_spikes.get(m, 0.0)
+            if m == 90:
+                h_val = round(home_xg, 2)
+                a_val = round(away_xg, 2)
             else:
-                h_cum += h_step
-                
-            if m in a_goals:
-                a_cum += a_goals[m]
-            elif m in a_saves:
-                a_cum += a_saves[m]
-            else:
-                a_cum += a_step
-                
+                h_val = round(min(home_xg, h_cum), 2)
+                a_val = round(min(away_xg, a_cum), 2)
             trend.append({
                 "minute": m,
-                "home_xg": round(min(home_xg, h_cum), 2),
-                "away_xg": round(min(away_xg, a_cum), 2)
+                "home_xg": h_val,
+                "away_xg": a_val
             })
         return trend
 
@@ -706,25 +841,27 @@ class SimulationEngine:
             time_factor = snap / 90.0
             
             if snap == 0:
-                h_p, d_p, a_p = home_win_pct, draw_pct, away_win_pct
+                h_p = round(home_win_pct, 1)
+                d_p = round(draw_pct, 1)
+                a_p = round(100.0 - h_p - d_p, 1)
             elif diff == 0:
                 d_p = round(min(88.0, draw_pct + time_factor * 36.0), 1)
                 rem = 100.0 - d_p
                 h_share = home_win_pct / (home_win_pct + away_win_pct + 0.01)
                 h_p = round(rem * h_share, 1)
-                a_p = round(rem * (1.0 - h_share), 1)
+                a_p = round(100.0 - h_p - d_p, 1)
             elif diff > 0:
                 lead_mult = 1.0 + (diff - 1) * 0.4
                 h_p = round(min(99.0, 62.0 + time_factor * 35.0 * lead_mult), 1)
                 rem = 100.0 - h_p
                 d_p = round(rem * 0.65, 1)
-                a_p = round(rem * 0.35, 1)
+                a_p = round(100.0 - h_p - d_p, 1)
             else:
                 lead_mult = 1.0 + (-diff - 1) * 0.4
                 a_p = round(min(99.0, 60.0 + time_factor * 36.0 * lead_mult), 1)
                 rem = 100.0 - a_p
                 d_p = round(rem * 0.65, 1)
-                h_p = round(rem * 0.35, 1)
+                h_p = round(100.0 - a_p - d_p, 1)
                 
             trend.append({
                 "minute": snap,
@@ -773,29 +910,31 @@ class SimulationEngine:
         """
         Simulates match using team ratings, starting XI ratings, dynamic player form,
         European fatigue modifiers, interactive manager mode tactical stance, and custom substitutions.
+        Automatically filters out suspended (red-carded) and injured players.
         Uses bivariate Dixon-Coles sampling and generates an exact 1-to-1 event timeline.
         """
         f = match_detail_data["fixture"]
         home = match_detail_data["home_team"]
         away = match_detail_data["away_team"]
 
-        h_tactics = home.get("tactics", {})
-        a_tactics = away.get("tactics", {})
+        # Sanitize both lineups first so no red-carded or injured player can start or sit on the bench
+        h_tactics = self._sanitize_available_lineup(home.get("tactics", {}))
+        a_tactics = self._sanitize_available_lineup(away.get("tactics", {}))
 
         # Deep copy starting lists so substitutions do not mutate original dict permanently
         h_starters = [dict(p) for p in h_tactics.get("starting_xi", [])]
         a_starters = [dict(p) for p in a_tactics.get("starting_xi", [])]
-        h_bench = h_tactics.get("bench", [])
-        a_bench = a_tactics.get("bench", [])
+        h_bench = [dict(p) for p in h_tactics.get("bench", [])]
+        a_bench = [dict(p) for p in a_tactics.get("bench", [])]
 
-        # Apply user substitutions if provided
+        # Apply user substitutions if provided (only allowing available bench players)
         if custom_substitutions:
             for sub in custom_substitutions:
                 side = sub.get("team", "home")
                 out_id = sub.get("out_id")
                 in_id = sub.get("in_id")
                 if side == "home":
-                    in_player = next((p for p in h_bench if p.get("id") == in_id), None)
+                    in_player = next((p for p in h_bench if p.get("id") == in_id and not self._is_player_unavailable(p)), None)
                     if in_player:
                         for idx, p in enumerate(h_starters):
                             if p.get("id") == out_id:
@@ -806,7 +945,7 @@ class SimulationEngine:
                                 h_starters[idx] = swapped
                                 break
                 elif side == "away":
-                    in_player = next((p for p in a_bench if p.get("id") == in_id), None)
+                    in_player = next((p for p in a_bench if p.get("id") == in_id and not self._is_player_unavailable(p)), None)
                     if in_player:
                         for idx, p in enumerate(a_starters):
                             if p.get("id") == out_id:
@@ -821,15 +960,16 @@ class SimulationEngine:
         # Substitutions are applied to the XI copy above, so feed the modified
         # lineups back into the model instead of the originals.
         model_input = dict(match_detail_data)
-        model_input["home_team"] = {**home, "tactics": {**h_tactics, "starting_xi": h_starters}}
-        model_input["away_team"] = {**away, "tactics": {**a_tactics, "starting_xi": a_starters}}
+        model_input["home_team"] = {**home, "tactics": {**h_tactics, "starting_xi": h_starters, "bench": h_bench}}
+        model_input["away_team"] = {**away, "tactics": {**a_tactics, "starting_xi": a_starters, "bench": a_bench}}
         model = self._match_strength_model(model_input)
         clash = model["clash"]
         lambda_h, lambda_a = model["lambda_h"], model["lambda_a"]
         h_fatigue = model["fatigue"]["home"]
         a_fatigue = model["fatigue"]["away"]
-        h_pos = model["home_strength"]["position"]
-        a_pos = model["away_strength"]["position"]
+        hs, as_ = model["home_strength"], model["away_strength"]
+        h_pos = hs["position"]
+        a_pos = as_["position"]
 
         # Per-player momentum: hot players (esp. after an explosive game vs a
         # weaker opponent) get a real scorer-weight bump in the simulation.
@@ -1077,7 +1217,7 @@ class SimulationEngine:
         # Calculate theoretical Win Probability Trend based on Dixon-Coles parameters
         h_win_base = round(sum(p for (x, y), p in dc_matrix.items() if x > y) * 100, 1)
         d_base = round(sum(p for (x, y), p in dc_matrix.items() if x == y) * 100, 1)
-        a_win_base = round(sum(p for (x, y), p in dc_matrix.items() if x < y) * 100, 1)
+        a_win_base = round(100.0 - h_win_base - d_base, 1)
         win_prob_trend = self.generate_win_probability_trend(h_win_base, d_base, a_win_base, events)
         
         trend_narrative = self.generate_match_trend_narrative(
@@ -1114,6 +1254,12 @@ class SimulationEngine:
             "expected_goals_lambda": {
                 "home": round(lambda_h, 2),
                 "away": round(lambda_a, 2)
+            },
+            "availability_analysis": {
+                "home_missing": hs["missing_players"],
+                "away_missing": as_["missing_players"],
+                "home_absence_penalty": hs["absence_penalty"],
+                "away_absence_penalty": as_["absence_penalty"],
             },
             "fatigue_analysis": {
                 "home": h_fatigue,
