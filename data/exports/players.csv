@@ -1,0 +1,521 @@
+player_id,opta_id,slug,name,nickname,position,position_group,country_code,date_of_birth,height_cm,weight_kg,shirt_number,club_id,club_name,photo_url,cutout_url,overall_rating,market_value,wage,season_id
+7,p81138,bartra,Marc Bartra,Bartra,Defender,defensa,ES,,,,5,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p81138/512x556/p81138_t185_2026_1_001_000.png,,85,,,2026-27
+66,p80209,isco,Francisco Román Alarcón Suárez,Isco,Midfielder,centrocampista,ES,,,,22,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p80209/512x556/p80209_t185_2026_1_001_000.png,,72,,,2026-27
+77,p80993,aitor-fdez,Aitor Fernández,Aitor Fdez.,Goalkeeper,portero,ES,,,,13,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p80993/512x556/p80993_t450_2026_0_001_000.png,,65,,,2026-27
+92,p109243,moi-gomez,Moi Gómez,Moi Gómez,Midfielder,centrocampista,ES,,,,16,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p109243/512x556/p109243_t450_2026_0_001_000.png,,67,,,2026-27
+157,p42670,yuri-b,Yuri Berchiche,Yuri,Defender,defensa,ES,,,,17,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p42670/512x556/p42670_t174_2026_1_001_000.png,,76,,,2026-27
+180,p91393,r-bigas,Pedro Bigas,R.p. Bigas,Defender,defensa,ES,,,,6,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p91393/512x556/p91393_t954_2026_0_001_000.png,,64,,,2026-27
+182,p90728,x-navarro,Joaquín Navarro Jiménez,X. Navarro,Defender,defensa,ES,,,,23,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p90728/512x556/p90728_t180_2026_0_001_000.png,,85,,,2026-27
+192,p93721,gerard,Gerard Moreno,Gerard,Forward,delantero,ES,,,,7,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p93721/512x556/p93721_t449_2026_0_001_000.png,,77,,,2026-27
+362,p168580,ayoze-perez,Ayoze Pérez,Ayoze,Forward,delantero,ES,,,,22,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p168580/512x556/p168580_t449_2026_0_001_000.png,,71,,,2026-27
+395,p146941,laporte,Aymeric Laporte,Laporte,Defender,defensa,ES,,,,14,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p146941/512x556/p146941_t174_2026_1_001_000.png,,82,,,2026-27
+418,p96767,foulquier,Dimitri Foulquier,Foulquier,Defender,defensa,GP,,,,20,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p96767/512x556/p96767_t191_2026_0_001_000.png,,65,,,2026-27
+429,p165682,alvaro-1,Álvaro García,Álvaro,Midfielder,centrocampista,ES,,,,18,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p165682/512x556/p165682_t184_2026_0_001_000.png,,75,,,2026-27
+526,p106004,grimaldo,Alejandro Grimaldo,Grimaldo,Defender,defensa,ES,,,,22,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p106004/512x556/p106004_t175_2026_1_001_000.png,,86,,,2026-27
+530,p89572,denis-suarez,Denis Suárez,Denis Suárez,Midfielder,centrocampista,ES,,,,4,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p89572/512x556/p89572_t173_2026_1_001_000.png,,70,,,2026-27
+536,p159533,adama,Adama Traoré,Adama,Forward,delantero,ES,,,,24,,RC Deportivo,,,68,,,2026-27
+560,p60772,courtois,Thibaut Courtois,Courtois,Goalkeeper,portero,BE,,,,1,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p60772/512x556/p60772_t186_2026_0_001_000.png,,78,,,2026-27
+562,p151883,j-m-gimenez,José María Giménez,J. M. Giménez,Defender,defensa,UY,,,,20,,RC Deportivo,,,71,,,2026-27
+571,p77390,koke,Jorge Resurrección Merodio,Koke,Midfielder,centrocampista,ES,,,,6,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p77390/512x556/p77390_t175_2026_1_001_000.png,,74,,,2026-27
+594,p114128,jonny,Jonny Otto,J. Otto,Defender,defensa,ES,,,,17,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p114128/512x556/p114128_t173_2026_1_001_000.png,,79,,,2026-27
+659,p152723,j-mojica,Johan Mojica,Johan Mojica,Midfielder,centrocampista,CO,,,,22,11,Getafe CF,,,70,,,2026-27
+722,p132105,gaya,José Gayà,Gayà,Defender,defensa,ES,,,,14,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p132105/512x556/p132105_t191_2026_0_001_000.png,,62,,,2026-27
+723,p56448,canales,Sergio Canales,Canales,Midfielder,centrocampista,ES,,,,20,,R. Racing Club,,,72,,,2026-27
+819,p96736,r-de-galarreta,Íñigo Ruiz de Galarreta,R. De Galarreta,Midfielder,centrocampista,ES,,,,16,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p96736/512x556/p96736_t174_2026_1_001_000.png,,72,,,2026-27
+972,p130026,ruben-garcia,Rubén García,Rubén García,Forward,delantero,ES,,,,14,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p130026/512x556/p130026_t450_2026_0_001_000.png,,68,,,2026-27
+989,p149915,llorente-r,Diego Llorente,Llorente R.,Defender,defensa,ES,,,,3,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p149915/512x556/p149915_t185_2026_1_001_000.png,,79,,,2026-27
+995,p54484,kiko-femenia,Francisco Femenía Far,Kiko F.,Defender,defensa,ES,,,,17,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p54484/512x556/p54484_t1450_2026_0_001_000.png,,73,,,2026-27
+997,p111232,torro,Lucas Torró,Torró,Midfielder,centrocampista,ES,,,,6,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p111232/512x556/p111232_t450_2026_0_001_000.png,,69,,,2026-27
+1035,p94878,dimitrievski,Stole Dimitrievski,Dimitrievski,Goalkeeper,portero,MK,,,,1,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p94878/512x556/p94878_t191_2026_0_001_000.png,,75,,,2026-27
+1037,p149052,german,Germán Parreño,Germán,Goalkeeper,portero,ES,,,,1,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p149052/512x556/p149052_t180_2026_0_001_000.png,,65,,,2026-27
+1047,p138041,einar-galilea,Einar Galilea,Einar,Defender,defensa,ES,,,,4,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p138041/512x556/p138041_t182_2026_0_001_000.png,,80,,,2026-27
+1061,p171129,rico,Diego Rico,Rico,Defender,defensa,ES,,,,15,18,CA Osasuna,,,65,,,2026-27
+1190,p178347,mariano,Mariano Díaz,Mariano,Forward,delantero,DO,,,,9,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p178347/512x556/p178347_t173_2026_1_001_000.png,,79,,,2026-27
+1290,p176245,sivera,Antonio Sivera,Sivera,Goalkeeper,portero,ES,,,,1,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p176245/512x556/p176245_t173_2026_1_001_000.png,,84,,,2026-27
+1470,p81352,oblak,Jan Oblak,Oblak,Goalkeeper,portero,SI,,,,13,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p81352/512x556/p81352_t175_2026_1_001_000.png,,81,,,2026-27
+1479,p40270,iago-aspas,Iago Aspas,Iago Aspas,Forward,delantero,ES,,,,10,8,Celta,https://assets.laliga.com/squad/2026/t176/p40270/512x556/p40270_t176_2026_0_001_000.png,,69,,,2026-27
+1484,p77359,lejeune,Florian Lejeune,Lejeune,Defender,defensa,FR,,,,24,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p77359/512x556/p77359_t184_2026_0_001_000.png,,85,,,2026-27
+1578,p121145,cancelo,João Pedro Cavaco Cancelo,Joao Cancelo,Defender,defensa,PT,,,,2,5,FC Barcelona,,,65,,,2026-27
+1590,p183462,unai-lopez,Unai López,Unai Lopez,Midfielder,centrocampista,ES,,,,8,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p183462/512x556/p183462_t184_2026_0_001_000.png,,84,,,2026-27
+1593,p195385,berenguer,Alex Berenguer,Berenguer,Forward,delantero,ES,,,,7,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p195385/512x556/p195385_t174_2026_1_001_000.png,,73,,,2026-27
+1594,p178870,kike-barja,Kike Barja,Kike Barja,Forward,delantero,ES,,,,11,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p178870/512x556/p178870_t450_2026_0_001_000.png,,68,,,2026-27
+1669,p175204,david-soria,David Soria,David Soria,Goalkeeper,portero,ES,,,,13,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p175204/512x556/p175204_t1450_2026_0_001_000.png,,79,,,2026-27
+1683,p149838,djene,Djené Dakonam,Djene,Defender,defensa,TG,,,,2,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p149838/512x556/p149838_t1450_2026_0_001_000.png,,81,,,2026-27
+1687,p175090,pere-milla,Pere Milla,Pere Milla,Forward,delantero,ES,,,,11,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p175090/512x556/p175090_t177_2026_0_001_000.png,,64,,,2026-27
+1700,p192364,m-llorente,Marcos Llorente,M. Llorente,Midfielder,centrocampista,ES,,,,14,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p192364/512x556/p192364_t175_2026_1_001_000.png,,74,,,2026-27
+1702,p197334,williams,Iñaki Williams,Williams,Forward,delantero,GH,,,,9,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p197334/512x556/p197334_t174_2026_1_001_000.png,,73,,,2026-27
+1720,p202044,b-iglesias,Borja Iglesias,B. Iglesias,Forward,delantero,ES,,,,7,8,Celta,https://assets.laliga.com/squad/2026/t176/p202044/512x556/p202044_t176_2026_0_001_000.png,,65,,,2026-27
+1793,p197316,a-remiro,Álex Remiro,A. Remiro,Goalkeeper,portero,ES,,,,1,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p197316/512x556/p197316_t188_2026_0_001_000.png,,86,,,2026-27
+1819,p199248,b-mayoral,Borja Mayoral,B. Mayoral,Forward,delantero,ES,,,,9,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p199248/512x556/p199248_t1450_2026_0_001_000.png,,60,,,2026-27
+1885,p131897,mathew-ryan,Mathew Ryan,Ryan,Goalkeeper,portero,AU,,,,13,16,Levante UD,,,86,,,2026-27
+1988,p94618,dmitrovic,Marko Dmitrovic,Dmitrovic,Goalkeeper,portero,RS,,,,13,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p94618/512x556/p94618_t177_2026_0_001_000.png,,84,,,2026-27
+1996,p199195,josan,José Antonio Ferrández Pomares,Josan,Midfielder,centrocampista,ES,,,,17,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p199195/512x556/p199195_t954_2026_0_001_000.png,,64,,,2026-27
+2001,p212769,unai-simon,Unai Simón,Unai Simon,Goalkeeper,portero,ES,,,,1,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p212769/512x556/p212769_t174_2026_1_001_000.png,,90,,,2026-27
+2007,p197319,yeray-2,Yeray Álvarez,Yeray,Defender,defensa,ES,,,,5,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p197319/512x556/p197319_t174_2026_1_001_000.png,,83,,,2026-27
+2023,p212770,villalibre,Asier Villalibre,Villalibre,Forward,delantero,ES,,,,12,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p212770/512x556/p212770_t189_2026_0_001_000.png,,65,,,2026-27
+2157,p135363,andreas-christensen,Andreas Christensen,Christensen,Defender,defensa,DK,,,,15,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p135363/512x556/p135363_t178_2026_0_001_000.png,,82,,,2026-27
+2162,p59936,wojciech-szczesny,Wojciech Szczesny,Szczesny,Goalkeeper,portero,PL,,,,13,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p59936/512x556/p59936_t178_2026_0_001_000.png,,65,,,2026-27
+2166,p102380,antonio-rudiger,Antonio Rüdiger,Rüdiger,Defender,defensa,DE,,,,22,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p102380/512x556/p102380_t186_2026_0_001_000.png,,65,,,2026-27
+2262,p165809,bernardo-silva,Bernardo Mota Veiga de Carvalho e Silva,Bernardo,Midfielder,centrocampista,PT,,,,20,20,Real Madrid,,,72,,,2026-27
+2275,p217593,p-fornals,Pablo Fornals,P. Fornals,Midfielder,centrocampista,ES,,,,8,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p217593/512x556/p217593_t185_2026_1_001_000.png,,78,,,2026-27
+2419,p98745,hector-bellerin,Héctor Bellerín,Bellerín,Defender,defensa,ES,,,,2,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p98745/512x556/p98745_t185_2026_1_001_000.png,,84,,,2026-27
+2580,p170154,maffeo,Pablo Maffeo,Maffeo,Defender,defensa,AR,,,,24,23,Valencia CF,,,73,,,2026-27
+2663,p181284,guedes,Gonçalo Manuel Ganchinho Guedes,Guedes,Midfielder,centrocampista,PT,,,,11,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p181284/512x556/p181284_t188_2026_0_001_000.png,,68,,,2026-27
+2821,p82263,marcos-alonso,Marcos Alonso,M. Alonso,Defender,defensa,ES,,,,3,8,Celta,https://assets.laliga.com/squad/2026/t176/p82263/512x556/p82263_t176_2026_0_001_000.png,,83,,,2026-27
+3242,p72154,gudelj,Nemanja Gudelj,Gudelj,Midfielder,centrocampista,RS,,,,8,11,Getafe CF,,,61,,,2026-27
+3750,p54694,pierre-emerick-aubameyang,Pierre-Emerick Aubameyang,Aubameyang,Forward,delantero,GA,,,,7,,RC Deportivo,,,82,,,2026-27
+3861,p219000,oyarzabal,Mikel Oyarzabal,Oyarzabal,Forward,delantero,ES,,,,10,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p219000/512x556/p219000_t188_2026_0_001_000.png,,72,,,2026-27
+3956,p219717,javi-galan,Javi Galán,Javi Galán,Midfielder,centrocampista,ES,,,,22,8,Celta,,,71,,,2026-27
+4110,p220191,pepelu,José Luis García Vayá,Pepelu,Midfielder,centrocampista,ES,,,,18,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p220191/512x556/p220191_t191_2026_0_001_000.png,,68,,,2026-27
+4145,p220325,kounde,Jules Koundé,Kounde,Defender,defensa,FR,,,,23,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p220325/512x556/p220325_t178_2026_0_001_000.png,,70,,,2026-27
+4169,p220160,kylian-mbappe-lottin,Kylian Mbappé,Mbappé,Forward,delantero,FR,,,,10,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p220160/512x556/p220160_t186_2026_0_001_000.png,,88,,,2026-27
+4225,p173209,augusto-batalla,Augusto Batalla,A. Batalla,Goalkeeper,portero,AR,,,,13,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p173209/512x556/p173209_t184_2026_0_001_000.png,,70,,,2026-27
+4266,p220566,rodrigo-1,Rodrigo Hernández Cascante,Rodrigo,Midfielder,centrocampista,ES,,,,16,5,FC Barcelona,,,62,,,2026-27
+4269,p220182,guruzeta,Gorka Guruzeta,Guruzeta,Forward,delantero,ES,,,,11,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p220182/512x556/p220182_t174_2026_1_001_000.png,,63,,,2026-27
+4319,p179271,alena,Carles Aleñá,C. Aleñá,Midfielder,centrocampista,ES,,,,10,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p179271/512x556/p179271_t173_2026_1_001_000.png,,65,,,2026-27
+4451,p224860,c-soler,Carlos Soler,C.soler,Midfielder,centrocampista,ES,,,,18,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p224860/512x556/p224860_t188_2026_0_001_000.png,,73,,,2026-27
+4468,p216475,zubeldia,Igor Zubeldia,Zubeldia,Defender,defensa,ES,,,,5,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p216475/512x556/p216475_t188_2026_0_001_000.png,,84,,,2026-27
+4611,p86813,mandi-1,Aïssa Mandi,Mandi,Defender,defensa,DZ,,,,2,16,Levante UD,,,85,,,2026-27
+4617,p138039,s-herrera,Sergio Herrera,S. Herrera,Goalkeeper,portero,ES,,,,1,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p138039/512x556/p138039_t450_2026_0_001_000.png,,77,,,2026-27
+4626,p172845,ezequiel-ponce,Ezequiel Ponce,E. Ponce,Forward,delantero,AR,,,,9,9,Elche CF,,,67,,,2026-27
+4631,p234370,marc-roca,Marc Roca,Marc Roca,Midfielder,centrocampista,ES,,,,21,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p234370/512x556/p234370_t185_2026_1_001_000.png,,79,,,2026-27
+4676,p234369,aaron-1,Aarón Martín,Aaron,Defender,defensa,ES,,,,3,,R. Racing Club,,,60,,,2026-27
+4683,p230071,santi-c-v,Santi Comesaña,Santi C.v.,Midfielder,centrocampista,ES,,,,14,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p230071/512x556/p230071_t449_2026_0_001_000.png,,72,,,2026-27
+4736,p165795,a-herrero,Alfonso Herrero,A. Herrero,Goalkeeper,portero,ES,,,,1,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p165795/512x556/p165795_t182_2026_0_001_000.png,,80,,,2026-27
+4820,p145235,angelino,José Ángel Esmoris Tasende,Angeliño,Defender,defensa,ES,,,,17,,RC Deportivo,,,65,,,2026-27
+4872,p208135,diakhaby,Mouctar Diakhaby,Diakhaby,Defender,defensa,GN,,,,4,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p208135/512x556/p208135_t191_2026_0_001_000.png,,81,,,2026-27
+5370,p240796,alvaro-fernandez,Álvaro Fernández,A. Ferllo,Goalkeeper,portero,ES,,,,25,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p240796/512x556/p240796_t180_2026_0_001_000.png,,65,,,2026-27
+5978,p240071,dani-raba,Dani Raba,Raba,Forward,delantero,ES,,,,19,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p240071/512x556/p240071_t191_2026_0_001_000.png,,65,,,2026-27
+5997,p201178,guridi,Jon Guridi,Guridi,Midfielder,centrocampista,ES,,,,18,21,Sevilla FC,,,66,,,2026-27
+6007,p420909,edu-exposito,Edu Expósito,Edu Expósito,Midfielder,centrocampista,ES,,,,8,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p420909/512x556/p420909_t177_2026_0_001_000.png,,72,,,2026-27
+6121,p179268,cucurella,Marc Cucurella,Cucurella,Defender,defensa,ES,,,,17,20,Real Madrid,,,82,,,2026-27
+6130,p223255,valverde-1,Federico Valverde,Valverde,Midfielder,centrocampista,UY,,,,8,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p223255/512x556/p223255_t186_2026_0_001_000.png,,78,,,2026-27
+6132,p429213,loureiro,Miguel Loureiro,M. Loureiro,Defender,defensa,ES,,,,15,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p429213/512x556/p429213_t180_2026_0_001_000.png,,76,,,2026-27
+6154,p199250,febas,Aleix Febas,Febas,Midfielder,centrocampista,ES,,,,14,8,Celta,,,67,,,2026-27
+6199,p168636,enes-unal,Enes Ünal,Enes Ünal,Forward,delantero,TR,,,,19,11,Getafe CF,,,67,,,2026-27
+6254,p111452,odisseas-vlachodimos,Odysseas Vlachodimos,Odysseas,Goalkeeper,portero,GR,,,,1,21,Sevilla FC,,,76,,,2026-27
+6262,p244716,cucho,Cucho Hernández,C. Hernández,Forward,delantero,CO,,,,9,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p244716/512x556/p244716_t185_2026_1_001_000.png,,70,,,2026-27
+6263,p429644,t-morente,José Antonio Morente Oliva,T. Morente,Midfielder,centrocampista,ES,,,,20,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p429644/512x556/p429644_t954_2026_0_001_000.png,,72,,,2026-27
+6270,p431644,guevara,Ander Guevara,Guevara,Midfielder,centrocampista,ES,,,,6,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p431644/512x556/p431644_t173_2026_1_001_000.png,,61,,,2026-27
+6280,p242830,nunez-2,Unai Núñez,Nuñez,Defender,defensa,ES,,,,14,,RCD Espanyol de Barcelona,,,83,,,2026-27
+6340,p435065,pedro-diaz,Pedro Díaz,Pedro Díaz,Midfielder,centrocampista,ES,,,,4,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p435065/512x556/p435065_t184_2026_0_001_000.png,,71,,,2026-27
+6413,p46506,peter-gulacsi,Péter Gulácsi,Gulácsi,Goalkeeper,portero,HU,,,,25,26,Villarreal CF,,,65,,,2026-27
+6476,p234908,foyth,Juan Foyth,Foyth,Defender,defensa,AR,,,,8,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p234908/512x556/p234908_t449_2026_0_001_000.png,,84,,,2026-27
+6477,p160540,jeremy-toljan,Jeremy Toljan,Toljan,Defender,defensa,DE,,,,22,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p160540/512x556/p160540_t855_2026_0_001_000.png,,68,,,2026-27
+6724,p224965,lunin,Andrii Lunin,Lunin,Goalkeeper,portero,UA,,,,13,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p224965/512x556/p224965_t186_2026_0_001_000.png,,65,,,2026-27
+6924,p219961,raphinha,Raphael Dias Belloli,Raphinha,Forward,delantero,BR,,,,11,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p219961/512x556/p219961_t178_2026_0_001_000.png,,88,,,2026-27
+6959,p169187,trent-alexander-arnold,Trent Alexander-Arnold,Trent,Defender,defensa,GB-ENG,,,,12,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p169187/512x556/p169187_t186_2026_0_001_000.png,,76,,,2026-27
+7013,p219352,ademola-lookman,Ademola Lookman,Lookman,Forward,delantero,NG,,,,11,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p219352/512x556/p219352_t175_2026_1_001_000.png,,71,,,2026-27
+7071,p204716,ibrahima-konate,Ibrahima Konaté,Konaté,Defender,defensa,FR,,,,16,20,Real Madrid,,,82,,,2026-27
+7122,p439716,hugo-duro,Hugo Duro,Hugo Duro,Forward,delantero,ES,,,,9,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p439716/512x556/p439716_t191_2026_0_001_000.png,,63,,,2026-27
+7167,p179372,m-hernando,José Manuel Hernando Riol,Manu H.,Defender,defensa,ES,,,,4,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p179372/512x556/p179372_t189_2026_0_001_000.png,,81,,,2026-27
+7170,p439878,r-brugue,Roger Brugué,R. Brugué,Forward,delantero,ES,,,,7,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p439878/512x556/p439878_t855_2026_0_001_000.png,,70,,,2026-27
+7215,p216183,brahim,Brahim Díaz,Brahim,Midfielder,centrocampista,MA,,,,21,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p216183/512x556/p216183_t186_2026_0_001_000.png,,67,,,2026-27
+7252,p437468,sergio-gomez,Sergio Gómez,Sergio Gómez,Defender,defensa,ES,,,,17,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p437468/512x556/p437468_t188_2026_0_001_000.png,,88,,,2026-27
+7276,p434078,isi-2,Isi Palazón,Isi,Midfielder,centrocampista,ES,,,,7,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p434078/512x556/p434078_t184_2026_0_001_000.png,,63,,,2026-27
+7323,p232826,anthony-gordon,Anthony Gordon,Anthony Gordon,Forward,delantero,GB-ENG,,,,17,5,FC Barcelona,,,78,,,2026-27
+7427,p442819,c-rivero,Cristian Rivero,C.rivero,Goalkeeper,portero,ES,,,,13,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p442819/512x556/p442819_t191_2026_0_001_000.png,,65,,,2026-27
+7453,p443967,junior,Junior Firpo,J. Firpo,Defender,defensa,DO,,,,23,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p443967/512x556/p443967_t185_2026_1_001_000.png,,65,,,2026-27
+7455,p444284,andres-2,Andrés Martín,Andrés,Forward,delantero,ES,,,,11,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p444284/512x556/p444284_t189_2026_0_001_000.png,,75,,,2026-27
+7467,p216473,eneko,Eneko Jauregi,Jauregi,Forward,delantero,ES,,,,17,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p216473/512x556/p216473_t182_2026_0_001_000.png,,62,,,2026-27
+7480,p178867,t-martinez,Toni Martínez,T. Martínez,Forward,delantero,ES,,,,11,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p178867/512x556/p178867_t173_2026_1_001_000.png,,66,,,2026-27
+7482,p193774,lucas-boye,Lucas Boyé,Lucas Boyé,Forward,delantero,AR,,,,15,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p193774/512x556/p193774_t173_2026_1_001_000.png,,69,,,2026-27
+7533,p445998,p-martinez,Pablo Martínez,Martínez,Midfielder,centrocampista,ES,,,,18,,Málaga CF,,,62,,,2026-27
+7551,p446814,alfonso-1,Alfon González,Alfon,Forward,delantero,ES,,,,7,21,Sevilla FC,,,62,,,2026-27
+7607,p436027,mujaid,Mujaid Sadick,Mujaid,Defender,defensa,ES,,,,15,25,Rayo Vallecano,,,65,,,2026-27
+7608,p450782,g-villar,Gonzalo Villar,G. Villar,Midfielder,centrocampista,ES,,,,12,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p450782/512x556/p450782_t954_2026_0_001_000.png,,78,,,2026-27
+8223,p451281,juan-cruz,Juan Cruz,Cruz,Midfielder,centrocampista,ES,,,,19,,Málaga CF,,,63,,,2026-27
+8515,p246333,vini-jr,Vinícius José Paixão de Oliveira Júnior,Vini Jr.,Forward,delantero,BR,,,,7,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p246333/512x556/p246333_t186_2026_0_001_000.png,,79,,,2026-27
+8535,p244273,catena,Alejandro Catena,Catena,Defender,defensa,ES,,,,24,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p244273/512x556/p244273_t450_2026_0_001_000.png,,84,,,2026-27
+8554,p433161,oscar-5,Óscar Valentín,Óscar V.,Midfielder,centrocampista,ES,,,,23,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p433161/512x556/p433161_t184_2026_0_001_000.png,,73,,,2026-27
+8635,p434941,l-rioja,Luis Rioja,L. Rioja,Midfielder,centrocampista,ES,,,,11,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p434941/512x556/p434941_t191_2026_0_001_000.png,,63,,,2026-27
+8715,p463001,abqar,Abdel Abqar,A. Abqar,Defender,defensa,MA,,,,5,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p463001/512x556/p463001_t1450_2026_0_001_000.png,,72,,,2026-27
+8739,p463784,herrando,Jorge Herrando,Herrando,Defender,defensa,ES,,,,5,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p463784/512x556/p463784_t450_2026_0_001_000.png,,82,,,2026-27
+8823,p465278,victor-g-1,Víctor García,Víctor G.,Defender,defensa,ES,,,,17,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p465278/512x556/p465278_t855_2026_0_001_000.png,,71,,,2026-27
+8836,p199432,denzel-dumfries,Denzel Dumfries,Dumfries,Defender,defensa,NL,,,,24,20,Real Madrid,,,78,,,2026-27
+8861,p220307,arnaut-danjuma,Arnaut Danjuma,Danjuma,Midfielder,centrocampista,NL,,,,7,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p220307/512x556/p220307_t191_2026_0_001_000.png,,66,,,2026-27
+9000,p196878,sadiq,Umar Sadiq,Sadiq,Forward,delantero,NG,,,,6,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p196878/512x556/p196878_t191_2026_0_001_000.png,,71,,,2026-27
+9068,p179370,dani-olmo,Dani Olmo,Olmo,Midfielder,centrocampista,ES,,,,20,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p179370/512x556/p179370_t178_2026_0_001_000.png,,69,,,2026-27
+9223,p446990,pedrosa-1,Adrià Pedrosa,Pedrosa,Defender,defensa,ES,,,,17,25,Rayo Vallecano,,,72,,,2026-27
+9361,p451358,kang-in,Kang-In Lee,Kang In,Midfielder,centrocampista,KR,,,,7,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p451358/512x556/p451358_t175_2026_1_001_000.png,,82,,,2026-27
+9383,p437831,joaquin-1,Joaquín Muñoz,Joaquín,Forward,delantero,ES,,,,11,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p437831/512x556/p437831_t182_2026_0_001_000.png,,67,,,2026-27
+9395,p437808,de-la-fuente,Adrián de la Fuente,Dela,Defender,defensa,ES,,,,4,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p437808/512x556/p437808_t855_2026_0_001_000.png,,79,,,2026-27
+9398,p469317,pablo-ramon,Pablo Ramón,Pablo Ramón,Midfielder,centrocampista,ES,,,,5,,R. Racing Club,,,73,,,2026-27
+9468,p224919,le-normand,Robin Le Normand,Le Normand,Defender,defensa,ES,,,,24,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p224919/512x556/p224919_t175_2026_1_001_000.png,,82,,,2026-27
+9522,p464575,ferran-1,Ferran Jutglà,Jutgla,Forward,delantero,ES,,,,9,8,Celta,https://assets.laliga.com/squad/2026/t176/p464575/512x556/p464575_t176_2026_0_001_000.png,,66,,,2026-27
+9528,p223761,fidalgo,Álvaro Fidalgo,Fidalgo,Midfielder,centrocampista,MX,,,,15,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p223761/512x556/p223761_t185_2026_1_001_000.png,,62,,,2026-27
+9529,p227166,fran-garcia-1,Fran García,Fran García,Defender,defensa,ES,,,,11,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p227166/512x556/p227166_t185_2026_1_001_000.png,,85,,,2026-27
+9539,p472145,aihen,Aihen Muñoz,Aihen,Defender,defensa,ES,,,,3,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p472145/512x556/p472145_t188_2026_0_001_000.png,,65,,,2026-27
+9540,p472194,a-valles,Álvaro Valles,Á.valles,Goalkeeper,portero,ES,,,,1,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p472194/512x556/p472194_t185_2026_1_001_000.png,,90,,,2026-27
+9557,p451017,heorhii-tsitaishvili,Giorgi Tsitaishvili,G.tsitaishvili,Forward,delantero,GE,,,,14,25,Rayo Vallecano,,,60,,,2026-27
+9582,p471138,barrenetxea,Ander Barrenetxea,Barrene,Midfielder,centrocampista,ES,,,,7,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p471138/512x556/p471138_t188_2026_0_001_000.png,,68,,,2026-27
+9589,p461358,julian-alvarez,Julián Alvarez,J.alvarez,Forward,delantero,AR,,,,19,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p461358/512x556/p461358_t175_2026_1_001_000.png,,70,,,2026-27
+9645,p242833,i-vicente,Iñigo Vicente,Vicente,Forward,delantero,ES,,,,10,,R. Racing Club,,,75,,,2026-27
+9655,p224467,ivan-martin,Iván Martín,Iván Martín,Midfielder,centrocampista,ES,,,,23,,R. Racing Club,,,72,,,2026-27
+9656,p94273,budimir,Ante Budimir,Budimir,Forward,delantero,HR,,,,17,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p94273/512x556/p94273_t450_2026_0_001_000.png,,74,,,2026-27
+9658,p226541,herrera-1,Yangel Herrera,Herrera,Midfielder,centrocampista,VE,,,,21,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p226541/512x556/p226541_t188_2026_0_001_000.png,,72,,,2026-27
+9743,p477463,moncayola,Jon Moncayola,Moncayola,Midfielder,centrocampista,ES,,,,7,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p477463/512x556/p477463_t450_2026_0_001_000.png,,73,,,2026-27
+9782,p466543,andrei,Andrei Ratiu,Andrei,Defender,defensa,RO,,,,2,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p466543/512x556/p466543_t184_2026_0_001_000.png,,86,,,2026-27
+9784,p248507,camello,Sergio Camello,Camello,Forward,delantero,ES,,,,10,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p248507/512x556/p248507_t184_2026_0_001_000.png,,83,,,2026-27
+9807,p465494,m-sanchez,Manu Sánchez,Manu Sánchez,Defender,defensa,ES,,,,23,16,Levante UD,,,84,,,2026-27
+9808,p484702,aimar-1,Aimar Oroz,Aimar,Forward,delantero,ES,,,,10,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p484702/512x556/p484702_t450_2026_0_001_000.png,,68,,,2026-27
+11789,p484693,sergi-cardona,Sergi Cardona,S. Cardona,Defender,defensa,ES,,,,23,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p484693/512x556/p484693_t449_2026_0_001_000.png,,72,,,2026-27
+11979,p449300,nteka,Randy Nteka,Nteka,Midfielder,centrocampista,AO,,,,11,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p449300/512x556/p449300_t184_2026_0_001_000.png,,65,,,2026-27
+12000,p464168,inigo,Íñigo Sainz-Maza,Iñigo,Defender,defensa,ES,,,,6,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p464168/512x556/p464168_t189_2026_0_001_000.png,,65,,,2026-27
+12015,p241153,de-frutos-1,Jorge de Frutos,De Frutos,Midfielder,centrocampista,ES,,,,19,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p241153/512x556/p241153_t184_2026_0_001_000.png,,76,,,2026-27
+12116,p437834,riquelme,Rodrigo Riquelme,Riquelme,Midfielder,centrocampista,ES,,,,17,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p437834/512x556/p437834_t185_2026_1_001_000.png,,79,,,2026-27
+12118,p227172,pol-lozano,Pol Lozano,Pol Lozano,Midfielder,centrocampista,ES,,,,10,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p227172/512x556/p227172_t177_2026_0_001_000.png,,65,,,2026-27
+12132,p219271,take,Takefusa Kubo,Take,Midfielder,centrocampista,JP,,,,14,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p219271/512x556/p219271_t188_2026_0_001_000.png,,73,,,2026-27
+12207,p486783,giorgi-guliashvili,Giorgi Guliashvili,Guliashvili,Forward,delantero,GE,,,,7,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p486783/512x556/p486783_t189_2026_0_001_000.png,,61,,,2026-27
+12600,p466131,a-rodriguez-1,Adrián Rodríguez,A. Rodriguez,Goalkeeper,portero,AR,,,,13,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p466131/512x556/p466131_t173_2026_1_001_000.png,,65,,,2026-27
+12609,p439772,o-sancet-1,Oihan Sancet,O. Sancet,Midfielder,centrocampista,ES,,,,8,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p439772/512x556/p439772_t174_2026_1_001_000.png,,79,,,2026-27
+12617,p490726,losada,Iker Losada,Iker,Midfielder,centrocampista,ES,,,,14,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p490726/512x556/p490726_t185_2026_1_001_000.png,,65,,,2026-27
+12622,p490733,ramon-2,Ramón Enríquez,Ramon,Midfielder,centrocampista,ES,,,,6,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p490733/512x556/p490733_t182_2026_0_001_000.png,,61,,,2026-27
+12624,p97624,balliu,Iván Balliu,Balliu,Defender,defensa,AL,,,,20,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p97624/512x556/p97624_t184_2026_0_001_000.png,,79,,,2026-27
+12633,p464470,riki-1,Riki Rodríguez,Riki,Midfielder,centrocampista,ES,,,,14,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p464470/512x556/p464470_t180_2026_0_001_000.png,,60,,,2026-27
+12636,p490541,pedri,Pedro González López,Pedri,Midfielder,centrocampista,ES,,,,8,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p490541/512x556/p490541_t178_2026_0_001_000.png,,76,,,2026-27
+12646,p484741,marc-aguado,Marc Aguado,M. Aguado,Midfielder,centrocampista,ES,,,,8,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p484741/512x556/p484741_t954_2026_0_001_000.png,,66,,,2026-27
+12675,p449931,pacheco-3,Jon Pacheco,J. Pacheco,Defender,defensa,ES,,,,16,22,Real Sociedad,,,65,,,2026-27
+12678,p439871,s-carreira,Sergio Carreira,Carreira,Defender,defensa,ES,,,,5,8,Celta,https://assets.laliga.com/squad/2026/t176/p439871/512x556/p439871_t176_2026_1_001_000.png,,74,,,2026-27
+12694,p490859,raul-4,Raúl García,Raúl,Forward,delantero,ES,,,,9,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p490859/512x556/p490859_t450_2026_0_001_000.png,,69,,,2026-27
+12716,p491436,cardenas,Dani Cárdenas,Cárdenas,Goalkeeper,portero,ES,,,,1,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p491436/512x556/p491436_t184_2026_0_001_000.png,,74,,,2026-27
+12767,p441175,pathe-ciss,Pathé Ciss,Pathé I. Ciss,Midfielder,centrocampista,SN,,,,6,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p441175/512x556/p441175_t184_2026_0_001_000.png,,74,,,2026-27
+12859,p432656,eric-garcia,Eric García,Eric,Defender,defensa,ES,,,,24,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p432656/512x556/p432656_t178_2026_0_001_000.png,,84,,,2026-27
+12867,p195735,nicolas-pepe,Nicolas Pépé,Pepe,Midfielder,centrocampista,CI,,,,19,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p195735/512x556/p195735_t449_2026_0_001_000.png,,85,,,2026-27
+12895,p247636,andre-almeida-1,Domingos André Ribeiro Almeida,Almeida,Midfielder,centrocampista,PT,,,,8,,R. Racing Club,,,63,,,2026-27
+12917,p475561,eduardo-camavinga,Eduardo Camavinga,Camavinga,Midfielder,centrocampista,FR,,,,6,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p475561/512x556/p475561_t186_2026_0_001_000.png,,71,,,2026-27
+13016,p421821,jonathan-david,Jonathan David,J.david,Forward,delantero,CA,,,,15,,Atlético de Madrid,,,65,,,2026-27
+13388,p447235,troy-parrott,Troy Parrott,Parrott,Forward,delantero,IE,,,,19,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p447235/512x556/p447235_t185_2026_1_001_000.png,,66,,,2026-27
+13770,p500745,abdessamad-ezzalzouli,Abde Ezzalzouli,Ez Abde,Forward,delantero,MA,,,,10,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p500745/512x556/p500745_t185_2026_1_001_000.png,,68,,,2026-27
+13804,p437549,areso,Jesús Areso,Areso,Defender,defensa,ES,,,,12,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p437549/512x556/p437549_t174_2026_1_001_000.png,,86,,,2026-27
+13963,p248501,alex-b,Álex Baena,Álex B.,Midfielder,centrocampista,ES,,,,10,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p248501/512x556/p248501_t175_2026_1_001_000.png,,78,,,2026-27
+14070,p500755,leo-1,Leo Román,Leo Román,Goalkeeper,portero,ES,,,,13,,RC Deportivo,,,80,,,2026-27
+14262,p437774,arnau-comas,Arnau Comas,Comas,Defender,defensa,ES,,,,3,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p437774/512x556/p437774_t180_2026_0_001_000.png,,65,,,2026-27
+14298,p500285,alvaro-mantilla,Álvaro Mantilla,Mantilla,Defender,defensa,ES,,,,2,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p500285/512x556/p500285_t189_2026_0_001_000.png,,84,,,2026-27
+14411,p467020,german-valera,Germán Valera,Germán V.,Midfielder,centrocampista,ES,,,,11,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p467020/512x556/p467020_t954_2026_0_001_000.png,,75,,,2026-27
+14494,p197024,g-rodriguez,Guido Rodríguez,G. Rodriguez,Midfielder,centrocampista,AR,,,,2,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p197024/512x556/p197024_t191_2026_0_001_000.png,,74,,,2026-27
+14508,p502290,fer-nino,Fer Niño,F. Niño,Forward,delantero,ES,,,,14,9,Elche CF,,,72,,,2026-27
+14513,p495392,lobete,Julen Lobete,Lobete,Forward,delantero,ES,,,,24,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p495392/512x556/p495392_t182_2026_0_001_000.png,,61,,,2026-27
+14564,p453750,karim-adeyemi,Karim Adeyemi,Adeyemi,Forward,delantero,DE,,,,14,5,FC Barcelona,,,75,,,2026-27
+14628,p428798,giorgi,Giorgi Kochorashvili,Kochorashvili,Midfielder,centrocampista,GE,,,,8,21,Sevilla FC,,,65,,,2026-27
+14661,p495391,larrubia,David Larrubia,D. Larrubia,Midfielder,centrocampista,ES,,,,10,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p495391/512x556/p495391_t182_2026_0_001_000.png,,76,,,2026-27
+14693,p468426,lucien-agoume,Lucien Agoumé,Agoumé,Midfielder,centrocampista,FR,,,,6,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p468426/512x556/p468426_t179_2026_0_001_000.png,,73,,,2026-27
+14762,p493055,hugo-novoa,Hugo Novoa,Novoa,Defender,defensa,ES,,,,12,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p493055/512x556/p493055_t173_2026_1_001_000.png,,65,,,2026-27
+14913,p494495,francho,Francho Serrano,Francho,Midfielder,centrocampista,ES,,,,16,11,Getafe CF,,,67,,,2026-27
+14915,p513950,j-carreras,Jofre Carreras,Jofre,Forward,delantero,ES,,,,17,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p513950/512x556/p513950_t177_2026_0_001_000.png,,64,,,2026-27
+14920,p494932,miguel-4,Miguel Rodríguez,Miguel,Forward,delantero,ES,,,,22,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p494932/512x556/p494932_t173_2026_1_001_000.png,,65,,,2026-27
+14929,p513956,a-moleiro,Alberto Moleiro,A. Moleiro,Midfielder,centrocampista,ES,,,,10,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p513956/512x556/p513956_t449_2026_0_001_000.png,,77,,,2026-27
+14930,p465689,ilaix,Moriba Kourouma Kourouma,Moriba,Midfielder,centrocampista,GN,,,,6,8,Celta,https://assets.laliga.com/squad/2026/t176/p465689/512x556/p465689_t176_2026_0_001_000.png,,70,,,2026-27
+14931,p513951,angel-f,Ángel Fortuño,Àngel Fortuño,Goalkeeper,portero,ES,,,,1,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p513951/512x556/p513951_t177_2026_0_001_000.png,,65,,,2026-27
+14936,p460265,navarro-2,Robert Navarro,Navarro,Midfielder,centrocampista,ES,,,,23,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p460265/512x556/p460265_t174_2026_1_001_000.png,,72,,,2026-27
+14937,p242310,o-rey,Oriol Rey,O. Rey,Midfielder,centrocampista,ES,,,,20,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p242310/512x556/p242310_t855_2026_0_001_000.png,,68,,,2026-27
+14991,p515611,salinas-1,José Salinas,Salinas,Defender,defensa,ES,,,,12,,Málaga CF,,,63,,,2026-27
+14998,p437677,boyomo,Enzo Boyomo,Boyomo,Defender,defensa,CM,,,,22,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p437677/512x556/p437677_t450_2026_0_001_000.png,,70,,,2026-27
+15000,p514204,gonzalez-de-zarate,Urko González de Zárate Quirós,Urko,Defender,defensa,ES,,,,4,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p514204/512x556/p514204_t177_2026_0_001_000.png,,72,,,2026-27
+15047,p440593,paredes-2,Aitor Paredes,Paredes,Defender,defensa,ES,,,,4,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p440593/512x556/p440593_t174_2026_1_001_000.png,,82,,,2026-27
+15067,p437463,chust,Víctor Chust,Victor Chust,Defender,defensa,ES,,,,23,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p437463/512x556/p437463_t954_2026_0_001_000.png,,86,,,2026-27
+15087,p517333,arnau-1,Arnau Martínez,Arnau,Defender,defensa,ES,,,,22,23,Valencia CF,,,66,,,2026-27
+15102,p449928,j-garcia,Joan García,Joan Garcia,Goalkeeper,portero,ES,,,,1,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p449928/512x556/p449928_t178_2026_0_001_000.png,,81,,,2026-27
+15165,p244855,jude-bellingham,Jude Bellingham,Bellingham,Midfielder,centrocampista,GB-ENG,,,,5,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p244855/512x556/p244855_t186_2026_0_001_000.png,,89,,,2026-27
+15204,p221632,cristian-romero,Cristian Romero,Romero,Defender,defensa,AR,,,,21,,Atlético de Madrid,,,63,,,2026-27
+15210,p422453,pape-alassane-gueye,Pape Gueye,Gueye,Midfielder,centrocampista,SN,,,,18,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p422453/512x556/p422453_t449_2026_0_001_000.png,,75,,,2026-27
+15431,p467622,justin-de-haas,Justin de Haas,De Haas,Defender,defensa,NL,,,,12,23,Valencia CF,,,60,,,2026-27
+15570,p250437,chidera-ejuke,Chidera Ejuke,Ejuke,Forward,delantero,NG,,,,21,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p250437/512x556/p250437_t179_2026_0_001_000.png,,74,,,2026-27
+15615,p467169,antony,Antony Matheus dos Santos,Antony,Forward,delantero,BR,,,,7,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p467169/512x556/p467169_t185_2026_1_001_000.png,,77,,,2026-27
+15703,p519373,r-terrats,Ramón Terrats,R. Terrats,Midfielder,centrocampista,ES,,,,11,11,Getafe CF,,,75,,,2026-27
+15739,p235093,david-hancko,Dávid Hancko,Hancko,Defender,defensa,SK,,,,17,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p235093/512x556/p235093_t175_2026_1_001_000.png,,88,,,2026-27
+15766,p519842,rafa-romero,Rafael Romero,Rafa Romero,Goalkeeper,portero,ES,,,,33,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p519842/512x556/p519842_t179_2026_0_001_000.png,,65,,,2026-27
+15792,p517929,omar-1,Omar El Hilali,El Hilali,Defender,defensa,MA,,,,23,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p517929/512x556/p517929_t177_2026_0_001_000.png,,84,,,2026-27
+15799,p494921,carlos-a,Carlos Álvarez,C. Alvarez,Forward,forward,ES,,,,,16,Levante UD,,,63,,,2026-27
+15822,p215531,ionut-radu,Ionut Radu,Radu,Goalkeeper,portero,RO,,,,13,8,Celta,https://assets.laliga.com/squad/2026/t176/p215531/512x556/p215531_t176_2026_0_001_000.png,,89,,,2026-27
+15823,p464166,luka-sucic,Luka Sucic,Sucic,Midfielder,centrocampista,HR,,,,24,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p464166/512x556/p464166_t188_2026_0_001_000.png,,71,,,2026-27
+15848,p488026,benat-turrientes,Beñat Turrientes,Turrientes,Midfielder,centrocampista,ES,,,,8,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p488026/512x556/p488026_t188_2026_0_001_000.png,,75,,,2026-27
+15893,p521508,ivan-2,Iván Romero,I. Romero,Forward,delantero,ES,,,,9,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p521508/512x556/p521508_t855_2026_0_001_000.png,,69,,,2026-27
+16161,p521429,alex-pastor,Álex Pastor,Pastor,Defender,defensa,ES,,,,5,,Málaga CF,,,65,,,2026-27
+16228,p466044,j-vazquez-1,Jesús Vázquez,J. Vázquez,Defender,defensa,ES,,,,21,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p466044/512x556/p466044_t191_2026_0_001_000.png,,83,,,2026-27
+16353,p523079,jonathan-dubasin,Jonathan Dubasin,Dubasin,Midfielder,centrocampista,ES,,,,21,18,CA Osasuna,,,65,,,2026-27
+16406,p523062,marrero,Unai Marrero,Marrero,Goalkeeper,portero,ES,,,,13,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p523062/512x556/p523062_t188_2026_0_001_000.png,,65,,,2026-27
+16483,p523234,gerard-2,Gerard Martín,Gerard Martín,Defender,defensa,ES,,,,18,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p523234/512x556/p523234_t178_2026_0_001_000.png,,78,,,2026-27
+16539,p464283,iglesias,Juan Iglesias,Iglesias,Defender,defensa,ES,,,,2,21,Sevilla FC,,,82,,,2026-27
+16650,p522856,pablo-ibanez,Pablo Ibáñez,Ibáñez,Midfielder,centrocampista,ES,,,,19,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p522856/512x556/p522856_t173_2026_1_001_000.png,,72,,,2026-27
+16889,p523654,williams-jr,Nico Williams,Williams Jr,Forward,delantero,ES,,,,10,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p523654/512x556/p523654_t174_2026_1_001_000.png,,72,,,2026-27
+16949,p482236,haitam,Haitam Abaida,Haitam,Forward,delantero,MA,,,,7,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p482236/512x556/p482236_t182_2026_0_001_000.png,,68,,,2026-27
+16961,p488042,mario-s,Mario Soriano,Mario S.,Midfielder,centrocampista,ES,,,,21,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p488042/512x556/p488042_t180_2026_0_001_000.png,,74,,,2026-27
+16992,p523890,peke,Yeremay Hernández,Yeremay,Midfielder,centrocampista,ES,,,,10,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p523890/512x556/p523890_t180_2026_0_001_000.png,,64,,,2026-27
+17025,p437465,antonio-blanco,Antonio Blanco,Blanco,Midfielder,centrocampista,ES,,,,8,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p437465/512x556/p437465_t173_2026_1_001_000.png,,74,,,2026-27
+17127,p449576,aliou-dieng,Aliou Dieng,Dieng,Midfielder,centrocampista,ML,,,,15,23,Valencia CF,,,62,,,2026-27
+17478,p179830,grady-diangana,Grady Diangana,Diang,Midfielder,centrocampista,CD,,,,19,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p179830/512x556/p179830_t954_2026_0_001_000.png,,65,,,2026-27
+17660,p474843,martin-satriano,Martín Satriano,Satriano,Forward,delantero,UY,,,,10,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p474843/512x556/p474843_t1450_2026_0_001_000.png,,68,,,2026-27
+17677,p465701,raul-moro,Raúl Moro,Moro,Midfielder,centrocampista,ES,,,,18,18,CA Osasuna,,,61,,,2026-27
+17737,p193509,emil-audero,Emil Audero,Emil Audero,Goalkeeper,portero,ID,,,,25,25,Rayo Vallecano,,,65,,,2026-27
+17824,p121537,juan-musso,Juan Musso,J. Musso,Goalkeeper,portero,AR,,,,1,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p121537/512x556/p121537_t175_2026_1_001_000.png,,65,,,2026-27
+17993,p429534,ruben-vargas,Rubén Vargas,Vargas,Forward,delantero,CH,,,,11,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p429534/512x556/p429534_t179_2026_0_001_000.png,,63,,,2026-27
+18108,p179519,orel-mangala,Orel Mangala,Mangala,Midfielder,centrocampista,BE,,,,23,11,Getafe CF,,,72,,,2026-27
+18830,p523865,pablo-cunat,Pablo Campos,P. Campos,Goalkeeper,portero,ES,,,,1,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p523865/512x556/p523865_t855_2026_0_001_000.png,,65,,,2026-27
+18955,p174249,carl-starfelt,Carl Starfelt,Starfelt,Defender,defensa,SE,,,,2,8,Celta,https://assets.laliga.com/squad/2026/t176/p174249/512x556/p174249_t176_2026_0_001_000.png,,82,,,2026-27
+18958,p451302,altay-bayindir,Altay Bayindir,Altay Bayindir,Goalkeeper,portero,TR,,,,1,8,Celta,,,65,,,2026-27
+19029,p513945,jon-ander-olasagasti,Jon Ander Olasagasti,Olasagasti,Midfielder,centrocampista,ES,,,,8,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p513945/512x556/p513945_t855_2026_0_001_000.png,,78,,,2026-27
+19072,p537940,roberto-fernandez-2,Roberto Fernández,Roberto,Forward,delantero,ES,,,,9,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p537940/512x556/p537940_t177_2026_0_001_000.png,,75,,,2026-27
+19074,p470506,benat-prados,Beñat Prados,Prados,Midfielder,centrocampista,ES,,,,6,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p470506/512x556/p470506_t174_2026_1_001_000.png,,65,,,2026-27
+19086,p538283,hugo-sotelo,Hugo Sotelo,Hugo Sotelo,Midfielder,centrocampista,ES,,,,5,16,Levante UD,,,64,,,2026-27
+19103,p475612,arsen-zakharyan,Arsen Zakharyan,Zakharyan,Midfielder,centrocampista,RU,,,,23,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p475612/512x556/p475612_t188_2026_0_001_000.png,,60,,,2026-27
+19189,p539602,angel-recio,Ángel Recio,Recio,Defender,defensa,ES,,,,15,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p539602/512x556/p539602_t182_2026_0_001_000.png,,75,,,2026-27
+19524,p445956,logan-costa,Logan Evans Costa,Costa,Defender,defensa,CV,,,,2,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p445956/512x556/p445956_t449_2026_0_001_000.png,,63,,,2026-27
+20161,p519810,ville-koski,Ville Koski,Koski,Defender,defensa,FI,,,,16,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p519810/512x556/p519810_t173_2026_1_001_000.png,,79,,,2026-27
+20682,p98448,matias-dituro,Matías Dituro,M. Dituro,Goalkeeper,portero,AR,,,,1,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p98448/512x556/p98448_t954_2026_0_001_000.png,,74,,,2026-27
+21217,p499209,georges-mikautadze,Georges Mikautadze,Mikautadze,Forward,delantero,GE,,,,9,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p499209/512x556/p499209_t449_2026_0_001_000.png,,77,,,2026-27
+21673,p493019,alex-balde,Alejandro Balde,Balde,Defender,defensa,ES,,,,3,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p493019/512x556/p493019_t178_2026_0_001_000.png,,65,,,2026-27
+21674,p500046,gavi,Pablo Páez Gavira,Gavi,Midfielder,centrocampista,ES,,,,6,5,FC Barcelona,,,61,,,2026-27
+22052,p543932,williot-swedberg,Williot Swedberg,Williot,Midfielder,centrocampista,SE,,,,19,8,Celta,https://assets.laliga.com/squad/2026/t176/p543932/512x556/p543932_t176_2026_1_001_000.png,,67,,,2026-27
+22797,p470508,julen-agirrezabala,Julen Agirrezabala,Agirrezabala,Goalkeeper,portero,ES,,,,13,,R. Racing Club,,,82,,,2026-27
+22855,p531219,carlos-martin,Carlos Martín,Carlos M.,Forward,forward,ES,,,,,,Atlético de Madrid,,,62,,,2026-27
+22856,p482652,giuliano-simeone,Giuliano Simeone,Giuliano,Forward,delantero,AR,,,,20,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p482652/512x556/p482652_t175_2026_1_001_000.png,,70,,,2026-27
+23123,p466057,francisco-martinez-1,Fran Pérez,Fran Pérez,Midfielder,centrocampista,ES,,,,21,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p466057/512x556/p466057_t184_2026_0_001_000.png,,66,,,2026-27
+23124,p546540,javier-guerra,Javi Guerra,Javi Guerra,Midfielder,centrocampista,ES,,,,8,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p546540/512x556/p546540_t191_2026_0_001_000.png,,71,,,2026-27
+23159,p242169,filip-ugrinic,Filip Ugrinic,Ugrinic,Midfielder,centrocampista,CH,,,,23,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p242169/512x556/p242169_t191_2026_0_001_000.png,,74,,,2026-27
+23268,p492900,hugo-gonzalez-1,Hugo González,H. González,Forward,forward,ES,,,,,8,Celta,,,62,,,2026-27
+23364,p545998,jose-angel-carmona,José Ángel Carmona,Carmona,Defender,defensa,ES,,,,22,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p545998/512x556/p545998_t179_2026_0_001_000.png,,60,,,2026-27
+23967,p520250,arda-guler,Arda Güler,Arda Güler,Midfielder,centrocampista,TR,,,,15,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p520250/512x556/p520250_t186_2026_0_001_000.png,,83,,,2026-27
+24002,p442299,david-affengruber,David Affengruber,Affengruber,Defender,defensa,AT,,,,,9,Elche CF,,,85,,,2026-27
+24044,p552095,arnau-ortiz,Arnau Ortiz,Arnau Ortiz,Midfielder,centrocampista,ES,,,,16,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p552095/512x556/p552095_t175_2026_1_001_000.png,,65,,,2026-27
+24190,p550566,hugo-alvarez-1,Hugo Álvarez,Hugo A.,Midfielder,centrocampista,ES,,,,23,8,Celta,https://assets.laliga.com/squad/2026/t176/p550566/512x556/p550566_t176_2026_0_001_000.png,,63,,,2026-27
+24222,p494920,alejandro-iturbe,Alejandro Iturbe,A. Iturbe,Goalkeeper,portero,ES,,,,,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p494920/512x556/p494920_t954_2026_0_001_000.png,,65,,,2026-27
+24258,p492898,cesar-tarrega,César Tárrega,Tárrega,Defender,defensa,ES,,,,5,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p492898/512x556/p492898_t191_2026_0_001_000.png,,84,,,2026-27
+24274,p500043,ilias-akhomach,Ilias Akhomach,I. Akhomach,Forward,delantero,MA,,,,11,26,Villarreal CF,,,66,,,2026-27
+24283,p546000,luismi-cruz,Luismi Cruz,Luismi Cruz,Forward,delantero,ES,,,,19,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p546000/512x556/p546000_t180_2026_0_001_000.png,,77,,,2026-27
+24314,p561391,daniel-lorenzo,Dani Lorenzo,Dani Lorenzo,Midfielder,centrocampista,ES,,,,22,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p561391/512x556/p561391_t182_2026_0_001_000.png,,73,,,2026-27
+24402,p465599,adria-altimira,Adrià Alti,A. Alti,Defender,defensa,ES,,,,2,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p465599/512x556/p465599_t180_2026_0_001_000.png,,77,,,2026-27
+24677,p562075,carlos-puga,Carlos Puga,C. Puga,Defender,defensa,ES,,,,3,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p562075/512x556/p562075_t182_2026_0_001_000.png,,85,,,2026-27
+24734,p493333,javier-rueda,Javi Rueda,Javi Rueda,Defender,defensa,ES,,,,17,8,Celta,https://assets.laliga.com/squad/2026/t176/p493333/512x556/p493333_t176_2026_0_001_000.png,,85,,,2026-27
+25140,p562922,castrin,Andrés López Gallo,A. Castrin,Defender,defensa,ES,,,,5,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p562922/512x556/p562922_t179_2026_0_001_000.png,,73,,,2026-27
+25275,p562720,marc-pubill,Marc Pubill,Marc Pubill,Defender,defensa,ES,,,,18,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p562720/512x556/p562720_t175_2026_1_001_000.png,,80,,,2026-27
+25298,p562005,diego-villares,Diego Villares,D. Villares,Midfielder,centrocampista,ES,,,,8,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p562005/512x556/p562005_t180_2026_0_001_000.png,,66,,,2026-27
+25358,p564923,johaneko-louis-jean,Johaneko Louis-Jean,Johaneko,Defender,defensa,FR,,,,31,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p564923/512x556/p564923_t174_2026_1_001_000.png,,81,,,2026-27
+25476,p432855,nahuel-tenaglia,Nahuel Tenaglia,N. Tenaglia,Defender,defensa,AR,,,,14,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p432855/512x556/p432855_t173_2026_1_001_000.png,,85,,,2026-27
+25492,p565992,jeanuel-belocian,Jeanuël Belocian,Jeanuël Belocian,Forward,forward,FR,,,,,,R. Racing Club,,,63,,,2026-27
+25514,p550816,kike-salas,Kike Salas,Kike Salas,Defender,defensa,ES,,,,4,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p550816/512x556/p550816_t179_2026_0_001_000.png,,79,,,2026-27
+25527,p553751,juan-carlos-arana,Juan Carlos Arana,Arana,Forward,delantero,ES,,,,9,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p553751/512x556/p553751_t189_2026_0_001_000.png,,64,,,2026-27
+25683,p503523,pablo-barrios-rivas,Pablo Barrios,Barrios,Midfielder,centrocampista,ES,,,,8,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p503523/512x556/p503523_t175_2026_1_001_000.png,,81,,,2026-27
+25769,p551230,renato-veiga,Renato Palma Veiga,Renato Veiga,Defender,defensa,PT,,,,12,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p551230/512x556/p551230_t449_2026_0_001_000.png,,78,,,2026-27
+25875,p515501,alvaro-fernandez-1,Álvaro Carreras,Á. Carreras,Defender,defensa,ES,,,,18,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p515501/512x556/p515501_t186_2026_0_001_000.png,,76,,,2026-27
+26153,p213102,gabriel-suazo,Gabriel Suazo,Suazo,Defender,defensa,CL,,,,17,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p213102/512x556/p213102_t179_2026_0_001_000.png,,87,,,2026-27
+26894,p541759,lucas-cepeda,Lucas Cepeda,Cepeda,Forward,delantero,CL,,,,21,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p541759/512x556/p541759_t954_2026_0_001_000.png,,69,,,2026-27
+27021,p424622,tajon-buchanan,Tajon Buchanan,Buchanan,Midfielder,centrocampista,CA,,,,17,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p424622/512x556/p424622_t449_2026_0_001_000.png,,75,,,2026-27
+27042,p454812,morten-hjulmand,Morten Hjulmand,Hjulmand,Midfielder,centrocampista,DK,,,,23,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p454812/512x556/p454812_t175_2026_1_001_000.png,,79,,,2026-27
+27214,p567601,ruben-gomez-peris,Rubén Gómez,Ruben Gomez,Goalkeeper,portero,ES,,,,13,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p567601/512x556/p567601_t449_2026_0_001_000.png,,65,,,2026-27
+27242,p244707,carlos-benavidez,Carlos Protesoni,C. Protesoni,Midfielder,centrocampista,UY,,,,23,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p244707/512x556/p244707_t173_2026_1_001_000.png,,60,,,2026-27
+27607,p485098,moussa-diarra-1,Moussa Diarra,M. Diarra,Forward,forward,ML,,,,,,Deportivo Alavés,,,65,,,2026-27
+27629,p494927,marc-casado,Marc Casadó,M. Casadó,Midfielder,centrocampista,ES,,,,6,,RC Deportivo,,,60,,,2026-27
+27640,p564895,facundo-gonzalez,Facu González,Facu,Defender,defensa,UY,,,,16,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p564895/512x556/p564895_t189_2026_0_001_000.png,,80,,,2026-27
+27754,p586866,abderrahman-rebbach,Abde Rebbach,A. Rebbach,Midfielder,centrocampista,DZ,,,,21,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p586866/512x556/p586866_t173_2026_1_001_000.png,,74,,,2026-27
+27822,p588010,etta-eyong,Karl Etta Eyong,Etta Eyong,Forward,delantero,CM,,,,21,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p588010/512x556/p588010_t855_2026_0_001_000.png,,66,,,2026-27
+27825,p456504,giacomo-quagliata,Giacomo Quagliata,Quagliata,Defender,defensa,IT,,,,12,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p456504/512x556/p456504_t180_2026_0_001_000.png,,84,,,2026-27
+27906,p493086,peque-1,Gerard Fernández Castellano,Peque,Forward,delantero,ES,,,,10,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p493086/512x556/p493086_t179_2026_0_001_000.png,,69,,,2026-27
+27909,p588993,carlos-romero,Carlos Romero,C. Romero,Defender,defensa,ES,,,,20,26,Villarreal CF,,,88,,,2026-27
+27916,p564564,alex-padilla,Álex Padilla,Padilla,Goalkeeper,portero,MX,,,,13,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p564564/512x556/p564564_t174_2026_1_001_000.png,,65,,,2026-27
+27944,p498594,abel-bretones,Abel Bretones,Abel Bretones,Midfielder,centrocampista,ES,,,,23,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p498594/512x556/p498594_t450_2026_0_001_000.png,,74,,,2026-27
+28814,p572069,maguette-gueye,Maguette Gueye,Maguette,Midfielder,centrocampista,SN,,,,14,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p572069/512x556/p572069_t189_2026_0_001_000.png,,64,,,2026-27
+30241,p588171,alvaro-djalo,Álvaro Djaló Dias-Fernandes,Djalo,Forward,delantero,GW,,,,25,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p588171/512x556/p588171_t174_2026_1_001_000.png,,60,,,2026-27
+30307,p494960,quilindschy-hartman,Quilindschy Hartman,Quilindschy,Defender,defensa,NL,,,,3,,RCD Espanyol de Barcelona,,,65,,,2026-27
+30444,p593179,sergio-mestre,Sergio Mestre,Mestre,Goalkeeper,portero,ES,,,,26,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p593179/512x556/p593179_t186_2026_0_001_000.png,,65,,,2026-27
+30448,p507438,orri-oskarsson,Orri Óskarsson,Oskarsson,Forward,delantero,IS,,,,9,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p507438/512x556/p507438_t188_2026_0_001_000.png,,70,,,2026-27
+30522,p488662,joao-cardoso,Johnny Cardoso,Johnny,Midfielder,centrocampista,US,,,,5,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p488662/512x556/p488662_t175_2026_1_001_000.png,,65,,,2026-27
+30558,p597355,pablo-duran,Pablo Durán,P. Durán,Forward,delantero,ES,,,,11,8,Celta,https://assets.laliga.com/squad/2026/t176/p597355/512x556/p597355_t176_2026_1_001_000.png,,70,,,2026-27
+30696,p448178,carlos-dotor,Carlos Dotor,Dotor,Midfielder,centrocampista,ES,,,,8,,Málaga CF,,,72,,,2026-27
+30818,p578538,rodrigo-mendoza,Rodrigo Mendoza,Mendoza,Midfielder,centrocampista,ES,,,,4,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p578538/512x556/p578538_t175_2026_1_001_000.png,,68,,,2026-27
+30901,p604116,marcos-fernandez-2,Marcos Fernández,Marcos,Forward,delantero,ES,,,,18,,RCD Espanyol de Barcelona,,,63,,,2026-27
+31378,p551086,fermin-lopez,Fermín López,Fermin,Midfielder,centrocampista,ES,,,,7,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p551086/512x556/p551086_t178_2026_0_001_000.png,,75,,,2026-27
+31440,p602479,miguel-roman,Miguel Román,M. Román,Midfielder,centrocampista,ES,,,,8,8,Celta,https://assets.laliga.com/squad/2026/t176/p602479/512x556/p602479_t176_2026_0_001_000.png,,73,,,2026-27
+31630,p479816,jon-aramburu,Jon Aramburu,Aramburu,Defender,defensa,VE,,,,2,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p479816/512x556/p479816_t188_2026_0_001_000.png,,88,,,2026-27
+31808,p574458,mamadou-sarr,Mamadou Sarr,M.sarr,Defender,defensa,SN,,,,19,22,Real Sociedad,,,65,,,2026-27
+31836,p588159,carlos-lopez-2,Carlos López,Carlos Lopez,Goalkeeper,portero,ES,,,,13,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p588159/512x556/p588159_t182_2026_0_001_000.png,,65,,,2026-27
+31865,p568812,cala,Álex Calatrava Torrado,Cala,Forward,delantero,ES,,,,22,,RCD Espanyol de Barcelona,,,72,,,2026-27
+31906,p606798,andres-garcia,Andrés García,Andres Garcia,Midfielder,centrocampista,ES,,,,21,11,Getafe CF,,,72,,,2026-27
+31937,p554605,dean-huijsen,Dean Huijsen,Huijsen,Defender,defensa,ES,,,,4,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p554605/512x556/p554605_t186_2026_0_001_000.png,,85,,,2026-27
+32013,p550781,manu-bueno,Manu Bueno,Manu Bueno,Midfielder,centrocampista,ES,,,,14,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p550781/512x556/p550781_t179_2026_0_001_000.png,,63,,,2026-27
+32019,p536916,facundo-buonanotte,Facundo Buonanotte,Buonanotte,Midfielder,centrocampista,AR,,,,10,9,Elche CF,,,64,,,2026-27
+32154,p607463,lorenzo-amatucci,Lorenzo Amatucci,Amatucci,Midfielder,centrocampista,IT,,,,16,,RC Deportivo,,,78,,,2026-27
+32201,p561243,mario-martin,Mario Martín,Mario Martín,Midfielder,centrocampista,ES,,,,6,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p561243/512x556/p561243_t1450_2026_0_001_000.png,,62,,,2026-27
+32283,p608484,rafa-rodriguez,Rafa Rodríguez,Rafa R.,Midfielder,centrocampista,ES,,,,14,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p608484/512x556/p608484_t182_2026_0_001_000.png,,67,,,2026-27
+32362,p589577,iker-munoz,Iker Muñoz,Iker Muñoz,Midfielder,centrocampista,ES,,,,8,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p589577/512x556/p589577_t450_2026_0_001_000.png,,68,,,2026-27
+32673,p593109,lamine-yamal,Lamine Yamal Nasraoui Ebana,Lamine Yamal,Forward,delantero,ES,,,,10,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p593109/512x556/p593109_t178_2026_0_001_000.png,,84,,,2026-27
+32708,p619748,marcos-navarro,Marcos Navarro,M. Navarro,Defender,defensa,ES,,,,41,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p619748/512x556/p619748_t191_2026_0_001_000.png,,65,,,2026-27
+32767,p620583,hugo-rincon,Hugo Rincón,H. Rincón,Defender,defensa,ES,,,,15,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p620583/512x556/p620583_t174_2026_1_001_000.png,,66,,,2026-27
+32786,p621306,daniel-requena,Dani Requena,Requena,Midfielder,centrocampista,ES,,,,6,16,Levante UD,,,65,,,2026-27
+32808,p592988,francisco-gonzalez,Fran González,Fran González,Goalkeeper,portero,ES,,,,13,21,Sevilla FC,,,65,,,2026-27
+32815,p499310,hector-fort,Héctor Fort,H. Fort,Defender,defensa,ES,,,,22,22,Real Sociedad,,,65,,,2026-27
+32967,p560564,gustavo-puerta,Gustavo Puerta,G. Puerta,Forward,forward,CO,,,,,,R. Racing Club,,,68,,,2026-27
+32985,p514968,clemens-riedel,Clemens Riedel,Riedel,Defender,defensa,DE,,,,5,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p514968/512x556/p514968_t177_2026_0_001_000.png,,76,,,2026-27
+33013,p509285,arouna-sangante,Arouna Sangante,Sangante,Defender,defensa,SN,,,,12,21,Sevilla FC,,,80,,,2026-27
+33150,p483116,alemao-1,Alexandre Zurawski,Alemâo,Forward,delantero,BR,,,,9,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p483116/512x556/p483116_t184_2026_0_001_000.png,,70,,,2026-27
+33153,p610206,isaac-romero,Isaac Romero,Isaac,Forward,delantero,ES,,,,16,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p610206/512x556/p610206_t179_2026_0_001_000.png,,69,,,2026-27
+33215,p518466,willy-kambwala,Willy Kambwala,Kambwala,Defender,defensa,FR,,,,53,26,Villarreal CF,,,65,,,2026-27
+33226,p536642,santiago-mourino,Santiago Mouriño,Mouriño,Defender,defensa,UY,,,,15,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p536642/512x556/p536642_t449_2026_0_001_000.png,,85,,,2026-27
+33252,p620617,jon-martin,Jon Martín,Jon Martín,Forward,forward,ES,,,,,22,Real Sociedad,,,66,,,2026-27
+33253,p627656,alex-lebarbier,Alex Lebarbier,Lebarbier,Defender,defensa,FR,,,,6,22,Real Sociedad,https://assets.laliga.com/squad/2026/t3567/p627656/512x556/p627656_t3567_2026_0_001_000.png,,65,,,2026-27
+33287,p448085,natan,Natan Bernardo de Souza,Natan,Defender,defensa,BR,,,,4,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p448085/512x556/p448085_t185_2026_1_001_000.png,,83,,,2026-27
+33290,p440594,alvaro-nunez,Álvaro Núñez,Álvaro N.c.,Defender,defensa,ES,,,,15,8,Celta,https://assets.laliga.com/squad/2026/t176/p440594/512x556/p440594_t176_2026_0_001_000.png,,74,,,2026-27
+33373,p628184,javi-hernandez-1,Javi Hernández,Javi H.,Forward,delantero,ES,,,,28,,RCD Espanyol de Barcelona,,,73,,,2026-27
+33396,p588222,matteo-prati,Matteo Prati,Prati,Midfielder,centrocampista,IT,,,,18,,R. Racing Club,,,64,,,2026-27
+33690,p593193,daniel-martinez-2,Dani Martinez,D. Martínez,Defender,defensa,ES,,,,30,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p593193/512x556/p593193_t175_2026_1_001_000.png,,69,,,2026-27
+33701,p631383,nordin-al-lal,Nordin Al Lal,N. Al-Lal,Forward,delantero,MA,,,,33,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p631383/512x556/p631383_t954_2026_0_001_000.png,,65,,,2026-27
+33702,p629907,pau-navarro,Pau Navarro,Pau Navarro,Defender,defensa,ES,,,,6,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p629907/512x556/p629907_t449_2026_0_001_000.png,,65,,,2026-27
+33706,p593110,pau-cubarsi,Pau Cubarsí,Cubarsí,Defender,defensa,ES,,,,5,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p593110/512x556/p593110_t178_2026_0_001_000.png,,81,,,2026-27
+33725,p492977,saba-sazonov,Saba Sazonov,Sazonov,Defender,defensa,GE,,,,4,11,Getafe CF,,,72,,,2026-27
+33882,p631935,abdoulaye-faye,Abdoulaye Faye,Faye,Defender,defensa,SN,,,,4,8,Celta,,,66,,,2026-27
+34324,p538671,jozhua-vertrouwd,Jozhua Vertrouwd,Jozhua V.,Defender,defensa,NL,,,,33,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p538671/512x556/p538671_t184_2026_0_001_000.png,,66,,,2026-27
+34517,p638238,javier-rodriguez-1,Javi Rodríguez,Javi Rguez,Defender,defensa,ES,,,,20,8,Celta,https://assets.laliga.com/squad/2026/t176/p638238/512x556/p638238_t176_2026_0_001_000.png,,77,,,2026-27
+34602,p639309,miguel-sierra,Miguel Sierra,Miguel Sierra,Forward,delantero,ES,,,,30,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p639309/512x556/p639309_t179_2026_0_001_000.png,,78,,,2026-27
+34648,p554651,david-mella,David Mella,Mella,Midfielder,centrocampista,ES,,,,11,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p554651/512x556/p554651_t180_2026_0_001_000.png,,61,,,2026-27
+34740,p633295,angel-perez-1,Ángel Pérez,Ángel P.,Defender,defensa,ES,,,,7,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p633295/512x556/p633295_t173_2026_1_001_000.png,,79,,,2026-27
+34766,p631382,ali-houary,Ali Houary,Ali Houary,Forward,delantero,MA,,,,29,9,Elche CF,,,71,,,2026-27
+34794,p640504,rafa-garrido,Rafael Garrido Hierro,Rafita,Defender,defensa,ES,,,,31,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p640504/512x556/p640504_t182_2026_0_001_000.png,,86,,,2026-27
+34986,p619893,joselu-7,José Luis Pérez del Amo,Joselu,Forward,delantero,ES,,,,32,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p619893/512x556/p619893_t1450_2026_0_001_000.png,,65,,,2026-27
+35112,p633425,buba-sangare,Buba Sangaré,B. Sangare,Defender,defensa,ES,,,,2,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p633425/512x556/p633425_t954_2026_0_001_000.png,,82,,,2026-27
+35176,p550797,ibrahima-sow,Ibrahima Sow,Ibra,Forward,delantero,SN,,,,37,21,Sevilla FC,,,65,,,2026-27
+35179,p576682,david-otorbi,David Otorbi,Otorbi,Forward,delantero,ES,,,,27,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p576682/512x556/p576682_t191_2026_0_001_000.png,,69,,,2026-27
+35182,p568601,kevin-sanchez-1,Kevin Sánchez,Kevin,Forward,delantero,ES,,,,33,,RC Deportivo,,,60,,,2026-27
+35194,p620616,izan-merino,Izan Merino,Izan M.,Midfielder,centrocampista,ES,,,,23,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p620616/512x556/p620616_t182_2026_0_001_000.png,,69,,,2026-27
+35209,p637705,oso,Joaquín Martínez Gauna,Oso,Forward,delantero,ES,,,,,21,Sevilla FC,,,70,,,2026-27
+35219,p632021,mikel-jauregizar,Mikel Jauregizar,Jauregizar,Midfielder,centrocampista,ES,,,,18,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p632021/512x556/p632021_t174_2026_1_001_000.png,,67,,,2026-27
+35233,p621927,rayane-belaid,Rayane Belaid,Rayane,Forward,delantero,ES,,,,37,25,Rayo Vallecano,,,65,,,2026-27
+35424,p551482,aitor-manas,Aitor Mañas,Mañas,Forward,delantero,ES,,,,20,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p551482/512x556/p551482_t173_2026_1_001_000.png,,63,,,2026-27
+35453,p629738,adama-boiro,Adama Boiro,Adama,Forward,forward,ES,,,,,3,Athletic Club,,,62,,,2026-27
+35501,p645745,carlos-espi,Carlos Espí,C. Espí,Forward,delantero,ES,,,,19,20,Real Madrid,,,72,,,2026-27
+35586,p646149,inigo-arguibide,Iñigo Arguibide,Arguibide,Defender,defensa,ES,,,,27,18,CA Osasuna,,,83,,,2026-27
+35597,p648762,jorge-cabello,Jorge Cabello,Cabello,Defender,defensa,ES,,,,14,16,Levante UD,,,65,,,2026-27
+35640,p646142,asier-osambela,Asier Osambela,A. Osambela,Midfielder,centrocampista,ES,,,,29,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p646142/512x556/p646142_t450_2026_0_001_000.png,,63,,,2026-27
+35645,p650358,llorenc-serred,Llorenç Serred Martínez,Llorenç,Goalkeeper,portero,ES,,,,31,,RCD Espanyol de Barcelona,,,65,,,2026-27
+35654,p617127,gabriel-moscardo,Gabriel Silva Moscardo de Salles,G. Moscardo,Midfielder,centrocampista,BR,,,,20,,RCD Espanyol de Barcelona,,,62,,,2026-27
+35677,p654680,rafael-bauza,Rafel Bauzà,Bauza,Midfielder,centrocampista,ES,,,,26,,RCD Espanyol de Barcelona,,,71,,,2026-27
+35681,p654780,alberto-risco,Alberto Risco,Risco,Midfielder,centrocampista,ES,,,,28,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p654780/512x556/p654780_t1450_2026_0_001_000.png,,63,,,2026-27
+35731,p568404,jonathan-asp-jensen,Jonathan Asp Jensen,Asp - Jensen,Midfielder,centrocampista,DK,,,,18,,RC Deportivo,,,63,,,2026-27
+35799,p462097,vanja-drkusic,Vanja Drkusic,Vanja,Defender,defensa,SI,,,,16,,RCD Espanyol de Barcelona,,,75,,,2026-27
+35808,p643133,yoel-lago,Yoel Lago,Yoel Lago,Forward,forward,ES,,,,,8,Celta,,,65,,,2026-27
+35827,p648430,paco-cortes,Paco Cortés,P. Cortes,Midfielder,centrocampista,ES,,,,27,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p648430/512x556/p648430_t855_2026_0_001_000.png,,61,,,2026-27
+37344,p493085,pelayo-fernandez,Pelayo Fernández,Pelayo,Defender,defensa,ES,,,,22,25,Rayo Vallecano,,,65,,,2026-27
+37418,p510681,jiri-letacek,Jirí Letácek,Letacek,Goalkeeper,portero,CZ,,,,1,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p510681/512x556/p510681_t1450_2026_0_001_000.png,,65,,,2026-27
+37528,p637198,iker-cordoba,Iker Córdoba,I. Córdoba,Defender,defensa,ES,,,,36,23,Valencia CF,,,65,,,2026-27
+37536,p637126,marc-bernal,Marc Bernal,Bernal,Midfielder,centrocampista,ES,,,,22,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p637126/512x556/p637126_t178_2026_0_001_000.png,,79,,,2026-27
+37593,p620045,chupete,Carlos Ruiz Rubio,Chupe,Forward,delantero,ES,,,,9,,Málaga CF,https://assets.laliga.com/squad/2026/t182/p620045/512x556/p620045_t182_2026_0_001_000.png,,66,,,2026-27
+37594,p546812,jon-gorrotxategi,Jon Gorrotxategi,Gorrotxa,Midfielder,centrocampista,ES,,,,4,22,Real Sociedad,https://assets.laliga.com/squad/2026/t188/p546812/512x556/p546812_t188_2026_0_001_000.png,,61,,,2026-27
+37627,p632023,peio-canales,Peio Canales,Canales,Forward,delantero,ES,,,,28,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p632023/512x556/p632023_t174_2026_1_001_000.png,,73,,,2026-27
+37628,p631990,benat-gerenabarrena,Beñat Gerenabarrena,Gerenabarrena,Midfielder,centrocampista,ES,,,,24,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p631990/512x556/p631990_t174_2026_1_001_000.png,,76,,,2026-27
+37665,p664904,diego-ferrer,Diego Ferrer,Ferrer,Goalkeeper,portero,ES,,,,35,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p664904/512x556/p664904_t1450_2026_0_001_000.png,,65,,,2026-27
+37728,p658061,jorge-salinas,Jorge Salinas,Salinas,Defender,defensa,ES,,,,17,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p658061/512x556/p658061_t189_2026_0_001_000.png,,86,,,2026-27
+37741,p665388,marco-de-las-sias,Marco de Las Sias,De Las Sias,Defender,defensa,ES,,,,26,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p665388/512x556/p665388_t184_2026_0_001_000.png,,65,,,2026-27
+37743,p593181,matia-barzic,Matia Barzic,M. Baržić,Defender,defensa,HR,,,,26,9,Elche CF,,,65,,,2026-27
+37783,p514664,luiz-junior-1,Luiz Lúcio Reis Júnior,Júnior R.,Goalkeeper,portero,BR,,,,1,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p514664/512x556/p514664_t449_2026_0_001_000.png,,73,,,2026-27
+38168,p648428,manu-gonzalez,Manu González,Manu G.,Goalkeeper,portero,ES,,,,31,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p648428/512x556/p648428_t185_2026_1_001_000.png,,65,,,2026-27
+38294,p510657,couhaib-driouech,Couhaib Driouech,Driouech,Forward,delantero,MA,,,,24,8,Celta,,,67,,,2026-27
+38313,p500021,zaid-romero,Zaid Romero,Z.romero,Defender,defensa,AR,,,,24,11,Getafe CF,,,86,,,2026-27
+38797,p675560,curro-burgos,Francisco Burgos Barrionuevo,Curro,Midfielder,centrocampista,ES,,,,29,11,Getafe CF,,,65,,,2026-27
+38840,p677054,jean-valou,Jean Valou,J. Ives Valou,Defender,defensa,CI,,,,26,11,Getafe CF,,,60,,,2026-27
+39083,p611626,maroan-sannadi,Maroan Sannadi,Maroan,Forward,delantero,MA,,,,21,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p611626/512x556/p611626_t174_2026_1_001_000.png,,63,,,2026-27
+39249,p675374,alvaro-de-pablo,Álvaro de Pablo,Á. De Pablo,Goalkeeper,portero,ES,,,,40,6,Real Betis,,,65,,,2026-27
+39450,p588143,angel-ortiz,Ángel Ortiz,Á. Ortiz,Midfielder,centrocampista,ES,,,,12,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p588143/512x556/p588143_t185_2026_1_001_000.png,,65,,,2026-27
+39467,p664923,diego-diaz-3,Diego Díaz,Diego Diaz,Forward,delantero,ES,,,,22,,R. Racing Club,,,63,,,2026-27
+39525,p612301,luken-beitia,Luken Beitia,Beitia,Defender,defensa,ES,,,,4,22,Real Sociedad,https://assets.laliga.com/squad/2026/t3567/p612301/512x556/p612301_t3567_2026_0_001_000.png,,68,,,2026-27
+39527,p631521,mikel-rodriguez,Mikel Rodríguez,Mikel R.,Defender,defensa,ES,,,,18,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p631521/512x556/p631521_t173_2026_1_001_000.png,,84,,,2026-27
+39528,p628792,mikel-goti,Mikel Goti,Goti,Midfielder,centrocampista,ES,,,,8,22,Real Sociedad,,,65,,,2026-27
+39529,p634254,alex-marchal,Alex Marchal,Marchal,Midfielder,centrocampista,ES,,,,11,22,Real Sociedad,https://assets.laliga.com/squad/2026/t3567/p634254/512x556/p634254_t3567_2026_0_001_000.png,,63,,,2026-27
+39542,p634056,alvaro-cortes-1,Álvaro Cortés,Cortes,Defender,defensa,ES,,,,26,5,FC Barcelona,,,65,,,2026-27
+39544,p665522,alassane-diatta,Alassane Diatta,A. Diatta,Midfielder,centrocampista,SN,,,,5,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p665522/512x556/p665522_t449_2026_0_001_000.png,,65,,,2026-27
+39653,p623680,jose-angel-lopez,José Ángel López Gálvez,Jose Angel,Defender,defensa,ES,,,,32,,RCD Espanyol de Barcelona,,,65,,,2026-27
+39685,p554656,youssef-lekhedim,Youssef Enriquez,Youssef,Defender,defensa,MA,,,,3,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p554656/512x556/p554656_t173_2026_0_001_000.png,,79,,,2026-27
+39759,p544538,nelson-deossa,Nelson Deossa,N. Deossa,Midfielder,centrocampista,CO,,,,18,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p544538/512x556/p544538_t185_2026_1_001_000.png,,74,,,2026-27
+39841,p536665,nicolas-valentini,Nicolás Valentini,Valentini,Defender,defensa,AR,,,,2,,Deportivo Alavés,,,61,,,2026-27
+39851,p665389,adrian-molina,Adrián Molina,Adrián Molina,Goalkeeper,portero,ES,,,,30,25,Rayo Vallecano,https://assets.laliga.com/squad/2026/t184/p665389/512x556/p665389_t184_2026_0_001_000.png,,65,,,2026-27
+39871,p566165,jones-el-abdellaoui,Jones El Abdellaoui,El-Abdellaoui,Forward,delantero,MA,,,,,8,Celta,,,64,,,2026-27
+39973,p623696,pablo-garcia-5,Pablo García,Pablo G.,Forward,delantero,ES,,,,15,,R. Racing Club,,,75,,,2026-27
+39982,p573143,gregoire-swiderski,Grégoire Swiderski,Swiderski,Goalkeeper,portero,CA,,,,31,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p573143/512x556/p573143_t173_2026_1_001_000.png,,65,,,2026-27
+40007,p479491,zakaria-eddahchouri,Zakaria Eddahchouri,Eddahchouri,Forward,delantero,NL,,,,9,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p479491/512x556/p479491_t180_2026_0_001_000.png,,67,,,2026-27
+40035,p633424,mario-rivas-1,Mario Rivas,Mario Rivas,Defender,defensa,ES,,,,33,20,Real Madrid,,,65,,,2026-27
+40203,p690618,roger-hinojo,Roger Hinojo,R. Hinojo,Defender,defensa,ES,,,,21,,RCD Espanyol de Barcelona,,,84,,,2026-27
+40229,p691217,sergio-lozano,Sergio Lozano,Lozano,Defender,defensa,ES,,,,27,25,Rayo Vallecano,,,65,,,2026-27
+40244,p692871,yan-diomande,Yan Diomande,Yan Diomande,Forward,delantero,CI,,,,25,20,Real Madrid,,,70,,,2026-27
+40321,p631986,alejandro-rego,Alejandro Rego,Rego,Defender,defensa,ES,,,,20,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p631986/512x556/p631986_t174_2026_1_001_000.png,,65,,,2026-27
+40352,p678727,rafa-fernandez,Rafa Fernández,Rafa Fdez.,Goalkeeper,portero,ES,,,,31,18,CA Osasuna,,,65,,,2026-27
+40384,p536884,federico-redondo,Federico Redondo,Redondo,Midfielder,centrocampista,AR,,,,5,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p536884/512x556/p536884_t954_2026_0_001_000.png,,69,,,2026-27
+40508,p614242,facundo-bernal,Facundo Bernal,F. Bernal,Midfielder,centrocampista,UY,,,,6,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p614242/512x556/p614242_t185_2026_1_001_000.png,,73,,,2026-27
+40948,p632509,gorka-carrera,Gorka Carrera,Carrera,Forward,delantero,ES,,,,18,22,Real Sociedad,https://assets.laliga.com/squad/2026/t3567/p632509/512x556/p632509_t3567_2026_0_001_000.png,,65,,,2026-27
+40951,p612309,job-ochieng,Job Ochieng,Ochieng,Forward,forward,KE,,,,,22,Real Sociedad,,,61,,,2026-27
+40969,p543316,lucas-noubi,Lucas Noubi,Noubi,Defender,defensa,BE,,,,4,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p543316/512x556/p543316_t180_2026_0_001_000.png,,84,,,2026-27
+40978,p700202,davinchi,David Cordón Mancha,Davinchi,Defender,defensa,ES,,,,3,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p700202/512x556/p700202_t1450_2026_0_001_000.png,,66,,,2026-27
+41058,p420926,tyrhys-dolan,Tyrhys Dolan,Dolan,Forward,delantero,GB-ENG,,,,24,,RCD Espanyol de Barcelona,https://assets.laliga.com/squad/2026/t177/p420926/512x556/p420926_t177_2026_0_001_000.png,,71,,,2026-27
+41083,p570931,valentin-gomez,Valentín Gómez,V. Gómez,Defender,defensa,AR,,,,16,6,Real Betis,https://assets.laliga.com/squad/2026/t185/p570931/512x556/p570931_t185_2026_1_001_000.png,,80,,,2026-27
+41086,p483083,martim-neto,Martim Carvalho Neto,M. Neto,Midfielder,centrocampista,PT,,,,16,9,Elche CF,https://assets.laliga.com/squad/2026/t954/p483083/512x556/p483083_t954_2026_0_001_000.png,,64,,,2026-27
+41226,p704740,sergio-martinez-2,Sergio Martínez,Sergio,Midfielder,centrocampista,ES,,,,38,20,Real Madrid,,,70,,,2026-27
+41234,p704770,nacho-perez-1,Nacho Pérez,Nacho Perez,Defender,defensa,ES,,,,29,16,Levante UD,https://assets.laliga.com/squad/2026/t855/p704770/512x556/p704770_t855_2026_0_001_000.png,,85,,,2026-27
+41242,p646145,mauro-echegoyen,Mauro Echegoyen,Mauro,Midfielder,centrocampista,ES,,,,26,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p646145/512x556/p646145_t450_2026_0_001_000.png,,65,,,2026-27
+41254,p592810,edu-altozano,Edu Altozano,Edu Altozano,Midfielder,centrocampista,ES,,,,39,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p592810/512x556/p592810_t179_2026_0_001_000.png,,65,,,2026-27
+41401,p496694,nathan-saliba,Nathan Saliba,Saliba,Midfielder,centrocampista,CA,,,,24,26,Villarreal CF,,,73,,,2026-27
+41757,p565686,tani-oluwaseyi,Tani Oluwaseyi,Oluwaseyi,Forward,delantero,CA,,,,21,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p565686/512x556/p565686_t449_2026_0_001_000.png,,63,,,2026-27
+41804,p634238,ibai-aguirre,Ibai Aguirre,Aguirre,Midfielder,centrocampista,ES,,,,8,22,Real Sociedad,,,65,,,2026-27
+42875,p668821,iker-monreal,Iker Monreal,Monreal,Defender,defensa,ES,,,,30,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p668821/512x556/p668821_t174_2026_0_001_000.png,,65,,,2026-27
+42903,p680523,jose-morante,José Antonio Morante Antúnez,Morante,Forward,delantero,ES,,,,27,6,Real Betis,,,65,,,2026-27
+43009,p669936,eder-aller,Eder Aller,Eder Aller,Goalkeeper,portero,ES,,,,31,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p669936/512x556/p669936_t178_2026_0_001_000.png,,65,,,2026-27
+43043,p675131,javier-navarro-1,Javi Navarro,Javi Navarro,Goalkeeper,portero,ES,,,,31,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p675131/512x556/p675131_t186_2026_0_001_000.png,,65,,,2026-27
+43219,p617105,pedro-felipe,Pedro Felipe de Jesus Gomes,Pedro,Defender,defensa,BR,,,,22,,R. Racing Club,,,60,,,2026-27
+43243,p593184,jorge-castillo-1,Jorge Castillo,Castillo,Midfielder,centrocampista,ES,,,,46,,Atlético de Madrid,,,65,,,2026-27
+43270,p634630,xavi-espart,Xavi Espart,Xavi Espart,Defender,defensa,ES,,,,12,5,FC Barcelona,https://assets.laliga.com/squad/2026/t178/p634630/512x556/p634630_t178_2026_0_001_000.png,,90,,,2026-27
+43351,p643319,alex-panach,Alejandro Panach Olmo,Panach,Defender,defensa,ES,,,,29,23,Valencia CF,https://assets.laliga.com/squad/2026/t191/p643319/512x556/p643319_t191_2026_0_001_000.png,,65,,,2026-27
+43462,p718495,andres-vallecillo,Andrés Vallecillo,Vallecillo,Midfielder,centrocampista,ES,,,,29,,R. Racing Club,https://assets.laliga.com/squad/2026/t189/p718495/512x556/p718495_t189_2026_0_001_000.png,,65,,,2026-27
+44039,p657325,hugo-burcio-1,Hugo Burcio,Burcio,Midfielder,centrocampista,ES,,,,5,8,Celta,,,65,,,2026-27
+44040,p672231,andres-antanon-1,Andrés Antañón,Antañon,Midfielder,centrocampista,ES,,,,8,8,Celta,,,60,,,2026-27
+44154,p711110,bil-nsongo,Bil Nsongo,Nsongo Bil,Forward,delantero,CM,,,,32,,RC Deportivo,https://assets.laliga.com/squad/2026/t180/p711110/512x556/p711110_t180_2026_0_001_000.png,,71,,,2026-27
+44211,p646190,selton-sanchez,Selton Sánchez,Selton,Midfielder,centrocampista,ES,,,,44,3,Athletic Club,https://assets.laliga.com/squad/2026/t174/p646190/512x556/p646190_t174_2026_0_001_000.png,,65,,,2026-27
+44473,p554646,xanet-olaiz,Xanet Oláiz,Xanet Olaiz,Defender,defensa,ES,,,,27,,Deportivo Alavés,https://assets.laliga.com/squad/2026/t173/p554646/512x556/p554646_t173_2026_1_001_000.png,,65,,,2026-27
+44505,p722839,marco-roman,Marco Román,M. Román,Midfielder,centrocampista,ES,,,,31,25,Rayo Vallecano,,,65,,,2026-27
+44529,p484917,alexander-freeman,Alex Freeman,Freeman,Defender,defensa,US,,,,3,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p484917/512x556/p484917_t449_2026_0_001_000.png,,74,,,2026-27
+44661,p614481,ryunosuke-sato,Ryunosuke Sato,Ryunosuke,Midfielder,centrocampista,JP,,,,39,23,Valencia CF,,,69,,,2026-27
+44836,p710081,carlos-macia-1,Carlos Maciá,Macia,Midfielder,centrocampista,ES,,,,16,26,Villarreal CF,https://assets.laliga.com/squad/2026/t449/p710081/512x556/p710081_t449_2026_0_001_000.png,,68,,,2026-27
+44858,p499358,jorge-cestero-1,Jorge Cestero Sancho,Cestero,Midfielder,centrocampista,ES,,,,29,20,Real Madrid,https://assets.laliga.com/squad/2026/t186/p499358/512x556/p499358_t186_2026_0_001_000.png,,65,,,2026-27
+44915,p592812,iker-ortin,Iker Munoz,Iker Muñoz,Defender,defensa,ES,,,,34,21,Sevilla FC,https://assets.laliga.com/squad/2026/t179/p592812/512x556/p592812_t179_2026_0_001_000.png,,65,,,2026-27
+44930,p645755,kareem-tunde,Kareem Tunde,K. Tunde,Forward,forward,ES,,,,,16,Levante UD,,,62,,,2026-27
+44933,p672686,unai-santos-1,Unai Santos,Santos,Defender,defensa,ES,,,,35,18,CA Osasuna,https://assets.laliga.com/squad/2026/t450/p672686/512x556/p672686_t450_2026_0_001_000.png,,65,,,2026-27
+45082,p551311,julio-diaz-1,Julio Díaz,Julio Díaz,Defender,defensa,ES,,,,3,21,Sevilla FC,,,64,,,2026-27
+45089,p575889,thiago-fernandez,Thiago Fernández,Thiago,Midfielder,centrocampista,AR,,,,24,16,Levante UD,,,69,,,2026-27
+45136,p572662,abiel-osorio,Abiel Osorio,Osorio,Forward,delantero,AR,,,,24,9,Elche CF,,,65,,,2026-27
+45161,p609050,sebastian-boselli,Sebastián Boselli,Boselli,Defender,defensa,UY,,,,15,11,Getafe CF,https://assets.laliga.com/squad/2026/t1450/p609050/512x556/p609050_t1450_2026_0_001_000.png,,60,,,2026-27
+45221,p687671,simon-eriksson,Simon Eriksson,Eriksson,Goalkeeper,portero,SE,,,,1,,R. Racing Club,,,65,,,2026-27
+45409,p652987,yassir-zabiri,Yassir Zabiri,Zabiri,Forward,delantero,MA,,,,21,,R. Racing Club,,,74,,,2026-27
+45471,p720320,aaron-mayol,Aaron Mayol,Mayol,Midfielder,centrocampista,ES,,,,33,23,Valencia CF,,,65,,,2026-27
+45631,p720618,adama-timera,Adama Timera,Timera,Defender,defensa,FR,,,,27,,RCD Espanyol de Barcelona,,,65,,,2026-27
+45775,p720621,carlos-sanchez-5,Carlos Sánchez,Carlos,Forward,forward,ES,,,,,,R. Racing Club,,,65,,,2026-27
+45794,p714598,javier-morcillo,Javier Morcillo,Morcillo,Midfielder,centrocampista,ES,,,,47,9,Elche CF,,,63,,,2026-27
+45841,p709993,cubo,Miguel Llorente Cubo,Cubo,Forward,delantero,ES,,,,29,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p709993/512x556/p709993_t175_2026_1_001_000.png,,65,,,2026-27
+45910,p664217,nico-guillen-1,Nico Guillén,Nico Guillen,Midfielder,centrocampista,ES,,,,27,21,Sevilla FC,,,68,,,2026-27
+46014,p684337,hamza-abdelkarim,Hamza Mohamed Abdelkarim Elsayed Selim,Hamza Abdelkarim,Forward,delantero,EG,,,,29,5,FC Barcelona,,,62,,,2026-27
+46215,p560616,teun-gijselhart,Teun Gijselhart,Gijselhart,Midfielder,centrocampista,NL,,,,34,,RC Deportivo,,,60,,,2026-27
+46216,p492841,enzo-bardeli,Enzo Bardeli,Enzo Bardeli,Midfielder,centrocampista,FR,,,,18,16,Levante UD,,,73,,,2026-27
+46222,p567886,quique-ribes-1,Enrique Ribes,Ribes,Defender,defensa,ES,,,,27,8,Celta,,,65,,,2026-27
+46895,p679125,bright-ede,Bright Ede,Ede,Defender,defensa,PL,,,,22,,RC Deportivo,,,83,,,2026-27
+46956,p546600,kayne-van-oevelen,Kayne van Oevelen,Van Oevelen,Goalkeeper,portero,NL,,,,25,23,Valencia CF,,,65,,,2026-27
+46996,p591617,ifeanyi-ndukwe,Ifeanyi Ndukwe,Ndukwe,Defender,defensa,AT,,,,3,16,Levante UD,,,65,,,2026-27
+47025,p746342,joseph-otunenche,Joseph Otu,Otu Jr,Midfielder,centrocampista,NG,,,,28,,Málaga CF,,,65,,,2026-27
+47026,p706221,juan-fernandez-2,Juan Francisco Fernández Martin,Juani,Forward,delantero,ES,,,,32,,Málaga CF,,,65,,,2026-27
+47029,p696086,cheikh-thiam,Cheikh Thiam,Cheikh,Midfielder,centrocampista,SN,,,,30,26,Villarreal CF,,,65,,,2026-27
+47030,p746335,nizar-jmili,Nizar El Jmili Ben Hamou,Nizar,Midfielder,centrocampista,ES,,,,27,26,Villarreal CF,,,65,,,2026-27
+47060,p723493,jordi-pesquer,Jordi Pesquer,Jordi Pesquer,Defender,defensa,ES,,,,33,5,FC Barcelona,,,65,,,2026-27
+47063,p499314,brian-farinas,Brian Fariñas,Brian,Midfielder,centrocampista,ES,,,,4,5,FC Barcelona,,,65,,,2026-27
+47068,p710911,jorge-dominguez-1,Jorge Domínguez,Domínguez,Defender,defensa,ES,,,,27,,Atlético de Madrid,https://assets.laliga.com/squad/2026/t175/p710911/512x556/p710911_t175_2026_1_001_000.png,,61,,,2026-27
+47083,p704994,alexis-ciria,Alexis Ciria,Alexis Ciria,Forward,delantero,ES,,,,36,20,Real Madrid,,,65,,,2026-27
+47105,p664880,yanis-musuayi,Yanis Musuayi,Yanis Musuayi,Forward,delantero,BE,,,,11,16,Levante UD,,,65,,,2026-27
+47125,p747880,gnangoro,Gnangoro Bouare Samake,G. Bouaré,Midfielder,centrocampista,ES,,,,36,25,Rayo Vallecano,,,66,,,2026-27
+47145,p748228,ebrahima-drammeh,Ebrahima Drammeh,Ibra Drj,Forward,delantero,GM,,,,27,11,Getafe CF,,,65,,,2026-27
+47146,p679262,oscar-lopez-2,Óscar López,O. Lopez,Midfielder,centrocampista,BO,,,,30,11,Getafe CF,,,65,,,2026-27
+47164,p670115,jaume-dura,Jaume Durá,Jaume Durà,Midfielder,centrocampista,ES,,,,38,23,Valencia CF,,,65,,,2026-27
+47170,p503537,robbie-ure,Robbie Ure,Robbie Ure,Forward,delantero,GB-SCT,,,,9,21,Sevilla FC,,,65,,,2026-27
+47181,p627127,rockson-yeboah,Rockson Yeboah,Rockson,Defender,defensa,GH,,,,48,18,CA Osasuna,,,65,,,2026-27
+47206,p499356,ivan-alonso-1,Iván Alonso,Alonso,Forward,delantero,ES,,,,34,25,Rayo Vallecano,,,65,,,2026-27
+47213,p621929,jorge-castellanos,Jorge Castellanos,Castellanos,Midfielder,centrocampista,ES,,,,33,,R. Racing Club,,,65,,,2026-27
+47215,p749255,manel-usedo,Manel Usedo,Manel Usedo,Midfielder,centrocampista,ES,,,,34,16,Levante UD,,,65,,,2026-27
+47216,p749254,ihor-galdin,Ihor Galdin,Ihor Galdin,Goalkeeper,portero,UA,,,,36,16,Levante UD,,,65,,,2026-27
+47217,p719440,marc-santos,Marc Santos,Marc Santos,Defender,defensa,ES,,,,33,16,Levante UD,,,64,,,2026-27
+47218,p645746,alberto-calatrava,Alberto Calatrava,Calatrava,Midfielder,centrocampista,ES,,,,38,16,Levante UD,,,65,,,2026-27
+47231,p691630,umaru,Umaru Konare Tounkara,Umaru,Forward,delantero,ES,,,,27,9,Elche CF,,,60,,,2026-27
+47232,p748535,alvaro-padilla,Álvaro Padilla,Padilla,Midfielder,centrocampista,ES,,,,30,9,Elche CF,,,63,,,2026-27
+47240,p730982,hugo-perez-2,Hugo Pérez,Hugo,Midfielder,centrocampista,ES,,,,38,,R. Racing Club,,,65,,,2026-27
+47589,p735727,manuel-angel-castillo,Manuel Ángel Castillo,Manuel Ángel,Defender,defensa,ES,,,,26,21,Sevilla FC,,,65,,,2026-27
+47634,p647953,asier-bonel-1,Asier Bonel,A. Bonel,Forward,delantero,ES,,,,30,18,CA Osasuna,,,65,,,2026-27

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STATSPHERE — Football Stats, Player Ratings & Fixtures</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="statsphere-body">
+
+  <!-- TOP APP HEADER -->
+  <header class="statsphere-top-bar">
+    <div class="top-chrome-left">
+      <span class="chrome-dot red"></span>
+      <span class="chrome-dot yellow"></span>
+      <span class="chrome-dot green"></span>
+      <span class="chrome-url-tag">STATSPHERE · Spanish La Liga EA SPORTS</span>
+    </div>
+    <div class="top-chrome-center">
+      <span class="feed-status-pill" id="feedStatusPill"><span class="pulse-green"></span> API-FOOTBALL · OFFICIAL LIVE FEED</span>
+    </div>
+    <div class="top-chrome-right">
+      <span class="system-time" id="systemClock">--:--:-- UTC</span>
+      <div class="user-chip">
+        <div class="user-avatar-placeholder">⚽</div>
+        <span class="user-name">Fan Dashboard</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MASTER LAYOUT -->
+  <div class="statsphere-layout">
+
+    <!-- ====================================================================
+         COLUMN 1: LEFT NAVIGATION RAIL
+         ==================================================================== -->
+    <aside class="col-sidebar-left" id="sidebar-left">
+      
+      <!-- Brand & Logo -->
+      <div class="brand-container" onclick="switchView('home')" style="cursor:pointer;" title="Return to Home Dashboard">
+        <div class="brand-swirl-icon">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 3"/>
+            <path d="M16 6C10.477 6 6 10.477 6 16C6 21.523 10.477 26 16 26C21.523 26 26 21.523 26 16" stroke="#007AFF" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M16 10C12.686 10 10 12.686 10 16C10 19.314 12.686 22 16 22C19.314 22 22 19.314 22 16" stroke="#FF9500" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="3" fill="#007AFF"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">STATSPHERE</span>
+          <span class="brand-subtitle">FOOTBALL STATS &amp; RATINGS</span>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="nav-search-wrap">
+        <svg class="nav-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="globalSearchInput" placeholder="Search players, clubs..." autocomplete="off">
+        <span class="search-kbd-shortcut">⌘K</span>
+      </div>
+
+      <!-- Main Navigation Menu -->
+      <nav class="nav-main-menu" id="navMainMenu">
+        <button class="nav-link-btn active" data-nav="home" title="Overview dashboard with matches, featured star and standings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home Dashboard</span>
+        </button>
+        <button class="nav-link-btn" data-nav="fixtures" title="Full schedule and match results">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span>Matches &amp; Schedule</span>
+        </button>
+        <button class="nav-link-btn" data-nav="players" title="Search all players, compare ratings and stats">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Players &amp; Ratings</span>
+        </button>
+        <button class="nav-link-btn" data-nav="clubs" title="All 20 La Liga teams, tactics and records">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Clubs &amp; Teams</span>
+        </button>
+      </nav>
+
+      <!-- Favorite Clubs Quick Access -->
+      <div class="nav-section">
+        <div class="nav-section-title">
+          <span>TOP CLUBS</span>
+          <span class="nav-hint-badge">Click to view</span>
+        </div>
+        <ul class="nav-fav-list" id="favoritesList">
+          <li class="fav-item active" data-club="fc-barcelona">
+            <img class="fav-crest" src="https://assets.laliga.com/assets/2019/06/07/small/barcelona.png" alt="FC Barcelona" onerror="this.style.opacity='0.2'">
+            <span class="fav-label">FC Barcelona</span>
+            <span class="fav-tag gold">★ #1</span>
+          </li>
+          <li class="fav-item" data-club="real-madrid">
+            <img class="fav-crest" src="https://assets.laliga.com/assets/2019/06/07/small/real-madrid.png" alt="Real Madrid" onerror="this.style.opacity='0.2'">
+            <span class="fav-label">Real Madrid</span>
+            <span class="fav-tag">#3</span>
+          </li>
+          <li class="fav-item" data-club="atletico-de-madrid">
+            <img class="fav-crest" src="https://assets.laliga.com/assets/2019/06/07/small/atletico.png" alt="Atlético Madrid" onerror="this.style.opacity='0.2'">
+            <span class="fav-label">Atlético Madrid</span>
+            <span class="fav-tag">#6</span>
+          </li>
+          <li class="fav-item" data-club="athletic-club">
+            <img class="fav-crest" src="https://assets.laliga.com/assets/2019/06/07/small/athletic.png" alt="Athletic Club" onerror="this.style.opacity='0.2'">
+            <span class="fav-label">Athletic Club</span>
+            <span class="fav-tag">#9</span>
+          </li>
+          <li class="fav-item" data-club="real-betis">
+            <img class="fav-crest" src="https://assets.laliga.com/assets/2019/06/07/small/betis.png" alt="Real Betis" onerror="this.style.opacity='0.2'">
+            <span class="fav-label">Real Betis</span>
+            <span class="fav-tag">#4</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="nav-tips-card">
+        <div class="nt-header">💡 How it works</div>
+        <p class="nt-text"><strong>OVR:</strong> Overall player rating (0–100) calculated from last 5 seasons.<br>Click any player or club card to open full dossier.</p>
+      </div>
+
+    </aside>
+
+    <!-- ====================================================================
+         VIEWS WRAPPER (HOME, FIXTURES, PLAYERS, CLUBS)
+         ==================================================================== -->
+    <div class="views-wrapper" id="viewsWrapper">
+
+      <!-- ================================================================
+           VIEW 1: HOME DASHBOARD
+           ================================================================ -->
+      <div class="view-section active" id="view-home">
+        
+        <!-- MAIN CANVAS -->
+        <main class="col-main-canvas" id="main-canvas">
+
+          <!-- WIDGET 1: MATCH CENTER (FIXTURES HUB) -->
+          <section class="widget-card fixtures-hub-widget" id="fixtures-hub">
+            <div class="widget-header">
+              <div class="widget-title-area">
+                <span class="widget-eyebrow">LA LIGA MATCHDAY HUB</span>
+                <h2 class="widget-title">THIS WEEK'S MATCHES &amp; SCHEDULE</h2>
+                <span class="widget-helper-note">Recent Round 4 official results &amp; confirmed Round 5 upcoming fixtures</span>
+              </div>
+              <div class="hub-header-actions">
+                <span class="live-ticker-badge no-live" id="liveMatchBadge"><span class="dot-idle"></span> <span id="liveMatchCount">0 LIVE · ROUND 4 COMPLETE</span></span>
+                <span class="matchday-indicator" id="matchdayIndicator"><span id="currentMatchdayNum">Round 4 (FT) · Upcoming: MD 5</span></span>
+                <button class="view-all-btn" onclick="switchView('fixtures')">Full Calendar ›</button>
+              </div>
+            </div>
+
+            <!-- Date Selector Pills -->
+            <div class="date-selector-wrap">
+              <span class="dsw-label">Schedule:</span>
+              <div class="date-selector-bar" id="dateSelectorBar"></div>
+            </div>
+
+            <!-- Match Grid Container -->
+            <div class="match-grid-container" id="matchGridContainer">
+              <div class="match-loading-state">
+                <div class="spinner"></div>
+                <span>Loading matchday matches...</span>
+              </div>
+            </div>
+
+            <!-- Match Analysis Accordion -->
+            <div class="pre-match-accordion" id="preMatchAccordion">
+              <div class="accordion-trigger" onclick="toggleAccordion()">
+                <div class="ac-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007AFF" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <span>TACTICAL MATCH PREVIEW &amp; ANALYSIS</span>
+                </div>
+                <div class="ac-action">
+                  <span id="acStateText">Show Match Analysis ▾</span>
+                  <svg class="ac-arrow" id="acArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div class="accordion-body" id="accordionBody">
+                <div class="insights-grid">
+                  <div class="insight-box">
+                    <span class="ib-label">ATTACKING PATTERN</span>
+                    <p class="ib-desc">FC Barcelona creates <strong>61%</strong> of goal chances through progressive winger carries and 1-on-1 box entries.</p>
+                  </div>
+                  <div class="insight-box">
+                    <span class="ib-label">CURRENT FORM</span>
+                    <p class="ib-desc">Perfect <strong>4/4 wins</strong> start for Barça with 17 goals scored and 2 conceded, setting the title pace.</p>
+                  </div>
+                  <div class="insight-box">
+                    <span class="ib-label">EXPECTED GOALS (xG)</span>
+                    <p class="ib-desc">High-scoring projection: League leader averages <strong>4.25 goals per game</strong> over the last 4 rounds.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- WIDGET 2: FEATURED PLAYER -->
+          <section class="widget-card featured-player-widget" id="featured-player">
+            <div class="widget-header">
+              <div class="widget-title-area">
+                <span class="widget-eyebrow">PLAYER SPOTLIGHT</span>
+                <div class="widget-title-dual">
+                  <h2 class="widget-title">FEATURED STAR</h2>
+                  <span class="widget-subbadge" id="featuredPositionBadge">FORWARD</span>
+                </div>
+                <span class="widget-helper-note">Overall rating (OVR) calibrated from 5-year official match stats</span>
+              </div>
+              <div class="widget-action-icons">
+                <button class="view-all-btn" onclick="switchView('players')" style="margin-right:0.4rem;">Browse All Players ›</button>
+                <button class="icon-btn" title="Open Full Player Profile" onclick="expandCurrentFeatured()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                </button>
+                <button class="icon-btn" title="Cycle Next Player" onclick="cycleFeaturedPlayer()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Profile Plus Visualizations -->
+            <div class="profile-plus-visualizations" id="featuredPlayerContent">
+              
+              <!-- Bio Panel -->
+              <div class="bio-panel">
+                <div class="avatar-spotlight-frame">
+                  <img src="https://r2.thesportsdb.com/images/media/player/cutout/w94spe1726510018.png"
+                       id="featuredAvatar" alt="Player" class="bio-avatar-img"
+                       onerror="this.src='https://assets.laliga.com/assets/2019/06/07/small/barcelona.png'">
+                  <div class="ovr-floating-badge" id="featuredOvr" title="Overall Rating (0-100)">89</div>
+                </div>
+                
+                <h3 class="bio-player-name" id="featuredName">Raphinha</h3>
+                <span class="bio-club-tag" id="featuredClub">FC Barcelona</span>
+
+                <div class="bio-meta-tags" id="featuredMetaTags">
+                  <div class="meta-tag"><span class="lbl">Position</span><span class="val">Forward</span></div>
+                  <div class="meta-tag"><span class="lbl">Age</span><span class="val">28 yrs</span></div>
+                  <div class="meta-tag"><span class="lbl">Nation</span><span class="val">🇧🇷 Brazil</span></div>
+                </div>
+
+                <div class="bio-stats-row" id="featuredStatsRow">
+                  <div class="bio-stat"><span class="bs-val" id="featuredGoals">5</span><span class="bs-lbl">Goals</span></div>
+                  <div class="bio-stat"><span class="bs-val" id="featuredAssists">1</span><span class="bs-lbl">Assists</span></div>
+                  <div class="bio-stat"><span class="bs-val" id="featuredApps">4</span><span class="bs-lbl">Matches</span></div>
+                </div>
+
+                <button class="btn-outline-cyan" id="featuredProfileBtn" onclick="openPlayerModal('raphinha')">
+                  <span>View Full Profile</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+
+              <!-- Radar Chart Panel -->
+              <div class="chart-panel radar-chart-panel">
+                <div class="chart-header">
+                  <div>
+                    <span class="chart-title">SKILL ATTRIBUTES RADAR</span>
+                    <span class="chart-subtitle">Dual-series 6-metric profile</span>
+                  </div>
+                  <div class="chart-legend">
+                    <span class="legend-item cyan"><span class="legend-line"></span> Player Stats</span>
+                    <span class="legend-item amber"><span class="legend-line"></span> League Avg</span>
+                  </div>
+                </div>
+                <div class="radar-svg-container" id="featuredRadarSvg"></div>
+              </div>
+
+              <!-- Timeline Chart Panel -->
+              <div class="chart-panel line-chart-panel">
+                <div class="chart-header">
+                  <div>
+                    <span class="chart-title">SEASONAL GOALS &amp; ASSISTS</span>
+                    <span class="chart-subtitle">5-Year performance history</span>
+                  </div>
+                  <div class="chart-legend">
+                    <span class="legend-item cyan"><span class="legend-dot"></span> Goals</span>
+                    <span class="legend-item amber"><span class="legend-dot"></span> Assists</span>
+                  </div>
+                </div>
+                <div class="timeline-svg-container" id="featuredTimelineSvg"></div>
+              </div>
+
+            </div>
+          </section>
+
+        </main>
+
+        <!-- RIGHT SIDEBAR: LEAGUE TABLE & CLUB FOCUS -->
+        <aside class="col-sidebar-right" id="sidebar-right">
+          
+          <div class="right-col-header">
+            <span class="context-eyebrow">LEAGUE OVERVIEW</span>
+            <h2 class="context-title">STANDINGS &amp; CLUB FOCUS</h2>
+            <span class="widget-helper-note">Click any team to view their squad and recent form</span>
+          </div>
+
+          <!-- WIDGET 1: LEAGUE TABLE -->
+          <section class="widget-card league-table-widget" id="league-table">
+            <div class="widget-header mini">
+              <span class="subwidget-title">LA LIGA STANDINGS</span>
+              <div class="league-table-meta">
+                <span class="lt-season-badge">2023/24 Season</span>
+              </div>
+            </div>
+
+            <div class="compact-table-wrap">
+              <table class="stat-mini-table">
+                <thead>
+                  <tr>
+                    <th style="width: 22px;" title="Rank position">#</th>
+                    <th title="Club name">Team</th>
+                    <th style="text-align:right;" title="Matches Played">Pl</th>
+                    <th style="text-align:right;" title="Won">W</th>
+                    <th style="text-align:right;" title="Drawn">D</th>
+                    <th style="text-align:right;" title="Lost">L</th>
+                    <th style="text-align:right;" title="Total Points">Pts</th>
+                  </tr>
+                </thead>
+                <tbody id="leagueTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- WIDGET 2: CLUB FOCUS -->
+          <section class="widget-card club-focus-widget" id="club-focus">
+            <div class="club-focus-header">
+              <div class="cf-left">
+                <img class="cf-shield-img" id="clubFocusShield"
+                     src="https://assets.laliga.com/assets/2019/06/07/medium/barcelona.png" 
+                     alt="Crest" onclick="openClubModal('fc-barcelona')" style="cursor:pointer;" title="Click to view full club profile">
+                <div class="cf-meta">
+                  <span class="cf-sub">TEAM IN FOCUS</span>
+                  <h3 class="cf-name" id="clubFocusName">FC Barcelona</h3>
+                </div>
+              </div>
+              <div class="cf-formation-badge" id="clubFocusFormation" title="Primary formation">4-3-3</div>
+            </div>
+
+            <!-- Form Guide -->
+            <div class="club-form-guide-section">
+              <div class="cfg-header">
+                <span class="cfg-lbl">RECENT FORM (Last 5)</span>
+                <span class="cfg-legend">🟢 Win · 🟡 Draw · 🔴 Loss</span>
+              </div>
+              <div class="cfg-dots" id="clubFocusFormDots"></div>
+            </div>
+
+            <!-- Split View: Top Scorers & Next 5 Fixtures -->
+            <div class="club-focus-split-view">
+              <div class="cf-split-col">
+                <div class="cf-split-header">
+                  <span>⚽ TOP SCORERS</span>
+                  <span class="cf-pill-muted">Goals</span>
+                </div>
+                <div class="cf-scorers-list" id="clubFocusScorers"></div>
+              </div>
+
+              <div class="cf-split-col">
+                <div class="cf-split-header">
+                  <span>📅 UPCOMING</span>
+                  <span class="cf-pill-muted">Round</span>
+                </div>
+                <div class="cf-fixtures-list" id="clubFocusNextFixtures"></div>
+              </div>
+            </div>
+          </section>
+
+        </aside>
+
+      </div><!-- END #view-home -->
+
+
+      <!-- ================================================================
+           VIEW 2: FIXTURES & SCHEDULE
+           ================================================================ -->
+      <div class="view-section" id="view-fixtures">
+        <section class="widget-card full-view-card">
+          <div class="full-view-header">
+            <div>
+              <span class="widget-eyebrow">COMPETITION CALENDAR</span>
+              <h2 class="widget-title">MATCHES &amp; SCHEDULE</h2>
+              <p class="view-desc">Browse all 38 matchdays for the official La Liga EA SPORTS season. Filter by matchday, status, or search for any club.</p>
+            </div>
+            <div class="view-header-stats">
+              <div class="vhs-pill"><span class="vhs-num" id="fxTotalCount">380</span><span class="vhs-lbl">Total Matches</span></div>
+              <div class="vhs-pill"><span class="vhs-num" id="fxPlayedCount">40</span><span class="vhs-lbl">Finished (FT)</span></div>
+              <div class="vhs-pill cyan"><span class="vhs-num" id="fxRemainingCount">340</span><span class="vhs-lbl">Upcoming</span></div>
+            </div>
+          </div>
+
+          <!-- Fixtures Filter Controls -->
+          <div class="catalog-filters-bar">
+            <!-- Search by club in fixtures -->
+            <div class="filter-input-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="fixtureSearchInput" placeholder="Filter matches by team name (e.g. Madrid, Sevilla)...">
+            </div>
+
+            <!-- Status filter pills -->
+            <div class="filter-pill-group" id="fixtureStatusFilters">
+              <button class="filter-tag-pill active" data-status="all">All Matches</button>
+              <button class="filter-tag-pill" data-status="FINISHED">Finished (FT)</button>
+              <button class="filter-tag-pill" data-status="SCHEDULED">Upcoming Schedule</button>
+              <button class="filter-tag-pill" data-status="LIVE">Live Now</button>
+            </div>
+
+            <!-- Matchday Select Dropdown -->
+            <div class="filter-select-wrap">
+              <select id="fixtureMatchdaySelect" class="styled-select">
+                <option value="all">All 38 Matchdays</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Horizontal Matchday Scroll Bar -->
+          <div class="matchday-full-nav-scroll" id="fixturesMatchdayNav"></div>
+
+          <!-- Fixtures List / Grid -->
+          <div class="fixtures-full-list" id="fixturesFullList">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading matches...</p>
+            </div>
+          </div>
+        </section>
+      </div><!-- END #view-fixtures -->
+
+
+      <!-- ================================================================
+           VIEW 3: PLAYERS CATALOG
+           ================================================================ -->
+      <div class="view-section" id="view-players">
+        <section class="widget-card full-view-card">
+          <div class="full-view-header">
+            <div>
+              <span class="widget-eyebrow">PLAYER DATABASE</span>
+              <h2 class="widget-title">PLAYERS &amp; RATINGS</h2>
+              <p class="view-desc">Explore 500+ verified La Liga player profiles. Click any card to view detailed strengths, weaknesses, and tactical radars.</p>
+            </div>
+            <div class="view-header-stats" id="playersStatsRibbon"></div>
+          </div>
+
+          <!-- Player Filters Bar -->
+          <div class="catalog-filters-bar">
+            <!-- Search input -->
+            <div class="filter-input-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="playerSearchInput" placeholder="Search by player name or nickname...">
+              <button class="filter-clear-btn" id="playerSearchClear" style="display:none;" title="Clear search">&times;</button>
+            </div>
+
+            <!-- Club filter select -->
+            <div class="filter-select-wrap">
+              <select id="playerClubSelect" class="styled-select">
+                <option value="all">All 20 Clubs</option>
+              </select>
+            </div>
+
+            <!-- Position filter pills -->
+            <div class="filter-pill-group" id="playerPositionPills">
+              <button class="filter-tag-pill active" data-pos="all">All Positions</button>
+              <button class="filter-tag-pill fw" data-pos="Forward">Forwards</button>
+              <button class="filter-tag-pill mid" data-pos="Midfielder">Midfielders</button>
+              <button class="filter-tag-pill def" data-pos="Defender">Defenders</button>
+              <button class="filter-tag-pill gk" data-pos="Goalkeeper">Goalkeepers</button>
+            </div>
+
+            <!-- Sort Select -->
+            <div class="filter-select-wrap">
+              <select id="playerSortSelect" class="styled-select">
+                <option value="rating-desc">Sort: Highest Rating (OVR)</option>
+                <option value="goals-desc">Sort: Most Goals</option>
+                <option value="assists-desc">Sort: Most Assists</option>
+                <option value="apps-desc">Sort: Most Matches Played</option>
+                <option value="rating-asc">Sort: Lowest Rating</option>
+                <option value="name-asc">Sort: Player Name (A–Z)</option>
+              </select>
+            </div>
+
+            <!-- Roster Count Badge -->
+            <div class="roster-count-badge" id="playerCountBadge">Showing 0 players</div>
+          </div>
+
+          <!-- Help Legend Banner -->
+          <div class="players-legend-strip">
+            <span>💡 <strong>Attribute Guide:</strong> PAC = Pace · SHO = Shooting · PAS = Passing · DRI = Dribbling · DEF = Defending · PHY = Physical (DIV/HAN/KIC/REF/SPD/POS for Goalkeepers). Click any card for full profile.</span>
+          </div>
+
+          <!-- Players Grid -->
+          <div class="players-catalog-grid" id="playersCatalogGrid">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading player profiles...</p>
+            </div>
+          </div>
+        </section>
+      </div><!-- END #view-players -->
+
+
+      <!-- ================================================================
+           VIEW 4: CLUBS DIRECTORY
+           ================================================================ -->
+      <div class="view-section" id="view-clubs">
+        <section class="widget-card full-view-card">
+          <div class="full-view-header">
+            <div>
+              <span class="widget-eyebrow">TEAMS &amp; TACTICS</span>
+              <h2 class="widget-title">CLUBS &amp; TEAMS DIRECTORY</h2>
+              <p class="view-desc">Complete profiles of all 20 clubs in La Liga EA SPORTS. Click any club card to inspect team formation, tactical system, and squad roster.</p>
+            </div>
+            <div class="view-header-stats">
+              <div class="vhs-pill"><span class="vhs-num">20</span><span class="vhs-lbl">Clubs</span></div>
+              <div class="vhs-pill cyan"><span class="vhs-num">380</span><span class="vhs-lbl">Matches</span></div>
+            </div>
+          </div>
+
+          <!-- Club Filters Bar -->
+          <div class="catalog-filters-bar">
+            <!-- Search input -->
+            <div class="filter-input-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="clubSearchInput" placeholder="Filter clubs by name, stadium...">
+            </div>
+
+            <!-- Sort Select -->
+            <div class="filter-select-wrap">
+              <select id="clubSortSelect" class="styled-select">
+                <option value="position">Sort: League Position (#1 to #20)</option>
+                <option value="rating">Sort: Overall Club Rating</option>
+                <option value="points">Sort: Total Points</option>
+                <option value="goals">Sort: Goals Scored</option>
+                <option value="won">Sort: Most Wins</option>
+                <option value="name">Sort: Team Name (A–Z)</option>
+              </select>
+            </div>
+
+            <!-- Club Count Badge -->
+            <div class="roster-count-badge" id="clubCountBadge">Showing 20 clubs</div>
+          </div>
+
+          <!-- Clubs Grid -->
+          <div class="clubs-catalog-grid" id="clubsCatalogGrid">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading clubs directory...</p>
+            </div>
+          </div>
+        </section>
+      </div><!-- END #view-clubs -->
+
+    </div><!-- END #viewsWrapper -->
+
+  </div><!-- END .statsphere-layout -->
+
+  <!-- BOTTOM OS / STATUS BAR -->
+  <footer class="statsphere-os-bar">
+    <div class="os-left">
+      <span class="os-status-indicator"></span>
+      <span class="os-text">STATSPHERE Football Analytics · La Liga EA SPORTS 2023/24</span>
+    </div>
+    <div class="os-center">
+      <span>Season Data: <strong>Verified</strong></span>
+      <span>•</span>
+      <span>Players: <strong id="os-player-count">—</strong></span>
+      <span>•</span>
+      <span>Fixtures: <strong id="os-fixture-count">—</strong></span>
+    </div>
+    <div class="os-right">
+      <span class="os-keyboard-tip">Tip: Press <strong>ESC</strong> to close modals · <strong>⌘K</strong> to search</span>
+    </div>
+  </footer>
+
+  <!-- FULL PLAYER DOSSIER MODAL -->
+  <div class="modal-backdrop" id="playerModal">
+    <div class="modal-container">
+      <button class="modal-close" id="modalCloseBtn" title="Close modal (ESC)">&times;</button>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- FULL CLUB DOSSIER MODAL -->
+  <div class="modal-backdrop" id="clubModal">
+    <div class="modal-container club-modal-container">
+      <button class="modal-close" id="clubModalCloseBtn" title="Close modal (ESC)">&times;</button>
+      <div class="modal-content" id="clubModalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

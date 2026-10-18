@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statsphere — La Liga Intelligence &amp; Match Simulator</title>
+  <meta name="description" content="La Liga player intelligence, club analytics and calibrated match simulation.">
+  <script>
+    (function () {
+      try {
+        var t = null;
+        try { t = new URLSearchParams(location.search).get('theme'); } catch (e) {}
+        t = t || localStorage.getItem('statsphere-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css?v=6.1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="../favicon.png">
+</head>
+<body>
+  <div id="app">
+    <!-- ============ TOP BAR ============ -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <button class="brand" data-nav="matches" aria-label="Statsphere home">
+          <span class="brand-mark">◈</span>
+          <span class="brand-text">STATSPHERE<small>LA LIGA INTELLIGENCE</small></span>
+        </button>
+        <nav class="mainnav" id="mainNav">
+          <button class="navbtn is-active" data-nav="matches">Matches</button>
+          <button class="navbtn" data-nav="players">Players</button>
+          <button class="navbtn" data-nav="clubs">Clubs</button>
+          <button class="navbtn" data-nav="table">Table</button>
+        </nav>
+        <div class="topbar-search">
+          <span class="search-ico">⌕</span>
+          <input id="globalSearch" type="text" placeholder="Search players or clubs…" autocomplete="off">
+          <div class="search-results" id="searchResults" hidden></div>
+        </div>
+        <div class="topbar-meta">
+          <span class="livepill" id="livePill" hidden><span class="dot"></span><span id="liveCount">0</span>&nbsp;LIVE</span>
+          <span class="clock mono" id="clock">--:--:--</span>
+          <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+        </div>
+        <button class="iconbtn burger" id="burger" aria-label="Menu">☰</button>
+      </div>
+    </header>
+
+    <!-- ============ VIEWS ============ -->
+    <main class="wrap">
+      <!-- MATCHES -->
+      <section class="view" id="view-matches">
+        <div class="viewhead">
+          <div>
+            <h1>Matches</h1>
+            <p class="sub" id="matchdayLabel">Loading fixtures…</p>
+          </div>
+          <div class="md-picker">
+            <button class="iconbtn" id="mdPrev" title="Previous matchday">‹</button>
+            <span class="mono" id="mdNow">MD –</span>
+            <button class="iconbtn" id="mdNext" title="Next matchday">›</button>
+          </div>
+        </div>
+        <div id="liveStrip"></div>
+        <div class="leaders-strip" id="leadersStrip"></div>
+        <div class="fixture-grid" id="fixtureGrid"><div class="skeleton-cards"></div></div>
+      </section>
+
+      <!-- MATCH DETAIL -->
+      <section class="view" id="view-match" hidden>
+        <button class="backlink" data-nav="matches">← All matches</button>
+        <div id="matchDetail"></div>
+      </section>
+
+      <!-- PLAYERS -->
+      <section class="view" id="view-players" hidden>
+        <div class="viewhead">
+          <div>
+            <h1>Players</h1>
+            <p class="sub" id="playersCount">–</p>
+          </div>
+          <button class="btn ghost" id="compareToggle">Compare two players</button>
+        </div>
+        <div class="filters">
+          <input id="playerSearch" type="text" placeholder="Filter by name…">
+          <select id="posFilter">
+            <option value="">All positions</option>
+            <option>Forward</option>
+            <option>Midfielder</option>
+            <option>Defender</option>
+            <option>Goalkeeper</option>
+          </select>
+          <select id="clubFilter"><option value="">All clubs</option></select>
+          <select id="sortFilter">
+            <option value="overall_rating">Sort: Overall</option>
+            <option value="goals">Sort: Goals</option>
+            <option value="assists">Sort: Assists</option>
+            <option value="key_passes">Sort: Key passes</option>
+            <option value="tackles_won">Sort: Tackles won</option>
+            <option value="clean_sheets">Sort: Clean sheets</option>
+          </select>
+        </div>
+        <div id="compareBar" class="comparebar" hidden>
+          <div class="cmp-slot" id="cmpSlotA">Pick player A ↓</div>
+          <span class="vs">VS</span>
+          <div class="cmp-slot" id="cmpSlotB">Pick player B ↓</div>
+          <button class="btn small" id="cmpGo" disabled>Compare</button>
+          <button class="btn small ghost" id="cmpClear">Clear</button>
+        </div>
+        <div id="h2hPanel"></div>
+        <div class="player-grid" id="playerGrid"></div>
+      </section>
+
+      <!-- CLUBS -->
+      <section class="view" id="view-clubs" hidden>
+        <div class="viewhead">
+          <div>
+            <h1>Clubs</h1>
+            <p class="sub">20 teams · ratings, tactics &amp; form</p>
+          </div>
+          <button class="btn ghost" id="clubCompareToggle">Compare two clubs</button>
+        </div>
+        <div id="clubCompareBar" class="comparebar" hidden>
+          <div class="cmp-slot" id="clubSlotA">Pick club A ↓</div>
+          <span class="vs">VS</span>
+          <div class="cmp-slot" id="clubSlotB">Pick club B ↓</div>
+          <button class="btn small" id="clubCmpGo" disabled>Compare</button>
+          <button class="btn small ghost" id="clubCmpClear">Clear</button>
+        </div>
+        <div id="clubH2h"></div>
+        <div class="club-grid" id="clubGrid"></div>
+      </section>
+
+      <!-- TABLE -->
+      <section class="view" id="view-table" hidden>
+        <div class="viewhead">
+          <div>
+            <h1>La Liga Table</h1>
+            <p class="sub" id="tableSub">Official standings</p>
+          </div>
+        </div>
+        <div class="table-card">
+          <table class="stattable" id="standingsTable">
+            <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>OVR</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="legend">
+          <span><i class="sw ucl"></i>Champions League</span>
+          <span><i class="sw uel"></i>Europa League</span>
+          <span><i class="sw rel"></i>Relegation</span>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>STATSPHERE · La Liga intelligence engine · Dixon-Coles calibrated simulation</span>
+      <span class="mono" id="syncNote"></span>
+    </footer>
+  </div>
+
+  <!-- PLAYER MODAL -->
+  <div class="modal-veil" id="playerModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="iconbtn modal-x" data-close>✕</button>
+      <div id="playerModalBody"></div>
+    </div>
+  </div>
+
+  <!-- CLUB MODAL -->
+  <div class="modal-veil" id="clubModal" hidden>
+    <div class="modal wide" role="dialog" aria-modal="true">
+      <button class="iconbtn modal-x" data-close>✕</button>
+      <div id="clubModalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="app.js?v=6.0"></script>
+</body>
+</html>

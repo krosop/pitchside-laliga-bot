@@ -1,0 +1,101 @@
+season_id,rank,team,played,won,drawn,lost,goals_for,goals_against,goal_difference,points,qualification
+2021-22,1,Real Madrid,38,26,8,4,80,31,49,86,Champion (UCL group stage)
+2021-22,2,FC Barcelona,38,21,10,7,68,38,30,73,UEFA Champions League
+2021-22,3,Atletico de Madrid,38,21,8,9,65,43,22,71,UEFA Champions League
+2021-22,4,Sevilla FC,38,18,16,4,53,30,23,70,UEFA Champions League
+2021-22,5,Real Betis,38,19,8,11,62,40,22,65,UEFA Europa League
+2021-22,6,Real Sociedad,38,17,11,10,40,37,3,62,UEFA Conference League play-off
+2021-22,7,Villarreal CF,38,16,11,11,63,37,26,59,
+2021-22,8,Athletic Club,38,14,13,11,43,36,7,55,
+2021-22,9,Valencia CF,38,11,15,12,48,53,-5,48,
+2021-22,10,CA Osasuna,38,12,11,15,37,51,-14,47,
+2021-22,11,RC Celta de Vigo,38,12,10,16,43,43,0,46,
+2021-22,12,Rayo Vallecano,38,11,9,18,39,50,-11,42,
+2021-22,13,Elche CF,38,11,9,18,40,52,-12,42,
+2021-22,14,RCD Espanyol,38,10,12,16,40,53,-13,42,
+2021-22,15,Getafe CF,38,8,15,15,33,41,-8,39,
+2021-22,16,Cadiz CF,38,8,15,15,35,51,-16,39,
+2021-22,17,RCD Mallorca,38,10,9,19,36,63,-27,39,
+2021-22,18,Granada CF,38,8,14,16,44,61,-17,38,Relegated to Segunda Division
+2021-22,19,Levante UD,38,8,11,19,51,76,-25,35,Relegated to Segunda Division
+2021-22,20,Deportivo Alaves,38,8,7,23,31,65,-34,31,Relegated to Segunda Division
+2022-23,1,FC Barcelona,38,28,4,6,70,20,50,88,Champion (UCL group stage)
+2022-23,2,Real Madrid,38,24,6,8,75,36,39,78,UEFA Champions League
+2022-23,3,Atletico de Madrid,38,23,8,7,70,33,37,77,UEFA Champions League
+2022-23,4,Real Sociedad,38,21,8,9,51,35,16,71,UEFA Champions League
+2022-23,5,Villarreal CF,38,19,7,12,59,40,19,64,UEFA Europa League
+2022-23,6,Real Betis,38,17,9,12,46,41,5,60,UEFA Conference League play-off
+2022-23,7,CA Osasuna,38,15,8,15,37,42,-5,53,
+2022-23,8,Athletic Club,38,14,9,15,47,43,4,51,
+2022-23,9,RCD Mallorca,38,14,8,16,37,43,-6,50,
+2022-23,10,Girona FC,38,13,10,15,58,55,3,49,
+2022-23,11,Sevilla FC,38,13,10,15,47,54,-7,49,
+2022-23,12,Rayo Vallecano,38,13,10,15,45,53,-8,49,
+2022-23,13,RC Celta de Vigo,38,11,10,17,43,53,-10,43,
+2022-23,14,Valencia CF,38,11,9,18,42,45,-3,42,
+2022-23,15,Getafe CF,38,10,12,16,34,45,-11,42,
+2022-23,16,Cadiz CF,38,10,12,16,30,53,-23,42,
+2022-23,17,UD Almeria,38,11,8,19,49,65,-16,41,
+2022-23,18,Real Valladolid,38,11,7,20,33,63,-30,40,Relegated to Segunda Division
+2022-23,19,RCD Espanyol,38,8,13,17,52,69,-17,37,Relegated to Segunda Division
+2022-23,20,Elche CF,38,5,10,23,30,67,-37,25,Relegated to Segunda Division
+2023-24,1,Real Madrid,38,29,8,1,87,26,61,95,Champion (UCL group stage)
+2023-24,2,FC Barcelona,38,26,7,5,79,44,35,85,UEFA Champions League
+2023-24,3,Girona FC,38,25,6,7,85,46,39,81,UEFA Champions League
+2023-24,4,Atletico de Madrid,38,24,4,10,70,43,27,76,UEFA Champions League
+2023-24,5,Athletic Club,38,19,11,8,61,37,24,68,UEFA Europa League
+2023-24,6,Real Sociedad,38,16,12,10,51,39,12,60,UEFA Conference League play-off
+2023-24,7,Real Betis,38,14,15,9,48,45,3,57,
+2023-24,8,Villarreal CF,38,14,11,13,65,65,0,53,
+2023-24,9,Valencia CF,38,13,10,15,40,45,-5,49,
+2023-24,10,Deportivo Alaves,38,12,10,16,36,46,-10,46,
+2023-24,11,CA Osasuna,38,12,9,17,45,56,-11,45,
+2023-24,12,Getafe CF,38,10,13,15,42,54,-12,43,
+2023-24,13,Sevilla FC,38,10,11,17,48,54,-6,41,
+2023-24,14,RC Celta de Vigo,38,10,11,17,46,57,-11,41,
+2023-24,15,RCD Mallorca,38,8,16,14,33,44,-11,40,
+2023-24,16,UD Las Palmas,38,10,10,18,33,47,-14,40,
+2023-24,17,Rayo Vallecano,38,8,14,16,29,48,-19,38,
+2023-24,18,Cadiz CF,38,6,15,17,26,55,-29,33,Relegated to Segunda Division
+2023-24,19,UD Almeria,38,3,12,23,43,75,-32,21,Relegated to Segunda Division
+2023-24,20,Granada CF,38,4,9,25,38,79,-41,21,Relegated to Segunda Division
+2024-25,1,FC Barcelona,38,28,4,6,102,39,63,88,Champion (UCL group stage)
+2024-25,2,Real Madrid,38,26,6,6,78,38,40,84,UEFA Champions League
+2024-25,3,Atletico de Madrid,38,22,10,6,68,30,38,76,UEFA Champions League
+2024-25,4,Athletic Club,38,19,13,6,54,29,25,70,UEFA Champions League
+2024-25,5,Villarreal CF,38,20,10,8,71,51,20,70,UEFA Europa League
+2024-25,6,Real Betis,38,16,12,10,57,50,7,60,UEFA Conference League play-off
+2024-25,7,RC Celta de Vigo,38,16,7,15,59,57,2,55,
+2024-25,8,CA Osasuna,38,12,16,10,48,52,-4,52,
+2024-25,9,Rayo Vallecano,38,13,13,12,41,45,-4,52,
+2024-25,10,RCD Mallorca,38,13,9,16,35,44,-9,48,
+2024-25,11,Valencia CF,38,11,13,14,44,54,-10,46,
+2024-25,12,Real Sociedad,38,13,7,18,35,46,-11,46,
+2024-25,13,Getafe CF,38,11,9,18,34,39,-5,42,
+2024-25,14,Deportivo Alaves,38,10,12,16,38,48,-10,42,
+2024-25,15,RCD Espanyol,38,11,9,18,40,51,-11,42,
+2024-25,16,Sevilla FC,38,10,11,17,42,55,-13,41,
+2024-25,17,Girona FC,38,11,8,19,44,60,-16,41,
+2024-25,18,CD Leganes,38,9,13,16,39,56,-17,40,Relegated to Segunda Division
+2024-25,19,UD Las Palmas,38,8,8,22,40,61,-21,32,Relegated to Segunda Division
+2024-25,20,Real Valladolid,38,4,4,30,26,90,-64,16,Relegated to Segunda Division
+2025-26,1,FC Barcelona,38,31,1,6,95,36,59,94,Champion (UCL group stage)
+2025-26,2,Real Madrid,38,27,5,6,77,35,42,86,UEFA Champions League
+2025-26,3,Villarreal CF,38,22,6,10,72,46,26,72,UEFA Champions League
+2025-26,4,Atletico de Madrid,38,21,6,11,62,44,18,69,UEFA Champions League
+2025-26,5,Real Betis,38,15,15,8,59,48,11,60,UEFA Europa League
+2025-26,6,RC Celta de Vigo,38,14,12,12,53,48,5,54,UEFA Conference League play-off
+2025-26,7,Getafe CF,38,15,6,17,32,38,-6,51,
+2025-26,8,Rayo Vallecano,38,12,14,12,41,44,-3,50,
+2025-26,9,Valencia CF,38,13,10,15,46,55,-9,49,
+2025-26,10,Real Sociedad,38,11,13,14,59,61,-2,46,
+2025-26,11,RCD Espanyol,38,12,10,16,43,55,-12,46,
+2025-26,12,Athletic Club,38,13,6,19,43,58,-15,45,
+2025-26,13,Elche CF,38,10,13,15,49,57,-8,43,
+2025-26,14,Deportivo Alaves,38,11,10,17,44,56,-12,43,
+2025-26,15,Sevilla FC,38,12,7,19,46,60,-14,43,
+2025-26,16,CA Osasuna,38,11,9,18,44,50,-6,42,
+2025-26,17,RCD Mallorca,38,11,9,18,47,57,-10,42,
+2025-26,18,Levante UD,38,11,9,18,47,61,-14,42,Relegated to Segunda Division
+2025-26,19,Girona FC,38,9,14,15,39,55,-16,41,Relegated to Segunda Division
+2025-26,20,Real Oviedo,38,6,11,21,26,60,-34,29,Relegated to Segunda Division

@@ -1,0 +1,12 @@
+{
+  "_comment": "European competition nights per club slug. Fatigue applies to league fixtures within 5 days after a night. Multiple entries per club allowed; stale past dates simply never match again.",
+  "nights": [
+    { "slug": "real-madrid", "comp": "UEFA Champions League", "opponent": "VfB Stuttgart", "date": "2026-09-09" },
+    { "slug": "fc-barcelona", "comp": "UEFA Champions League", "opponent": "AS Monaco", "date": "2026-09-08" },
+    { "slug": "atletico-madrid", "comp": "UEFA Champions League", "opponent": "RB Leipzig", "date": "2026-09-09" },
+    { "slug": "atletico-de-madrid", "comp": "UEFA Champions League", "opponent": "RB Leipzig", "date": "2026-09-09" },
+    { "slug": "real-betis", "comp": "UEFA Champions League", "opponent": "LOSC Lille", "date": "2026-09-08" },
+    { "slug": "athletic-club", "comp": "UEFA Europa League", "opponent": "AS Roma", "date": "2026-09-10" },
+    { "slug": "real-sociedad", "comp": "UEFA Europa League", "opponent": "OGC Nice", "date": "2026-09-10" }
+  ]
+}

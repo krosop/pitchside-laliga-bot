@@ -1,0 +1,27 @@
+team_id,name,nickname,code,city,founded,stadium,primary_color,secondary_color,crest_url
+1,Deportivo Alaves,Alaves,ALA,Vitoria-Gasteiz,1921,Mendizorroza,#0f39b8,#ffffff,https://assets.laliga.com/assets/2020/09/01/medium/27002754a98bf535807fe49a24cc63ea.png
+2,UD Almeria,Almeria,ALM,Almeria,1989,Power Horse Stadium,#d91a21,,
+3,Athletic Club,Athletic Bilbao,ATH,Bilbao,1898,Estadio San Mamés,#f21e27,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/athletic.png
+4,Atletico de Madrid,Atletico Madrid,ATM,Madrid,1903,Riyadh Air Metropolitano,#f21e27,#ffffff,https://assets.laliga.com/assets/2024/06/17/medium/cbc5c8cc8c3e8abd0e175c00ee53b723.png
+5,FC Barcelona,Barcelona,BAR,Barcelona,1899,Spotify Camp Nou,#0f39b8,#bc161c,https://assets.laliga.com/assets/2019/06/07/medium/barcelona.png
+6,Real Betis,Real Betis,BET,Seville,1907,Estadio La Cartuja,#038316,#ffffff,https://assets.laliga.com/assets/2022/09/15/medium/e4a09419d3bd115b8f3dab73d480e146.png
+7,Cadiz CF,Cadiz,CAD,Cadiz,1910,Nuevo Mirandilla,#f7d417,,
+8,RC Celta de Vigo,Celta Vigo,CEL,Vigo,1923,Estadio ABANCA Balaídos,#52c3f1,#ffffff,https://assets.laliga.com/assets/2025/07/11/medium/0a796827f9e758d7d750db805adde7c5.png
+9,Elche CF,Elche,ELC,Elche,1923,Estadio Martínez Valero,#038316,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/elche.png
+10,RCD Espanyol,Espanyol,ESP,Cornella de Llobregat,1900,RCDE Stadium,#5a7cf1,#ffffff,https://assets.laliga.com/assets/2025/07/02/medium/e9177f6edd72c6360602adbca85e442f.png
+11,Getafe CF,Getafe,GET,Getafe,1983,Coliseum,#0f39b8,#ffffff,https://assets.laliga.com/assets/2023/05/12/medium/dc59645c96bc2c9010341c16dd6d4bfa.png
+12,Girona FC,Girona,GIR,Girona,1930,Montilivi,#d4001f,,
+13,Granada CF,Granada,GRA,Granada,1931,Nuevo Los Carmenes,#b40a2d,,
+14,UD Las Palmas,Las Palmas,LPA,Las Palmas,1949,Gran Canaria,#f7d417,,
+15,CD Leganes,Leganes,LEG,Leganes,1928,Butarque,#0a4ea2,,
+16,Levante UD,Levante,LEV,Valencia,1909,Estadio Ciutat de València,#bc161c,#08237f,https://assets.laliga.com/assets/2019/06/07/medium/levante.png
+17,RCD Mallorca,Mallorca,MLL,Palma,1916,Son Moix,#e20613,,
+18,CA Osasuna,Osasuna,OSA,Pamplona,1920,Estadio El Sadar,#bc161c,#020f42,https://assets.laliga.com/assets/2019/06/07/medium/osasuna.png
+19,Real Oviedo,Oviedo,OVI,Oviedo,1926,Carlos Tartiere,#0a4ea2,,
+20,Real Madrid,Real Madrid,RMA,Madrid,1902,Bernabéu,#ffffff,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/real-madrid.png
+21,Sevilla FC,Sevilla,SEV,Seville,1890,Ramón Sánchez-Pizjuán,#f21e27,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/sevilla.png
+22,Real Sociedad,Real Sociedad,RSO,San Sebastian,1909,Anoeta,#194beb,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/real-sociedad.png
+23,Valencia CF,Valencia,VAL,Valencia,1919,Camp de Mestalla,#000000,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/valencia.png
+24,Real Valladolid,Valladolid,VLL,Valladolid,1928,Jose Zorrilla,#7b1fa2,,
+25,Rayo Vallecano,Rayo Vallecano,RAY,Madrid,1924,Estadio de Vallecas,#f21e27,#ffffff,https://assets.laliga.com/assets/2023/04/27/medium/57d9950a8745ead226c04d37235c0786.png
+26,Villarreal CF,Villarreal,VIL,Villarreal,1923,Estadio de la Cerámica,#ffd301,#ffffff,https://assets.laliga.com/assets/2019/06/07/medium/villarreal.png

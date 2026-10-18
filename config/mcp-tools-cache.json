@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-09-29T11:06:32.302Z",
+  "counts": {
+    "ok": 0,
+    "auth": 0,
+    "offline": 0,
+    "http": 0,
+    "error": 1
+  },
+  "servers": [
+    {
+      "name": "autoclaw-productivity",
+      "status": "error",
+      "durationMs": 20,
+      "transport": "HTTP http://127.0.0.1:19681/mcp",
+      "error": "SSE error: Unable to connect. Is the computer able to access the url?",
+      "tools": []
+    }
+  ]
+}

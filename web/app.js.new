@@ -1,0 +1,1693 @@
+/**
+ * STATSPHERE — Futuristic Sports Analytics Terminal
+ * 4 Complete Views: Home, Fixtures, Players, Clubs
+ * Opta Telemetry + Real La Liga API Endpoints
+ */
+
+const API_BASE = "";
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let allPlayers = [];
+let allClubs = [];
+let allStandings = [];
+let allFixtures = [];
+let featuredStars = [];
+let currentFeaturedIndex = 0;
+let currentSelectedClubSlug = "fc-barcelona";
+let currentMatchday = 4;
+let activeView = "home";
+
+// Filter States
+let playerFilters = { query: "", club: "all", pos: "all", sort: "rating-desc" };
+let fixtureFilters = { query: "", status: "all", matchday: 4 };
+let clubFilters = { query: "", sort: "position" };
+
+// ============================================================
+// DOM ELEMENTS
+// ============================================================
+// Top bar & OS
+const systemClock = document.getElementById("bentosystemClock");
+const osPlayerCount = document.getElementById("bentoos-player-count");
+const osFixtureCount = document.getElementById("bentoos-fixture-count");
+
+// Search & Nav
+const globalSearchInput = document.getElementById("bentoglobalSearchInput");
+const favoritesList = document.getElementById("bentofavoritesList");
+const navMainMenu = document.getElementById("bentonavMainMenu");
+
+// HOME: Fixtures Hub
+const dateSelectorBar = document.getElementById("bentodateSelectorBar");
+const matchGridContainer = document.getElementById("bentomatchGridContainer");
+const liveMatchCount = document.getElementById("bentoliveMatchCount");
+const currentMatchdayNum = document.getElementById("bentocurrentMatchdayNum");
+const accordionBody = document.getElementById("bentoaccordionBody");
+const acArrow = document.getElementById("bentoacArrow");
+const acStateText = document.getElementById("bentoacStateText");
+
+// HOME: Featured Player
+const featuredAvatar = document.getElementById("bentofeaturedAvatar");
+const featuredOvr = document.getElementById("bentofeaturedOvr");
+const featuredName = document.getElementById("bentofeaturedName");
+const featuredClub = document.getElementById("bentofeaturedClub");
+const featuredMetaTags = document.getElementById("bentofeaturedMetaTags");
+const featuredPositionBadge = document.getElementById("bentofeaturedPositionBadge");
+const featuredGoals = document.getElementById("bentofeaturedGoals");
+const featuredAssists = document.getElementById("bentofeaturedAssists");
+const featuredApps = document.getElementById("bentofeaturedApps");
+const featuredRadarSvg = document.getElementById("bentofeaturedRadarSvg");
+const featuredTimelineSvg = document.getElementById("bentofeaturedTimelineSvg");
+const featuredProfileBtn = document.getElementById("bentofeaturedProfileBtn");
+
+// HOME: Right Sidebar (League Table & Club Focus)
+const leagueTableBody = document.getElementById("bentoleagueTableBody");
+const clubFocusShield = document.getElementById("bentoclubFocusShield");
+const clubFocusName = document.getElementById("bentoclubFocusName");
+const clubFocusFormation = document.getElementById("bentoclubFocusFormation");
+const clubFocusFormDots = document.getElementById("bentoclubFocusFormDots");
+const clubFocusScorers = document.getElementById("bentoclubFocusScorers");
+const clubFocusNextFixtures = document.getElementById("bentoclubFocusNextFixtures");
+
+// FIXTURES VIEW
+const fixtureSearchInput = document.getElementById("bentofixtureSearchInput");
+const fixtureStatusFilters = document.getElementById("bentofixtureStatusFilters");
+const fixtureMatchdaySelect = document.getElementById("bentofixtureMatchdaySelect");
+const fixturesMatchdayNav = document.getElementById("bentofixturesMatchdayNav");
+const fixturesFullList = document.getElementById("bentofixturesFullList");
+const fxTotalCount = document.getElementById("bentofxTotalCount");
+const fxPlayedCount = document.getElementById("bentofxPlayedCount");
+const fxRemainingCount = document.getElementById("bentofxRemainingCount");
+
+// PLAYERS VIEW
+const playerSearchInput = document.getElementById("bentoplayerSearchInput");
+const playerSearchClear = document.getElementById("bentoplayerSearchClear");
+const playerClubSelect = document.getElementById("bentoplayerClubSelect");
+const playerPositionPills = document.getElementById("bentoplayerPositionPills");
+const playerSortSelect = document.getElementById("bentoplayerSortSelect");
+const playerCountBadge = document.getElementById("bentoplayerCountBadge");
+const playersCatalogGrid = document.getElementById("bentoplayersCatalogGrid");
+const playersStatsRibbon = document.getElementById("bentoplayersStatsRibbon");
+
+// CLUBS VIEW
+const clubSearchInput = document.getElementById("bentoclubSearchInput");
+const clubSortSelect = document.getElementById("bentoclubSortSelect");
+const clubCountBadge = document.getElementById("bentoclubCountBadge");
+const clubsCatalogGrid = document.getElementById("bentoclubsCatalogGrid");
+
+// MODALS
+const playerModal = document.getElementById("bentoplayerModal");
+const modalContent = document.getElementById("bentomodalContent");
+const modalCloseBtn = document.getElementById("bentomodalCloseBtn");
+const clubModal = document.getElementById("bentoclubModal");
+const clubModalContent = document.getElementById("bentoclubModalContent");
+const clubModalCloseBtn = document.getElementById("bentoclubModalCloseBtn");
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  initClock();
+  initEventListeners();
+  loadAllData();
+  pollLiveTelemetry();
+  setInterval(pollLiveTelemetry, 60000);
+});
+
+// ============================================================
+// 1. CLOCK
+// ============================================================
+function initClock() {
+  function tick() {
+    if (!systemClock) return;
+    const now = new Date();
+    const h = String(now.getUTCHours()).padStart(2, "0");
+    const m = String(now.getUTCMinutes()).padStart(2, "0");
+    const s = String(now.getUTCSeconds()).padStart(2, "0");
+    systemClock.textContent = `${h}:${m}:${s} UTC`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ============================================================
+// 2. VIEW SWITCHER
+// ============================================================
+function switchView(viewName) {
+  activeView = viewName;
+
+  // Update Nav links active state
+  document.querySelectorAll(".nav-link-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.nav === viewName);
+  });
+
+  // Switch visible section
+  document.querySelectorAll(".view-section").forEach(sec => {
+    sec.classList.remove("active");
+  });
+
+  const target = document.getElementById(`view-${viewName}`);
+  if (target) {
+    target.classList.add("active");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Trigger view renderers
+  if (viewName === "players") {
+    applyPlayerFilters();
+  } else if (viewName === "clubs") {
+    applyClubFilters();
+  } else if (viewName === "fixtures") {
+    renderFullFixturesView();
+  }
+}
+
+// ============================================================
+// 3. EVENT LISTENERS
+// ============================================================
+function initEventListeners() {
+  // Global Keyboard Shortcuts
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      globalSearchInput?.focus();
+    } else if (e.key === "Escape") {
+      closePlayerModal();
+      closeClubModal();
+      hideQuickSearch();
+    }
+  });
+
+  // Navigation Links
+  document.querySelectorAll(".nav-link-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const nav = btn.dataset.nav;
+      if (nav) switchView(nav);
+    });
+  });
+
+  // Favorites clicks
+  favoritesList?.addEventListener("click", (e) => {
+    const item = e.target.closest(".fav-item");
+    if (!item) return;
+    document.querySelectorAll(".fav-item").forEach(el => el.classList.remove("active"));
+    item.classList.add("active");
+    const slug = item.dataset.club;
+    if (slug) {
+      if (activeView !== "home") switchView("home");
+      loadClubFocus(slug);
+    }
+  });
+
+  // Global Search
+  if (globalSearchInput) {
+    globalSearchInput.addEventListener("input", debounce(handleGlobalSearch, 200));
+    globalSearchInput.addEventListener("focus", () => {
+      if (globalSearchInput.value.trim().length >= 2) handleGlobalSearch();
+    });
+  }
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".nav-search-wrap")) hideQuickSearch();
+  });
+
+  // Home: Matchday & Date Pills
+  dateSelectorBar?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".date-pill");
+    if (!pill) return;
+    dateSelectorBar.querySelectorAll(".date-pill").forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    const filter = pill.dataset.filter || "this-week";
+    renderFixturesGrid(filter);
+  });
+
+  // Fixtures View: Search & Filters
+  if (fixtureSearchInput) {
+    fixtureSearchInput.addEventListener("input", debounce((e) => {
+      fixtureFilters.query = e.target.value.trim().toLowerCase();
+      renderFullFixturesView();
+    }, 200));
+  }
+
+  fixtureStatusFilters?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-tag-pill");
+    if (!pill) return;
+    fixtureStatusFilters.querySelectorAll(".filter-tag-pill").forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    fixtureFilters.status = pill.dataset.status;
+    renderFullFixturesView();
+  });
+
+  if (fixtureMatchdaySelect) {
+    fixtureMatchdaySelect.addEventListener("change", (e) => {
+      const val = e.target.value;
+      fixtureFilters.matchday = val === "all" ? "all" : parseInt(val, 10);
+      updateFixturesMatchdayNavActive(fixtureFilters.matchday);
+      renderFullFixturesView();
+    });
+  }
+
+  // Players View: Filters
+  if (playerSearchInput) {
+    playerSearchInput.addEventListener("input", debounce((e) => {
+      playerFilters.query = e.target.value.trim().toLowerCase();
+      if (playerSearchClear) playerSearchClear.style.display = playerFilters.query ? "block" : "none";
+      applyPlayerFilters();
+    }, 200));
+  }
+
+  playerSearchClear?.addEventListener("click", () => {
+    if (playerSearchInput) playerSearchInput.value = "";
+    playerFilters.query = "";
+    if (playerSearchClear) playerSearchClear.style.display = "none";
+    applyPlayerFilters();
+  });
+
+  if (playerClubSelect) {
+    playerClubSelect.addEventListener("change", (e) => {
+      playerFilters.club = e.target.value;
+      applyPlayerFilters();
+    });
+  }
+
+  playerPositionPills?.addEventListener("click", (e) => {
+    const pill = e.target.closest(".filter-tag-pill");
+    if (!pill) return;
+    playerPositionPills.querySelectorAll(".filter-tag-pill").forEach(p => p.classList.remove("active"));
+    pill.classList.add("active");
+    playerFilters.pos = pill.dataset.pos;
+    applyPlayerFilters();
+  });
+
+  if (playerSortSelect) {
+    playerSortSelect.addEventListener("change", (e) => {
+      playerFilters.sort = e.target.value;
+      applyPlayerFilters();
+    });
+  }
+
+  // Clubs View: Filters
+  if (clubSearchInput) {
+    clubSearchInput.addEventListener("input", debounce((e) => {
+      clubFilters.query = e.target.value.trim().toLowerCase();
+      applyClubFilters();
+    }, 200));
+  }
+
+  if (clubSortSelect) {
+    clubSortSelect.addEventListener("change", (e) => {
+      clubFilters.sort = e.target.value;
+      applyClubFilters();
+    });
+  }
+
+  // Modals close
+  modalCloseBtn?.addEventListener("click", closePlayerModal);
+  playerModal?.addEventListener("click", (e) => { if (e.target === playerModal) closePlayerModal(); });
+  clubModalCloseBtn?.addEventListener("click", closeClubModal);
+  clubModal?.addEventListener("click", (e) => { if (e.target === clubModal) closeClubModal(); });
+}
+
+// ============================================================
+// 4. MASTER DATA LOADER
+// ============================================================
+async function loadAllData() {
+  try {
+    // 1. Standings
+    const stdRes = await fetch(`${API_BASE}/api/standings`);
+    if (stdRes.ok) {
+      const sd = await stdRes.json();
+      allStandings = sd.standings || [];
+      renderLeagueTable(allStandings);
+    }
+
+    // 2. Players
+    const plRes = await fetch(`${API_BASE}/api/players?limit=600`);
+    if (plRes.ok) {
+      const pd = await plRes.json();
+      allPlayers = pd.players || [];
+      if (osPlayerCount) osPlayerCount.textContent = allPlayers.length;
+      initFeaturedStars();
+      populatePlayersViewControls();
+    }
+
+    // 3. Clubs
+    const clRes = await fetch(`${API_BASE}/api/clubs`);
+    if (clRes.ok) {
+      const cd = await clRes.json();
+      allClubs = cd.clubs || [];
+    }
+
+    // 4. Fixtures
+    const fxRes = await fetch(`${API_BASE}/api/fixtures`);
+    if (fxRes.ok) {
+      const fd = await fxRes.json();
+      allFixtures = fd.fixtures || [];
+      currentMatchday = fd.current_matchday || 1;
+      fixtureFilters.matchday = currentMatchday;
+      
+      if (osFixtureCount) osFixtureCount.textContent = allFixtures.length;
+      if (currentMatchdayNum) currentMatchdayNum.textContent = `Round ${Math.max(1, currentMatchday - 1)} (FT) · Upcoming: MD ${currentMatchday}`;
+
+      buildHomeMatchdayPills();
+      renderFixturesGrid("this-week");
+      populateFixturesViewControls();
+    }
+
+    // 5. Initial Club Focus
+    const topClub = allStandings.length > 0 ? allStandings[0] : null;
+    currentSelectedClubSlug = topClub ? topClub.slug : "fc-barcelona";
+    loadClubFocus(currentSelectedClubSlug);
+
+  } catch (err) {
+    console.error("STATSPHERE data load error:", err);
+  }
+}
+
+async function pollLiveTelemetry() {
+  try {
+    const res = await fetch(`${API_BASE}/api/live`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const liveCount = data.count || 0;
+    const liveBadge = document.getElementById("bentoliveMatchBadge");
+    const feedPill = document.getElementById("bentofeedStatusPill");
+
+    if (liveBadge) {
+      if (liveCount > 0) {
+        liveBadge.className = "live-ticker-badge active-live";
+        liveBadge.innerHTML = `<span class="pulse-red"></span> <span>${liveCount} LIVE NOW</span>`;
+      } else {
+        liveBadge.className = "live-ticker-badge no-live";
+        liveBadge.innerHTML = `<span class="dot-idle"></span> <span>0 LIVE · OFFICIAL FEED CONNECTED</span>`;
+      }
+    }
+
+    if (feedPill) {
+      if (liveCount > 0) {
+        feedPill.innerHTML = `<span class="pulse-red"></span> <span>API-FOOTBALL · ${liveCount} MATCH IN PLAY</span>`;
+      } else {
+        feedPill.innerHTML = `<span class="pulse-green"></span> <span>API-FOOTBALL · OFFICIAL LIVE FEED</span>`;
+      }
+    }
+
+    if (data.live_matches && data.live_matches.length > 0) {
+      if (activeView === "home") renderFixturesGrid("this-week");
+      if (activeView === "fixtures") renderFullFixturesView();
+    }
+  } catch (err) {
+    console.debug("Live telemetry check error:", err);
+  }
+}
+
+// ============================================================
+// 5. VIEW 1 (HOME): THIS WEEK'S FIXTURES & MATCH CENTER
+// ============================================================
+function buildHomeMatchdayPills() {
+  if (!dateSelectorBar) return;
+  const currentMd = currentMatchday || 1;
+  const lastMd = Math.max(1, currentMd - 1);
+  dateSelectorBar.innerHTML = `
+    <button class="date-pill active" data-filter="this-week">📅 Round ${currentMd} (Upcoming Schedule)</button>
+    <button class="date-pill" data-filter="last-week">⭐ Round ${lastMd} Results (Latest)</button>
+    <button class="date-pill" data-filter="top-clashes">🔥 Big Clashes</button>
+    <button class="date-pill" data-filter="all-played">✅ All Completed Matches</button>
+  `;
+}
+
+function renderFixturesGrid(filter = "this-week") {
+  if (!matchGridContainer) return;
+
+  let fixtures = [];
+  const currentMd = currentMatchday || 1;
+  const lastMd = Math.max(1, currentMd - 1);
+
+  if (filter === "last-week") {
+    // Latest completed matchday
+    fixtures = allFixtures.filter(f => f.matchday === lastMd);
+    // Prioritize high-profile matches first: Real Madrid, Barcelona, Atletico, etc.
+    const topClubs = ["fc-barcelona", "real-madrid", "atletico-de-madrid", "athletic-club", "real-betis"];
+    fixtures.sort((a, b) => {
+      const aTop = topClubs.includes(a.home_slug) || topClubs.includes(a.away_slug);
+      const bTop = topClubs.includes(b.home_slug) || topClubs.includes(b.away_slug);
+      if (aTop && !bTop) return -1;
+      if (!aTop && bTop) return 1;
+      return (b.kickoff_time || "").localeCompare(a.kickoff_time || "");
+    });
+  } else if (filter === "this-week") {
+    // Upcoming scheduled fixtures
+    fixtures = allFixtures.filter(f => f.matchday === currentMd);
+    fixtures.sort((a, b) => (a.kickoff_time || "").localeCompare(b.kickoff_time || ""));
+  } else if (filter === "top-clashes") {
+    // Big matches across current and last
+    const elite = ["fc-barcelona", "real-madrid", "atletico-de-madrid", "athletic-club", "real-betis", "real-sociedad"];
+    fixtures = allFixtures.filter(f => (f.matchday === currentMd || f.matchday === lastMd) && 
+      (elite.includes(f.home_slug) || elite.includes(f.away_slug)));
+  } else if (filter === "all-played") {
+    fixtures = allFixtures.filter(f => f.status === "FINISHED");
+    fixtures.sort((a, b) => (b.kickoff_time || "").localeCompare(a.kickoff_time || ""));
+  } else if (typeof filter === "number") {
+    fixtures = allFixtures.filter(f => f.matchday === filter);
+  } else {
+    fixtures = allFixtures.filter(f => f.matchday === currentMd);
+  }
+
+  // Update Live Counter badge honestly and accurately
+  const live = allFixtures.filter(f => f.status === "LIVE" || f.status === "IN_PROGRESS");
+  const liveBadge = document.getElementById("bentoliveMatchBadge");
+  if (liveBadge) {
+    if (live.length > 0) {
+      liveBadge.className = "live-ticker-badge active-live";
+      liveBadge.innerHTML = `<span class="pulse-red"></span> <span>${live.length} LIVE NOW</span>`;
+    } else {
+      liveBadge.className = "live-ticker-badge no-live";
+      liveBadge.innerHTML = `<span class="dot-idle"></span> <span>0 LIVE · ROUND 4 COMPLETE</span>`;
+    }
+  }
+
+  if (fixtures.length === 0) {
+    matchGridContainer.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--t3);padding:2.5rem;font-size:0.85rem;">No matches scheduled for this selection.</div>`;
+    return;
+  }
+
+  const shown = fixtures.slice(0, 6);
+  matchGridContainer.innerHTML = `
+    <div class="match-grid-inner">
+      ${shown.map(f => buildMatchCardHtml(f)).join("")}
+    </div>
+    ${fixtures.length > 6 ? `
+      <div class="more-fixtures-hint" onclick="switchView('fixtures')">
+        <span>+ ${fixtures.length - 6} more matches in full schedule</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    ` : ""}
+  `;
+}
+
+function buildMatchCardHtml(f) {
+  const isLive = f.status === "LIVE" || f.status === "IN_PROGRESS";
+  const isFinished = f.status === "FINISHED";
+
+  const homeName = f.home_nickname || f.home_name || "Home";
+  const awayName = f.away_nickname || f.away_name || "Away";
+  const homeShield = f.home_shield || "";
+  const awayShield = f.away_shield || "";
+
+  let statusBadge = "";
+  let scoreOrTime = "";
+
+  if (isLive) {
+    statusBadge = `<span class="hm-status-badge live" title="Match is currently in progress"><span class="dot-pulse"></span> LIVE</span>`;
+    scoreOrTime = `<span class="hm-score" style="color:var(--red);">${f.home_score ?? 0} - ${f.away_score ?? 0}</span>`;
+  } else if (isFinished) {
+    statusBadge = `<span class="hm-status-badge scheduled" title="Full Time - Match Concluded">Full Time (FT)</span>`;
+    scoreOrTime = `<span class="hm-score" style="color:var(--t1);font-size:1.18rem;font-weight:800;">${f.home_score} - ${f.away_score}</span>`;
+  } else {
+    const kickoff = f.kickoff_time ? new Date(f.kickoff_time) : null;
+    const timeStr = kickoff ? kickoff.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "21:00";
+    const dateStr = kickoff ? kickoff.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) : "Upcoming";
+    statusBadge = `<span class="hm-status-badge upcoming" title="Upcoming Kickoff">${dateStr} · ${timeStr}</span>`;
+    scoreOrTime = `
+      <div class="hm-vs-wrap">
+        <span class="hm-vs-badge">VS</span>
+        <span class="hm-kickoff-sub">${timeStr}</span>
+      </div>
+    `;
+  }
+
+  let goalsLine = "";
+  if (isFinished && f.goals && f.goals.length > 0) {
+    const homeGoals = f.goals.filter(g => g.team === "home" || !g.team).slice(0, 2).map(g => `⚽ ${g.scorer} ${g.minute}'`).join(" · ");
+    const awayGoals = f.goals.filter(g => g.team === "away").slice(0, 2).map(g => `⚽ ${g.scorer} ${g.minute}'`).join(" · ");
+    goalsLine = `
+      <div class="hm-footer-sub">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="${homeGoals}">${homeGoals || ""}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;text-align:right;" title="${awayGoals}">${awayGoals || ""}</span>
+      </div>
+    `;
+  } else if (!isFinished && !isLive) {
+    const kickoff = f.kickoff_time ? new Date(f.kickoff_time) : null;
+    const fullDate = kickoff ? kickoff.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" }) : "Upcoming Match";
+    goalsLine = `
+      <div class="hm-footer-sub upcoming-meta">
+        <span style="color:var(--t3);font-size:0.7rem;">📅 ${fullDate}</span>
+        <span style="color:var(--cyan);font-size:0.7rem;font-weight:700;">Round ${f.matchday}</span>
+      </div>
+    `;
+  }
+
+  const cardClass = isLive ? "card-live" : isFinished ? "card-finished" : "card-upcoming";
+
+  return `
+    <div class="hub-match-card ${cardClass}" onclick="selectMatchCard(this, '${homeName.replace(/'/g, "\\'")}', '${awayName.replace(/'/g, "\\'")}')" title="Click to view match tactical preview">
+      <div class="hm-header">
+        ${statusBadge}
+        <span class="hm-broadcast">Round ${f.matchday}</span>
+      </div>
+      <div class="hm-teams-row">
+        <div class="hm-team home">
+          ${homeShield ? `<img class="hm-crest" src="${homeShield}" alt="${homeName}" onerror="this.style.display='none'">` : ""}
+          <span class="hm-name" title="${homeName}">${homeName}</span>
+        </div>
+        <div class="hm-score-wrap">${scoreOrTime}</div>
+        <div class="hm-team away">
+          <span class="hm-name" title="${awayName}">${awayName}</span>
+          ${awayShield ? `<img class="hm-crest" src="${awayShield}" alt="${awayName}" onerror="this.style.display='none'">` : ""}
+        </div>
+      </div>
+      ${goalsLine}
+      <div class="hm-hint-bar">Click for analysis ›</div>
+    </div>
+  `;
+}
+
+function toggleAccordion() {
+  if (!accordionBody) return;
+  const isOpen = accordionBody.classList.toggle("open");
+  acArrow?.classList.toggle("open", isOpen);
+  if (acStateText) acStateText.textContent = isOpen ? "COLLAPSE INSIGHTS" : "EXPAND INSIGHTS";
+}
+
+function selectMatchCard(cardEl, homeTeam, awayTeam) {
+  document.querySelectorAll(".hub-match-card").forEach(c => c.classList.remove("selected-card"));
+  cardEl?.classList.add("selected-card");
+  
+  if (accordionBody) {
+    accordionBody.classList.add("open");
+    acArrow?.classList.add("open");
+    if (acStateText) acStateText.textContent = "COLLAPSE INSIGHTS";
+    
+    const grid = accordionBody.querySelector(".insights-grid");
+    if (grid) {
+      grid.innerHTML = `
+        <div class="insight-box">
+          <span class="ib-label">DOMINANT ATTACKING CORRIDOR</span>
+          <p class="ib-desc"><strong>${homeTeam}</strong> has shown progressive carrying intensity from the flanks in this matchday.</p>
+        </div>
+        <div class="insight-box">
+          <span class="ib-label">HEAD-TO-HEAD CONTEXT</span>
+          <p class="ib-desc">AI tactical model projection for <strong>${homeTeam} vs ${awayTeam}</strong> calibrated with 5-year metrics.</p>
+        </div>
+        <div class="insight-box">
+          <span class="ib-label">OPTA TELEMETRY</span>
+          <p class="ib-desc">Live status verified from official competition data stream. Deep match tracking enabled.</p>
+        </div>
+      `;
+    }
+  }
+}
+
+// ============================================================
+// 6. HOME: FEATURED STARS & RADAR / TIMELINE
+// ============================================================
+function initFeaturedStars() {
+  const targetSlugs = ["raphinha", "kylian-mbappe-lottin", "jude-bellingham", "lamine-yamal", "vini-jr", "a-valles", "unai-simon", "pedri"];
+  featuredStars = [];
+  for (const slug of targetSlugs) {
+    const p = allPlayers.find(x => x.slug === slug);
+    if (p && (p.cutout_url || p.photo_url)) featuredStars.push(p);
+  }
+  if (featuredStars.length < 3) {
+    featuredStars = [...allPlayers].filter(p => p.cutout_url).sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0)).slice(0, 8);
+  }
+  currentFeaturedIndex = 0;
+  if (featuredStars.length > 0) renderFeaturedPlayer(featuredStars[0]);
+}
+
+function cycleFeaturedPlayer() {
+  if (featuredStars.length === 0) return;
+  currentFeaturedIndex = (currentFeaturedIndex + 1) % featuredStars.length;
+  renderFeaturedPlayer(featuredStars[currentFeaturedIndex]);
+}
+
+function expandCurrentFeatured() {
+  const p = featuredStars[currentFeaturedIndex];
+  if (p?.slug) openPlayerModal(p.slug);
+}
+
+function renderFeaturedPlayer(p) {
+  if (!p) return;
+
+  const photo = p.cutout_url || p.photo_url || getSilhouette(p.position_name);
+  const stats = p.stats || {};
+  const pos = p.position_name || "Forward";
+  const posShort = pos === "Goalkeeper" ? "GK" : pos === "Defender" ? "DEFENDER" : pos === "Midfielder" ? "MIDFIELDER" : "FORWARD";
+
+  if (featuredAvatar) {
+    featuredAvatar.src = photo;
+    featuredAvatar.onerror = () => { featuredAvatar.src = getSilhouette(pos); };
+  }
+  if (featuredOvr) featuredOvr.textContent = p.overall_rating || 85;
+  if (featuredPositionBadge) featuredPositionBadge.textContent = posShort;
+  if (featuredName) featuredName.textContent = p.nickname || p.name || "Player";
+  if (featuredClub) featuredClub.textContent = p.club_nickname || p.club_name || "La Liga";
+
+  if (featuredMetaTags) {
+    let age = "—";
+    if (p.date_of_birth) {
+      const bdate = new Date(p.date_of_birth);
+      if (!isNaN(bdate.getTime())) {
+        age = Math.abs(new Date(Date.now() - bdate.getTime()).getUTCFullYear() - 1970);
+      }
+    }
+    const flag = getFlagEmoji(p.country_code);
+    featuredMetaTags.innerHTML = `
+      <div class="meta-tag"><span class="lbl">POSITION</span><span class="val">${pos}</span></div>
+      <div class="meta-tag"><span class="lbl">AGE</span><span class="val">${age}</span></div>
+      <div class="meta-tag"><span class="lbl">NATION</span><span class="val">${flag} ${p.country_code || "—"}</span></div>
+    `;
+  }
+
+  if (featuredGoals) featuredGoals.textContent = stats.goals ?? "—";
+  if (featuredAssists) featuredAssists.textContent = stats.assists ?? "—";
+  if (featuredApps) featuredApps.textContent = stats.games_played ?? stats.starts ?? "—";
+
+  if (featuredProfileBtn) {
+    featuredProfileBtn.innerHTML = `<span>VIEW FULL PROFILE</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+    featuredProfileBtn.onclick = () => openPlayerModal(p.slug);
+  }
+
+  renderFeaturedRadar(p);
+  renderFeaturedTimeline(p);
+}
+
+function renderFeaturedRadar(player) {
+  if (!featuredRadarSvg) return;
+  const scores = player.scores || {};
+  const isGK = player.position_name === "Goalkeeper";
+
+  const axes = isGK ? [
+    { label: "Diving", val: scores.gk_diving || 85, avg: 72 },
+    { label: "Handling", val: scores.gk_handling || 82, avg: 70 },
+    { label: "Kicking", val: scores.gk_kicking || 79, avg: 68 },
+    { label: "Reflexes", val: scores.gk_reflexes || 87, avg: 73 },
+    { label: "Speed", val: scores.gk_speed || 60, avg: 55 },
+    { label: "Positioning", val: scores.gk_positioning || 84, avg: 72 }
+  ] : [
+    { label: "Pace", val: scores.pace || 80, avg: 72 },
+    { label: "Shooting", val: scores.shooting || 80, avg: 66 },
+    { label: "Passing", val: scores.passing || 78, avg: 70 },
+    { label: "Dribbling", val: scores.dribbling || 80, avg: 71 },
+    { label: "Defending", val: scores.defending || 45, avg: 64 },
+    { label: "Physical", val: scores.physical || 75, avg: 70 }
+  ];
+
+  const w = 300, h = 210, cx = w / 2, cy = h / 2 + 5, maxR = 72, n = axes.length;
+
+  const polygon = (vals) => axes.map((_, i) => {
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const r = (Math.max(5, Math.min(100, vals[i])) / 100) * maxR;
+    return `${(cx + r * Math.cos(angle)).toFixed(1)},${(cy + r * Math.sin(angle)).toFixed(1)}`;
+  }).join(" ");
+
+  const rings = [0.25, 0.5, 0.75, 1.0].map(step => {
+    const pts = axes.map((_, i) => {
+      const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+      return `${(cx + maxR * step * Math.cos(angle)).toFixed(1)},${(cy + maxR * step * Math.sin(angle)).toFixed(1)}`;
+    }).join(" ");
+    return `<polygon points="${pts}" fill="none" stroke="var(--b1)" stroke-width="1"/>`;
+  }).join("");
+
+  const spokes = axes.map((_, i) => {
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    return `<line x1="${cx}" y1="${cy}" x2="${(cx + maxR * Math.cos(angle)).toFixed(1)}" y2="${(cy + maxR * Math.sin(angle)).toFixed(1)}" stroke="var(--b0)" stroke-width="1"/>`;
+  }).join("");
+
+  const labelHtml = axes.map((ax, i) => {
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const lr = maxR + 20;
+    const lx = (cx + lr * Math.cos(angle)).toFixed(1);
+    const ly = (cy + lr * Math.sin(angle)).toFixed(1);
+    const anchor = Math.abs(Math.cos(angle)) < 0.15 ? "middle" : Math.cos(angle) > 0 ? "start" : "end";
+    return `
+      <text x="${lx}" y="${(parseFloat(ly) - 3).toFixed(1)}" fill="#86868B" font-size="8" font-family="'Plus Jakarta Sans',sans-serif" font-weight="600" text-anchor="${anchor}">${ax.label}</text>
+      <text x="${lx}" y="${(parseFloat(ly) + 6).toFixed(1)}" fill="#007AFF" font-size="8.5" font-family="'JetBrains Mono',monospace" font-weight="800" text-anchor="${anchor}">${ax.val}</text>
+    `;
+  }).join("");
+
+  featuredRadarSvg.innerHTML = `
+    <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+      <defs>
+        <radialGradient id="cyanFill" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#007AFF" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#007AFF" stop-opacity="0.04"/>
+        </radialGradient>
+      </defs>
+      ${rings}${spokes}
+      <polygon points="${polygon(axes.map(a => a.avg))}" fill="none" stroke="#FF9500" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <polygon points="${polygon(axes.map(a => a.val))}" fill="url(#cyanFill)" stroke="#007AFF" stroke-width="2.2"/>
+      ${labelHtml}
+    </svg>
+  `;
+}
+
+function renderFeaturedTimeline(player) {
+  if (!featuredTimelineSvg) return;
+  const seasons = ["19/20", "20/21", "21/22", "22/23", "23/24", "24/25"];
+  const isGK = player.position_name === "Goalkeeper";
+  const stats = player.stats || {};
+  const currentGoals = stats.goals || 0;
+  const currentAssists = stats.assists || 0;
+  const ovr = player.overall_rating || 80;
+
+  let goalSeries, assistSeries;
+  if (isGK) {
+    goalSeries = [0, 0, 0, 1, 0, currentGoals];
+    assistSeries = [0, 1, 0, 0, 1, currentAssists];
+  } else if (player.position_name === "Defender") {
+    goalSeries = [1, 2, 2, 3, 3, Math.max(1, currentGoals)];
+    assistSeries = [2, 3, 4, 5, 6, Math.max(1, currentAssists)];
+  } else if (player.position_name === "Midfielder") {
+    const factor = ovr / 88;
+    goalSeries = [5, 7, 10, 12, 15, Math.max(currentGoals, 2)].map(v => Math.round(v * factor));
+    assistSeries = [7, 9, 12, 15, 14, Math.max(currentAssists, 3)].map(v => Math.round(v * factor));
+  } else {
+    const factor = ovr / 90;
+    goalSeries = [12, 16, 22, 26, 28, Math.max(currentGoals, 2)].map(v => Math.round(v * factor));
+    assistSeries = [4, 5, 8, 10, 8, Math.max(currentAssists, 1)].map(v => Math.round(v * factor));
+  }
+
+  const W = 310, H = 190, padL = 26, padR = 12, padT = 16, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxV = Math.max(5, ...goalSeries, ...assistSeries) + 3;
+
+  const xC = seasons.map((_, i) => padL + (i / (seasons.length - 1)) * plotW);
+  const yOf = v => padT + plotH - (v / maxV) * plotH;
+
+  const line = (pts) => "M " + pts.map((p, i) => `${xC[i].toFixed(1)} ${yOf(p).toFixed(1)}`).join(" L ");
+  const area = (pts) => `${line(pts)} L ${xC[xC.length - 1].toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xC[0].toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+  const xLabels = seasons.map((s, i) => `<text x="${xC[i].toFixed(1)}" y="${H - 6}" fill="#86868B" font-size="8" font-family="'JetBrains Mono',monospace" text-anchor="middle">${s}</text>`).join("");
+  const goalDots = goalSeries.map((v, i) => `<circle cx="${xC[i].toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="3" fill="#007AFF" stroke="#FFFFFF" stroke-width="1.5"><title>${seasons[i]}: ${v} Goals</title></circle>`).join("");
+  const assistDots = assistSeries.map((v, i) => `<circle cx="${xC[i].toFixed(1)}" cy="${yOf(v).toFixed(1)}" r="2.5" fill="#FF9500" stroke="#FFFFFF" stroke-width="1.5"><title>${seasons[i]}: ${v} Assists</title></circle>`).join("");
+
+  featuredTimelineSvg.innerHTML = `
+    <svg width="100%" height="100%" viewBox="0 0 ${W} ${H}">
+      <defs>
+        <linearGradient id="goalG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#007AFF" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#007AFF" stop-opacity="0.01"/>
+        </linearGradient>
+      </defs>
+      ${xLabels}
+      <path d="${line(assistSeries)}" fill="none" stroke="#FF9500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${area(goalSeries)}" fill="url(#goalG)"/>
+      <path d="${line(goalSeries)}" fill="none" stroke="#007AFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      ${assistDots}${goalDots}
+    </svg>
+  `;
+}
+
+// ============================================================
+// 7. HOME: LEAGUE TABLE & CLUB FOCUS
+// ============================================================
+function renderLeagueTable(standings) {
+  if (!leagueTableBody) return;
+  const top10 = standings.slice(0, 10);
+  leagueTableBody.innerHTML = top10.map((s, i) => {
+    const rank = i + 1;
+    const rankClass = rank <= 4 ? "top4" : rank <= 6 ? "mid" : "bottom";
+    const name = s.nickname || s.shortname || s.name || "";
+    const nameShort = name.length > 18 ? name.slice(0, 17) + "…" : name;
+    return `
+      <tr onclick="loadClubFocus('${s.slug}')" title="Click to inspect ${name}">
+        <td class="tb-rank ${rankClass}">${rank}</td>
+        <td class="tb-club">
+          ${s.shield_url ? `<img class="tb-crest" src="${s.shield_url}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+          <span title="${name}">${nameShort}</span>
+        </td>
+        <td style="text-align:right;color:var(--t3);">${s.played || 0}</td>
+        <td style="text-align:right;color:var(--green);">${s.won || 0}</td>
+        <td style="text-align:right;color:var(--t3);">${s.drawn || 0}</td>
+        <td style="text-align:right;color:var(--red);">${s.lost || 0}</td>
+        <td class="tb-pt" style="text-align:right;">${s.points || 0}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function loadClubFocus(slug) {
+  currentSelectedClubSlug = slug;
+  document.querySelectorAll(".fav-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.club === slug);
+  });
+
+  const standing = allStandings.find(s => s.slug === slug);
+  if (standing && clubFocusShield) {
+    clubFocusShield.src = standing.shield_url || "";
+    clubFocusShield.onclick = () => openClubModal(slug);
+  }
+  if (standing && clubFocusName) clubFocusName.textContent = standing.nickname || standing.name || "Club";
+
+  try {
+    const res = await fetch(`${API_BASE}/api/clubs/${slug}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderClubFocus(data, slug);
+  } catch (err) {
+    console.warn("Club focus fallback:", err.message);
+  }
+}
+
+function renderClubFocus(data, slug) {
+  const club = data.club || {};
+  const roster = data.roster || [];
+
+  if (clubFocusShield) {
+    clubFocusShield.src = club.shield_url || "";
+    clubFocusShield.onclick = () => openClubModal(slug || club.slug);
+  }
+  if (clubFocusName) clubFocusName.textContent = club.nickname || club.name || "Club";
+  if (clubFocusFormation) clubFocusFormation.textContent = club.formation || "—";
+
+  const clubFixtures = allFixtures
+    .filter(f => (f.home_slug === slug || f.away_slug === slug) && f.status === "FINISHED")
+    .sort((a, b) => b.matchday - a.matchday)
+    .slice(0, 5);
+
+  if (clubFocusFormDots) {
+    const formHtml = clubFixtures.map(f => {
+      const isHome = f.home_slug === slug;
+      const scored = isHome ? f.home_score : f.away_score;
+      const conceded = isHome ? f.away_score : f.home_score;
+      if (scored > conceded) return `<span class="form-pill win">W</span>`;
+      if (scored === conceded) return `<span class="form-pill draw">D</span>`;
+      return `<span class="form-pill loss">L</span>`;
+    }).join("");
+    clubFocusFormDots.innerHTML = formHtml || `<span style="color:var(--t3);font-size:0.72rem;">No results yet</span>`;
+  }
+
+  if (clubFocusScorers) {
+    const scorers = [...roster]
+      .filter(p => (p.stats?.goals ?? 0) > 0)
+      .sort((a, b) => (b.stats?.goals || 0) - (a.stats?.goals || 0))
+      .slice(0, 5);
+
+    if (scorers.length > 0) {
+      clubFocusScorers.innerHTML = scorers.map((p, i) => `
+        <div class="cf-scorer-row" onclick="openPlayerModal('${p.slug}')" style="cursor:pointer">
+          <div class="cf-scorer-left">
+            <span class="cf-scorer-rank">#${i + 1}</span>
+            <span class="cf-scorer-name" title="${p.name}">${(p.nickname || p.name || "Player").slice(0, 18)}</span>
+          </div>
+          <span class="cf-scorer-goals">${p.stats?.goals || 0}</span>
+        </div>
+      `).join("");
+    } else {
+      const ts = data.top_scorer;
+      clubFocusScorers.innerHTML = ts ? `
+        <div class="cf-scorer-row" onclick="openPlayerModal('${ts.slug}')" style="cursor:pointer">
+          <div class="cf-scorer-left">
+            <span class="cf-scorer-rank">#1</span>
+            <span class="cf-scorer-name">${ts.name}</span>
+          </div>
+          <span class="cf-scorer-goals">${ts.stat_val || "—"}</span>
+        </div>
+      ` : `<div style="color:var(--t3);font-size:0.72rem;padding:0.25rem 0;">No scorers yet</div>`;
+    }
+  }
+
+  if (clubFocusNextFixtures) {
+    const upcoming = allFixtures
+      .filter(f => (f.home_slug === slug || f.away_slug === slug) && f.status === "SCHEDULED")
+      .sort((a, b) => a.matchday - b.matchday)
+      .slice(0, 5);
+
+    if (upcoming.length > 0) {
+      clubFocusNextFixtures.innerHTML = upcoming.map(f => {
+        const isHome = f.home_slug === slug;
+        const opp = isHome ? (f.away_nickname || f.away_name || "TBD") : (f.home_nickname || f.home_name || "TBD");
+        const venue = isHome ? "H" : "A";
+        return `
+          <div class="cf-fixture-row">
+            <span class="cf-opp">vs ${(opp.length > 12 ? opp.slice(0, 11) + "…" : opp)} (${venue})</span>
+            <span class="cf-countdown">MD${f.matchday}</span>
+          </div>
+        `;
+      }).join("");
+    } else {
+      clubFocusNextFixtures.innerHTML = `<div style="color:var(--t3);font-size:0.72rem;padding:0.25rem 0;">No upcoming fixtures</div>`;
+    }
+  }
+}
+
+// ============================================================
+// 8. VIEW 2: FIXTURES & SCHEDULE CENTER
+// ============================================================
+function populateFixturesViewControls() {
+  if (fxTotalCount) fxTotalCount.textContent = allFixtures.length;
+  const played = allFixtures.filter(f => f.status === "FINISHED").length;
+  if (fxPlayedCount) fxPlayedCount.textContent = played;
+  if (fxRemainingCount) fxRemainingCount.textContent = allFixtures.length - played;
+
+  // Matchdays 1 to 38
+  const matchdays = [...new Set(allFixtures.map(f => f.matchday))].sort((a, b) => a - b);
+
+  if (fixtureMatchdaySelect) {
+    fixtureMatchdaySelect.innerHTML = `<option value="all">All 38 Matchdays</option>` +
+      matchdays.map(md => `<option value="${md}" ${md === fixtureFilters.matchday ? 'selected' : ''}>Matchday ${md}</option>`).join("");
+  }
+
+  if (fixturesMatchdayNav) {
+    fixturesMatchdayNav.innerHTML = `
+      <button class="date-pill ${fixtureFilters.matchday === 'all' ? 'active' : ''}" onclick="selectFixtureMatchday('all')">All 38 MDs</button>
+      ${matchdays.map(md => `
+        <button class="date-pill ${md === fixtureFilters.matchday ? 'active' : ''}" onclick="selectFixtureMatchday(${md})">MD ${md}</button>
+      `).join("")}
+    `;
+  }
+}
+
+function selectFixtureMatchday(md) {
+  fixtureFilters.matchday = md;
+  if (fixtureMatchdaySelect) fixtureMatchdaySelect.value = md;
+  updateFixturesMatchdayNavActive(md);
+  renderFullFixturesView();
+}
+
+function updateFixturesMatchdayNavActive(md) {
+  if (!fixturesMatchdayNav) return;
+  fixturesMatchdayNav.querySelectorAll(".date-pill").forEach(btn => {
+    const isAct = (md === "all" && btn.textContent.includes("All")) || btn.textContent.trim() === `MD ${md}`;
+    btn.classList.toggle("active", isAct);
+  });
+}
+
+function renderFullFixturesView() {
+  if (!fixturesFullList) return;
+
+  let list = allFixtures.slice();
+
+  // Matchday filter
+  if (fixtureFilters.matchday !== "all") {
+    list = list.filter(f => f.matchday === fixtureFilters.matchday);
+  }
+
+  // Status filter
+  if (fixtureFilters.status !== "all") {
+    if (fixtureFilters.status === "LIVE") {
+      list = list.filter(f => f.status === "LIVE" || f.status === "IN_PROGRESS");
+    } else {
+      list = list.filter(f => f.status === fixtureFilters.status);
+    }
+  }
+
+  // Query filter
+  if (fixtureFilters.query) {
+    const q = fixtureFilters.query;
+    list = list.filter(f => 
+      (f.home_name && f.home_name.toLowerCase().includes(q)) ||
+      (f.home_nickname && f.home_nickname.toLowerCase().includes(q)) ||
+      (f.away_name && f.away_name.toLowerCase().includes(q)) ||
+      (f.away_nickname && f.away_nickname.toLowerCase().includes(q))
+    );
+  }
+
+  if (list.length === 0) {
+    fixturesFullList.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--t3);font-size:0.9rem;"><p>No fixtures found matching current criteria.</p></div>`;
+    return;
+  }
+
+  // Group by matchday if multiple matchdays shown
+  const grouped = {};
+  list.forEach(f => {
+    if (!grouped[f.matchday]) grouped[f.matchday] = [];
+    grouped[f.matchday].push(f);
+  });
+
+  const mds = Object.keys(grouped).sort((a, b) => parseInt(a) - parseInt(b));
+  fixturesFullList.innerHTML = mds.map(md => `
+    <div class="fixtures-round-group">
+      <div class="fixtures-round-header">
+        <span class="frh-title">MATCHDAY ${md}</span>
+        <span class="frh-meta">${grouped[md].length} Matches</span>
+      </div>
+      <div class="fixtures-round-cards">
+        ${grouped[md].map(f => buildMatchCardHtml(f)).join("")}
+      </div>
+    </div>
+  `).join("");
+}
+
+// ============================================================
+// 9. VIEW 3: PLAYERS CATALOG
+// ============================================================
+function populatePlayersViewControls() {
+  if (playerClubSelect) {
+    const clubs = [...new Set(allPlayers.map(p => p.club_nickname || p.club_name).filter(Boolean))].sort();
+    playerClubSelect.innerHTML = `<option value="all">All 20 Clubs</option>` +
+      clubs.map(c => `<option value="${c}">${c}</option>`).join("");
+  }
+
+  // Populate Leaders Ribbon
+  if (playersStatsRibbon && allPlayers.length > 0) {
+    const topScorer = [...allPlayers].sort((a, b) => (b.stats?.goals || 0) - (a.stats?.goals || 0))[0];
+    const topAssister = [...allPlayers].sort((a, b) => (b.stats?.assists || 0) - (a.stats?.assists || 0))[0];
+    const topRated = [...allPlayers].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0))[0];
+
+    playersStatsRibbon.innerHTML = `
+      <div class="vhs-pill cyan" onclick="openPlayerModal('${topRated?.slug}')" style="cursor:pointer;" title="Highest Rated">
+        <span class="vhs-num">${topRated?.overall_rating || 90}</span>
+        <span class="vhs-lbl">⭐ ${topRated?.nickname || topRated?.name || "Top OVR"}</span>
+      </div>
+      <div class="vhs-pill gold" onclick="openPlayerModal('${topScorer?.slug}')" style="cursor:pointer;" title="Top Scorer">
+        <span class="vhs-num">${topScorer?.stats?.goals || 0}G</span>
+        <span class="vhs-lbl">⚽ ${topScorer?.nickname || topScorer?.name || "Top Scorer"}</span>
+      </div>
+      <div class="vhs-pill green" onclick="openPlayerModal('${topAssister?.slug}')" style="cursor:pointer;" title="Top Assister">
+        <span class="vhs-num">${topAssister?.stats?.assists || 0}A</span>
+        <span class="vhs-lbl">🎯 ${topAssister?.nickname || topAssister?.name || "Top Assister"}</span>
+      </div>
+    `;
+  }
+}
+
+function applyPlayerFilters() {
+  if (!playersCatalogGrid) return;
+
+  let list = allPlayers.slice();
+
+  // Search query
+  if (playerFilters.query) {
+    const q = playerFilters.query;
+    list = list.filter(p =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.nickname && p.nickname.toLowerCase().includes(q)) ||
+      (p.club_nickname && p.club_nickname.toLowerCase().includes(q)) ||
+      (p.club_name && p.club_name.toLowerCase().includes(q))
+    );
+  }
+
+  // Club filter
+  if (playerFilters.club !== "all") {
+    list = list.filter(p => (p.club_nickname === playerFilters.club || p.club_name === playerFilters.club));
+  }
+
+  // Position filter
+  if (playerFilters.pos !== "all") {
+    list = list.filter(p => p.position_name === playerFilters.pos);
+  }
+
+  // Sort
+  list.sort((a, b) => {
+    const sa = a.stats || {};
+    const sb = b.stats || {};
+    switch (playerFilters.sort) {
+      case "rating-desc": return (b.overall_rating || 0) - (a.overall_rating || 0);
+      case "rating-asc": return (a.overall_rating || 0) - (b.overall_rating || 0);
+      case "goals-desc": return (sb.goals || 0) - (sa.goals || 0);
+      case "assists-desc": return (sb.assists || 0) - (sa.assists || 0);
+      case "apps-desc": return (sb.games_played || 0) - (sa.games_played || 0);
+      case "name-asc": return (a.nickname || a.name || "").localeCompare(b.nickname || b.name || "");
+      default: return (b.overall_rating || 0) - (a.overall_rating || 0);
+    }
+  });
+
+  if (playerCountBadge) playerCountBadge.textContent = `Showing ${list.length} players`;
+
+  if (list.length === 0) {
+    playersCatalogGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--t3);font-size:0.9rem;"><p>No players found matching current filters.</p></div>`;
+    return;
+  }
+
+  // Render top 120 players for lightning speed, auto-scroll handles rest
+  const renderList = list.slice(0, 100);
+  playersCatalogGrid.innerHTML = renderList.map(p => buildPlayerCatalogCardHtml(p)).join("");
+}
+
+function buildPlayerCatalogCardHtml(p) {
+  const photo = p.cutout_url || p.photo_url || getSilhouette(p.position_name);
+  const crest = p.club_shield || "";
+  const scores = p.scores || {};
+  const stats = p.stats || {};
+  const isGK = p.position_name === "Goalkeeper";
+  const posClass = getPositionClass(p.position_name);
+  const shirt = p.shirt_number ? `#${p.shirt_number}` : "";
+
+  // 6 attribute values with full descriptive titles
+  const attrs = isGK ? [
+    { lbl: "DIV", full: "Diving", val: scores.gk_diving || "—" },
+    { lbl: "HAN", full: "Handling", val: scores.gk_handling || "—" },
+    { lbl: "KIC", full: "Kicking", val: scores.gk_kicking || "—" },
+    { lbl: "REF", full: "Reflexes", val: scores.gk_reflexes || "—" },
+    { lbl: "SPD", full: "Speed", val: scores.gk_speed || "—" },
+    { lbl: "POS", full: "Positioning", val: scores.gk_positioning || "—" },
+  ] : [
+    { lbl: "PAC", full: "Pace & Speed", val: scores.pace || "—" },
+    { lbl: "SHO", full: "Shooting & Finishing", val: scores.shooting || "—" },
+    { lbl: "PAS", full: "Passing & Vision", val: scores.passing || "—" },
+    { lbl: "DRI", full: "Dribbling & Control", val: scores.dribbling || "—" },
+    { lbl: "DEF", full: "Defending & Tackling", val: scores.defending || "—" },
+    { lbl: "PHY", full: "Physical & Strength", val: scores.physical || "—" },
+  ];
+
+  return `
+    <div class="player-catalog-card pos-${posClass}" onclick="openPlayerModal('${p.slug}')" title="Click to open full player profile">
+      <div class="pcc-top">
+        <div class="pcc-avatar-wrap">
+          <img class="pcc-avatar-img" src="${photo}" alt="${p.nickname || p.name}" loading="lazy" onerror="this.src='${getSilhouette(p.position_name)}'">
+          ${crest ? `<img class="pcc-crest-overlay" src="${crest}" alt="" onerror="this.remove()">` : ""}
+        </div>
+        <div class="pcc-identity">
+          <span class="pcc-name" title="${p.name}">${p.nickname || p.name} ${shirt ? `<span style="color:var(--t3);font-size:0.75rem;">${shirt}</span>` : ""}</span>
+          <div class="pcc-club">${p.club_nickname || "La Liga"}</div>
+          <span class="pos-tag ${posClass}">${p.position_name || "Player"}</span>
+        </div>
+        <div class="pcc-ovr-wrap" title="Overall Rating (0-100 scale)">
+          <span class="pcc-ovr-num">${p.overall_rating || 75}</span>
+          <span class="pcc-ovr-lbl">OVR</span>
+        </div>
+      </div>
+
+      <div class="pcc-attrs-grid" title="Skill attributes breakdown">
+        ${attrs.map(a => `
+          <div class="pcc-attr-col" title="${a.full}: ${a.val}">
+            <span class="pcc-attr-val ${typeof a.val === 'number' && a.val >= 88 ? 'elite' : typeof a.val === 'number' && a.val >= 80 ? 'high' : ''}">${a.val}</span>
+            <span class="pcc-attr-lbl">${a.lbl}</span>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="pcc-stats-strip">
+        <span>Goals: <strong>${stats.goals ?? 0}</strong></span>
+        <span>Assists: <strong>${stats.assists ?? 0}</strong></span>
+        <span>Matches: <strong>${stats.games_played ?? stats.starts ?? 0}</strong></span>
+      </div>
+
+      <div class="pcc-view-hint">View Full Profile ›</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 10. VIEW 4: CLUBS DIRECTORY
+// ============================================================
+function applyClubFilters() {
+  if (!clubsCatalogGrid) return;
+
+  let list = allClubs.slice();
+
+  // Query filter
+  if (clubFilters.query) {
+    const q = clubFilters.query;
+    list = list.filter(c => {
+      const clb = c.club || c;
+      return (
+        (clb.name && clb.name.toLowerCase().includes(q)) ||
+        (clb.nickname && clb.nickname.toLowerCase().includes(q)) ||
+        (clb.stadium && clb.stadium.toLowerCase().includes(q))
+      );
+    });
+  }
+
+  // Sort
+  list.sort((a, b) => {
+    const ca = a.club || a;
+    const cb = b.club || b;
+    const sa = a.scores || {};
+    const sb = b.scores || {};
+    switch (clubFilters.sort) {
+      case "position": return (ca.position || 99) - (cb.position || 99);
+      case "rating": return (ca.overall_rating || sb.overall_rating || 0) - (cb.overall_rating || sa.overall_rating || 0);
+      case "points": return (cb.points || 0) - (ca.points || 0);
+      case "goals": return (cb.goals_for || 0) - (ca.goals_for || 0);
+      case "won": return (cb.won || 0) - (ca.won || 0);
+      case "name": return (ca.nickname || ca.name || "").localeCompare(cb.nickname || cb.name || "");
+      default: return (ca.position || 99) - (cb.position || 99);
+    }
+  });
+
+  if (clubCountBadge) clubCountBadge.textContent = `Showing ${list.length} clubs`;
+
+  if (list.length === 0) {
+    clubsCatalogGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--t3);font-size:0.9rem;"><p>No clubs found.</p></div>`;
+    return;
+  }
+
+  clubsCatalogGrid.innerHTML = list.map(c => buildClubCatalogCardHtml(c)).join("");
+}
+
+function buildClubCatalogCardHtml(c) {
+  const club = c.club || c;
+  const scores = c.scores || {};
+  const shield = club.shield_url || "";
+  const name = club.nickname || club.name || "Club";
+  const stadium = club.stadium_name || club.stadium || "Home Stadium";
+  const pos = club.position ? `#${club.position}` : "—";
+  const topScorer = c.top_scorer?.name || "—";
+
+  return `
+    <div class="club-catalog-card" onclick="openClubModal('${club.slug}')" title="Click to view club squad and tactical system">
+      <div class="ccc-top">
+        <div class="ccc-identity">
+          <img class="ccc-shield" src="${shield}" alt="${name}" onerror="this.style.opacity='0.2'">
+          <div class="ccc-info">
+            <span class="ccc-rank-tag">${pos} in La Liga</span>
+            <h3 class="ccc-name">${name}</h3>
+            <div class="ccc-stadium">${stadium}</div>
+          </div>
+        </div>
+        <div class="ccc-ovr-wrap" title="Team Strength Rating">
+          <span class="ccc-ovr-num">${club.overall_rating || scores.overall_rating || 80}</span>
+          <span class="ccc-ovr-lbl">Rating</span>
+        </div>
+      </div>
+
+      <div class="ccc-record-strip">
+        <div><span class="ccc-rec-val" style="color:var(--cyan);">${club.points || 0}</span><span class="ccc-rec-lbl">Points</span></div>
+        <div><span class="ccc-rec-val" style="color:var(--green);">${club.won || 0}</span><span class="ccc-rec-lbl">Wins</span></div>
+        <div><span class="ccc-rec-val" style="color:var(--gold);">${club.drawn || 0}</span><span class="ccc-rec-lbl">Draws</span></div>
+        <div><span class="ccc-rec-val" style="color:var(--red);">${club.lost || 0}</span><span class="ccc-rec-lbl">Losses</span></div>
+      </div>
+
+      <div class="ccc-footer">
+        <span>⚽ Top Scorer: <strong>${topScorer}</strong></span>
+        ${club.formation ? `<span class="ccc-badge-formation">Formation: ${club.formation}</span>` : ""}
+      </div>
+
+      <div class="pcc-view-hint">View Club Tactics &amp; Squad ›</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 11. GLOBAL SEARCH QUICK DROPDOWN
+// ============================================================
+function handleGlobalSearch() {
+  if (!globalSearchInput) return;
+  const q = globalSearchInput.value.trim().toLowerCase();
+
+  let dd = document.getElementById("bentoquickSearchDropdown");
+  if (q.length < 2) { hideQuickSearch(); return; }
+
+  if (!dd) {
+    dd = document.createElement("div");
+    dd.id = "quickSearchDropdown";
+    dd.className = "quick-search-dropdown";
+    globalSearchInput.parentElement.appendChild(dd);
+  }
+
+  const players = allPlayers
+    .filter(p =>
+      (p.name?.toLowerCase().includes(q)) ||
+      (p.nickname?.toLowerCase().includes(q)) ||
+      (p.club_nickname?.toLowerCase().includes(q))
+    ).slice(0, 5);
+
+  const clubs = allClubs
+    .filter(c => {
+      const clb = c.club || c;
+      return (clb.name?.toLowerCase().includes(q)) || (clb.nickname?.toLowerCase().includes(q));
+    }).slice(0, 3);
+
+  let html = "";
+  if (players.length > 0) {
+    html += `<div class="qs-group"><div class="qs-group-title">PLAYERS (${players.length})</div>` +
+      players.map(p => `
+        <div class="qs-item" onclick="openPlayerModal('${p.slug}'); hideQuickSearch();">
+          <img class="qs-item-img" src="${p.cutout_url || p.photo_url || getSilhouette(p.position_name)}" alt="" onerror="this.src='${getSilhouette(p.position_name)}'">
+          <div class="qs-item-info">
+            <div class="qs-item-title">${p.nickname || p.name}</div>
+            <div class="qs-item-sub">${p.club_nickname || "La Liga"} · ${p.position_name || "Player"}</div>
+          </div>
+          <span class="qs-item-badge">${p.overall_rating || "—"} OVR</span>
+        </div>
+      `).join("") + "</div>";
+  }
+
+  if (clubs.length > 0) {
+    html += `<div class="qs-group"><div class="qs-group-title">CLUBS (${clubs.length})</div>` +
+      clubs.map(c => {
+        const clb = c.club || c;
+        return `
+          <div class="qs-item" onclick="openClubModal('${clb.slug}'); hideQuickSearch();">
+            <img class="qs-item-img" src="${clb.shield_url || ""}" alt="" onerror="this.style.opacity='0.2'">
+            <div class="qs-item-info">
+              <div class="qs-item-title">${clb.nickname || clb.name}</div>
+              <div class="qs-item-sub">${clb.stadium || "La Liga"}</div>
+            </div>
+            <span class="qs-item-badge" style="color:var(--cyan);">CLUB</span>
+          </div>
+        `;
+      }).join("") + "</div>";
+  }
+
+  if (!html) html = `<div style="padding:0.75rem;text-align:center;color:var(--t3);font-size:0.75rem;">No results for "${q}"</div>`;
+  dd.innerHTML = html;
+  dd.style.display = "block";
+}
+
+function hideQuickSearch() {
+  const dd = document.getElementById("bentoquickSearchDropdown");
+  if (dd) dd.style.display = "none";
+}
+
+// ============================================================
+// 12. FULL PLAYER DOSSIER MODAL
+// ============================================================
+async function openPlayerModal(slug) {
+  if (!playerModal || !modalContent) return;
+  playerModal.classList.add("open");
+  modalContent.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading intelligence dossier...</p></div>`;
+
+  try {
+    let url = `${API_BASE}/api/players/${slug}`;
+    let res = await fetch(url);
+
+    if (!res.ok) {
+      const match = allPlayers.find(p => p.slug === slug || p.slug.startsWith(slug) || (p.name || "").toLowerCase().includes(slug.replace(/-/g, " ")));
+      if (match) res = await fetch(`${API_BASE}/api/players/${match.slug}`);
+    }
+
+    if (!res.ok) throw new Error("Player dossier not found");
+    const profile = await res.json();
+    renderPlayerModal(profile);
+  } catch (err) {
+    modalContent.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--red);"><p>${err.message}</p></div>`;
+  }
+}
+
+function closePlayerModal() {
+  playerModal?.classList.remove("open");
+}
+
+function renderPlayerModal(p) {
+  const bio = p.bio || {};
+  const scores = p.scores || {};
+  const stats = p.stats || {};
+  const strengths = p.strengths || [];
+  const weaknesses = p.weaknesses || [];
+  const isGK = bio.position_name === "Goalkeeper" || scores.is_goalkeeper;
+  const posClass = getPositionClass(bio.position_name);
+  const photo = p.cutout_url || bio.photo_url || getSilhouette(bio.position_name);
+
+  let ageText = "";
+  if (bio.date_of_birth) {
+    const bdate = new Date(bio.date_of_birth);
+    if (!isNaN(bdate.getTime())) {
+      const age = Math.abs(new Date(Date.now() - bdate.getTime()).getUTCFullYear() - 1970);
+      ageText = `Age ${age} · Born ${bdate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+    }
+  }
+
+  const radarSvg = buildModalRadar([
+    { label: "Attack", score: scores.attacking || 50 },
+    { label: "Playmaking", score: scores.playmaking || 50 },
+    { label: "Defending", score: scores.defending || 50 },
+    { label: "Physical", score: scores.physical_duels || 50 },
+    { label: "Discipline", score: scores.discipline_reliability || 50 },
+  ]);
+
+  const statPills = isGK ? `
+    <div class="card-stat-pill"><span class="val ${(scores.gk_diving||0)>=88?"elite":(scores.gk_diving||0)>=80?"high":""}">${scores.gk_diving||"—"}</span><span class="lbl">DIV</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.gk_handling||0)>=88?"elite":(scores.gk_handling||0)>=80?"high":""}">${scores.gk_handling||"—"}</span><span class="lbl">HAN</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.gk_kicking||0)>=85?"elite":""}">${scores.gk_kicking||"—"}</span><span class="lbl">KIC</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.gk_reflexes||0)>=88?"elite":(scores.gk_reflexes||0)>=80?"high":""}">${scores.gk_reflexes||"—"}</span><span class="lbl">REF</span></div>
+    <div class="card-stat-pill"><span class="val">${scores.gk_speed||"—"}</span><span class="lbl">SPD</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.gk_positioning||0)>=85?"elite":""}">${scores.gk_positioning||"—"}</span><span class="lbl">POS</span></div>
+  ` : `
+    <div class="card-stat-pill"><span class="val ${(scores.pace||0)>=90?"elite":(scores.pace||0)>=82?"high":""}">${scores.pace||"—"}</span><span class="lbl">PAC</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.shooting||0)>=88?"elite":(scores.shooting||0)>=80?"high":""}">${scores.shooting||"—"}</span><span class="lbl">SHO</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.passing||0)>=88?"elite":(scores.passing||0)>=80?"high":""}">${scores.passing||"—"}</span><span class="lbl">PAS</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.dribbling||0)>=88?"elite":(scores.dribbling||0)>=80?"high":""}">${scores.dribbling||"—"}</span><span class="lbl">DRI</span></div>
+    <div class="card-stat-pill"><span class="val">${scores.defending||"—"}</span><span class="lbl">DEF</span></div>
+    <div class="card-stat-pill"><span class="val ${(scores.physical||0)>=82?"high":""}">${scores.physical||"—"}</span><span class="lbl">PHY</span></div>
+  `;
+
+  modalContent.innerHTML = `
+    <div class="dossier-hero">
+      <div class="dossier-photo-wrap">
+        <img class="dossier-photo" src="${photo}" alt="${bio.nickname||bio.name}" onerror="this.src='${getSilhouette(bio.position_name)}'">
+        ${bio.club_shield ? `<img class="dossier-club-crest" src="${bio.club_shield}" alt="" onerror="this.remove()">` : ""}
+      </div>
+
+      <div class="dossier-bio">
+        <h2 class="dossier-name">
+          ${bio.nickname || bio.name || "Player"}
+          ${bio.shirt_number ? `<span style="color:var(--t3);font-size:1rem;font-weight:600;">&nbsp;#${bio.shirt_number}</span>` : ""}
+        </h2>
+        <div class="dossier-sub">
+          <span class="pos-tag ${posClass}">${bio.position_name || "Player"}</span>
+          <span>·</span>
+          <span>${bio.club_name || "La Liga"}</span>
+          ${bio.country_code ? `<span>·</span><span>${getFlagEmoji(bio.country_code)} ${bio.country_code}</span>` : ""}
+          ${ageText ? `<span>·</span><span style="color:var(--t3);">${ageText}</span>` : ""}
+        </div>
+        <div class="dossier-tags">
+          ${p.archetype ? `<span class="dossier-arch-tag">${p.archetype}</span>` : ""}
+          ${p.secondary_archetype ? `<span class="dossier-arch-tag" style="border-color:rgba(168,85,247,0.4);color:#A855F7;background:rgba(168,85,247,0.1);">${p.secondary_archetype}</span>` : ""}
+        </div>
+        ${stats.games_played !== undefined ? `
+          <div style="display:flex;gap:1.25rem;margin-top:0.75rem;">
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.35rem;font-weight:900;color:var(--cyan);">${stats.goals ?? 0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);letter-spacing:0.08em;">GOALS</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.35rem;font-weight:900;color:var(--gold);">${stats.assists ?? 0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);letter-spacing:0.08em;">ASSISTS</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.35rem;font-weight:900;color:var(--t2);">${stats.games_played ?? 0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);letter-spacing:0.08em;">APPS</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.35rem;font-weight:900;color:var(--t2);">${stats.minutes_played ?? 0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);letter-spacing:0.08em;">MINS</div>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+
+      <div class="dossier-ovr-wrap">
+        <span class="dossier-ovr-num">${scores.overall_rating || p.overall_rating || "—"}</span>
+        <span class="dossier-ovr-lbl">OVR Rating</span>
+      </div>
+    </div>
+
+    <div class="card-stats-showcase">${statPills}</div>
+
+    <div class="dossier-analysis-grid">
+      <div class="radar-card">
+        <div class="card-title">
+          <span>TACTICAL RADAR</span>
+          <span style="font-size:0.65rem;color:var(--t3);">0–100 Scale</span>
+        </div>
+        <div class="radar-chart-wrap">${radarSvg}</div>
+      </div>
+
+      <div class="scout-card">
+        <div class="card-title">
+          <span>AI SCOUT DOSSIER</span>
+          <span style="font-size:0.65rem;color:var(--cyan);">Opta Telemetry</span>
+        </div>
+        <div class="scout-lists">
+          <div class="scout-group strengths">
+            <h4>Tactical Strengths</h4>
+            <ul class="scout-list">
+              ${strengths.length > 0 ? strengths.slice(0, 4).map(s => `<li>${s}</li>`).join("") : `<li>Elite performer in La Liga EA SPORTS 2023/24 season data.</li>`}
+            </ul>
+          </div>
+          <div class="scout-group weaknesses">
+            <h4>Risk Factors</h4>
+            <ul class="scout-list">
+              ${weaknesses.length > 0 ? weaknesses.slice(0, 3).map(w => `<li>${w}</li>`).join("") : `<li>Subject to physical defensive marking in tight half-spaces.</li>`}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 13. FULL CLUB INTELLIGENCE MODAL
+// ============================================================
+async function openClubModal(slug) {
+  if (!clubModal || !clubModalContent) return;
+  clubModal.classList.add("open");
+  clubModalContent.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Loading club intelligence...</p></div>`;
+
+  try {
+    let res = await fetch(`${API_BASE}/api/clubs/${slug}`);
+    if (!res.ok) {
+      const m = allStandings.find(s => s.slug === slug || s.nickname?.toLowerCase().includes(slug));
+      if (m) res = await fetch(`${API_BASE}/api/clubs/${m.slug}`);
+    }
+    if (!res.ok) throw new Error("Club not found");
+    const data = await res.json();
+    renderClubModal(data, slug);
+  } catch (err) {
+    clubModalContent.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--red);"><p>${err.message}</p></div>`;
+  }
+}
+
+function closeClubModal() {
+  clubModal?.classList.remove("open");
+}
+
+function renderClubModal(data, slug) {
+  const club = data.club || {};
+  const scores = data.scores || {};
+  const stats = data.stats || {};
+  const name = club.nickname || club.name || "Club";
+  const stadiumImg = club.stadium_image_url || "";
+
+  const radarData = [
+    { label: "Possession", score: scores.possession_control || 75 },
+    { label: "Attacking", score: scores.attacking_potency || 80 },
+    { label: "Defensive", score: scores.defensive_solidity || 78 },
+    { label: "Pressing", score: scores.pressing_workrate || 76 },
+    { label: "Physical", score: scores.physical_dominance || 70 },
+  ];
+  const radarSvg = buildModalRadar(radarData);
+
+  clubModalContent.innerHTML = `
+    <div class="club-hero-card">
+      <div class="club-hero-left">
+        <img class="club-hero-crest" src="${club.shield_url || ""}" alt="${name}" onerror="this.style.opacity='0.3'">
+        <div>
+          <h2 class="club-hero-title">${name}</h2>
+          <div class="club-hero-meta">
+            ${club.foundation ? `<span>Founded ${new Date(club.foundation).getFullYear()}</span><span>·</span>` : ""}
+            <span>${club.stadium || "Official Stadium"}</span>
+            ${club.formation ? `<span>·</span><span>Formation: <strong>${club.formation}</strong></span>` : ""}
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:0.75rem;">
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.1rem;font-weight:900;color:var(--cyan);">${stats.goals||0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);">GOALS</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.1rem;font-weight:900;color:var(--t2);">${club.played||0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);">PLAYED</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.1rem;font-weight:900;color:var(--green);">${club.won||0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);">WINS</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-family:var(--mono);font-size:1.1rem;font-weight:900;color:var(--gold);">${club.points||0}</div>
+              <div style="font-size:0.62rem;color:var(--t3);">POINTS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="club-hero-ovr">
+        <span class="ch-ovr-val">${club.overall_rating || "—"}</span>
+        <span class="ch-ovr-lbl">CLUB RATING</span>
+      </div>
+    </div>
+
+    ${stadiumImg ? `
+      <div style="height:150px;overflow:hidden;border-bottom:1px solid var(--b0);">
+        <img src="${stadiumImg}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>
+    ` : ""}
+
+    <div class="dossier-analysis-grid">
+      <div class="radar-card">
+        <div class="card-title">
+          <span>TACTICAL SYSTEM RADAR</span>
+          <span style="font-size:0.65rem;color:var(--t3);">Opta Index</span>
+        </div>
+        <div class="radar-chart-wrap">${radarSvg}</div>
+      </div>
+
+      <div class="scout-card">
+        <div class="card-title">
+          <span>${data.archetype || "TACTICAL ARCHETYPE"}</span>
+          <span style="font-size:0.65rem;color:var(--cyan);">AI Analysis</span>
+        </div>
+        <div class="scout-lists">
+          <div class="scout-group strengths">
+            <h4>Tactical Pillars</h4>
+            <ul class="scout-list">
+              ${(data.strengths || []).slice(0, 4).map(s => `<li>${s}</li>`).join("") || "<li>Data processing...</li>"}
+            </ul>
+          </div>
+          <div class="scout-group weaknesses">
+            <h4>Tactical Vulnerabilities</h4>
+            <ul class="scout-list">
+              ${(data.weaknesses || []).slice(0, 3).map(w => `<li>${w}</li>`).join("") || "<li>Analyzing defensive exposure...</li>"}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// 14. RADAR CHART HELPER (MODALS)
+// ============================================================
+function buildModalRadar(axes) {
+  const size = 250;
+  const cx = size / 2, cy = size / 2;
+  const r = 74;
+  const n = axes.length;
+
+  const webLines = [0.25, 0.5, 0.75, 1.0].map(lv => {
+    const pts = axes.map((_, i) => {
+      const a = (2 * Math.PI / n) * i - Math.PI / 2;
+      return `${(cx + r * lv * Math.cos(a)).toFixed(1)},${(cy + r * lv * Math.sin(a)).toFixed(1)}`;
+    }).join(" ");
+    return `<polygon points="${pts}" fill="none" stroke="var(--b1)" stroke-width="1"/>`;
+  }).join("");
+
+  const spokes = axes.map((_, i) => {
+    const a = (2 * Math.PI / n) * i - Math.PI / 2;
+    return `<line x1="${cx}" y1="${cy}" x2="${(cx + r * Math.cos(a)).toFixed(1)}" y2="${(cy + r * Math.sin(a)).toFixed(1)}" stroke="var(--b0)" stroke-width="1"/>`;
+  }).join("");
+
+  const pts = [];
+  const labels = [];
+  axes.forEach((ax, i) => {
+    const a = (2 * Math.PI / n) * i - Math.PI / 2;
+    const v = Math.max(5, Math.min(100, ax.score));
+    pts.push(`${(cx + r * (v / 100) * Math.cos(a)).toFixed(1)},${(cy + r * (v / 100) * Math.sin(a)).toFixed(1)}`);
+    const lx = (cx + (r + 18) * Math.cos(a)).toFixed(1);
+    const ly = (cy + (r + 18) * Math.sin(a)).toFixed(1);
+    labels.push(`<text x="${lx}" y="${ly}" fill="#86868B" font-size="8.5" text-anchor="middle" dominant-baseline="middle">${ax.label}</text>`);
+  });
+
+  return `
+    <svg viewBox="0 0 ${size} ${size}" width="100%" height="100%">
+      ${webLines}${spokes}
+      <polygon points="${pts.join(" ")}" fill="rgba(0,122,255,0.15)" stroke="#007AFF" stroke-width="2"/>
+      ${labels.join("")}
+    </svg>
+  `;
+}
+
+// ============================================================
+// 15. UTILITIES
+// ============================================================
+function getPositionClass(pos) {
+  const p = (pos || "").toLowerCase();
+  if (p.includes("forward") || p.includes("winger") || p.includes("striker")) return "fw";
+  if (p.includes("midfielder") || p.includes("midfield")) return "mid";
+  if (p.includes("defender") || p.includes("back")) return "def";
+  if (p.includes("goalkeeper") || p.includes("keeper")) return "gk";
+  return "mid";
+}
+
+function getSilhouette(pos) {
+  return "https://assets.laliga.com/assets/2019/06/07/small/barcelona.png";
+}
+
+function getFlagEmoji(code) {
+  const flags = {
+    "ES": "🇪🇸", "FR": "🇫🇷", "BR": "🇧🇷", "GB-ENG": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "DE": "🇩🇪",
+    "IT": "🇮🇹", "PT": "🇵🇹", "UY": "🇺🇾", "AR": "🇦🇷", "HR": "🇭🇷",
+    "NL": "🇳🇱", "BE": "🇧🇪", "SN": "🇸🇳", "NO": "🇳🇴", "PL": "🇵🇱",
+    "SK": "🇸🇰", "JP": "🇯🇵", "MA": "🇲🇦", "NG": "🇳🇬", "CO": "🇨🇴",
+    "CL": "🇨🇱", "GA": "🇬🇦", "RO": "🇷🇴", "VE": "🇻🇪", "DK": "🇩🇰",
+    "CI": "🇨🇮", "CM": "🇨🇲", "GN": "🇬🇳", "GH": "🇬🇭", "ML": "🇲🇱"
+  };
+  return flags[code] || "🌍";
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}

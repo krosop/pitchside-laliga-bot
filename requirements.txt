@@ -1,0 +1,2 @@
+# Keep the serverless bundle lean — stdlib only, no installs needed.
+# (empty by design)
