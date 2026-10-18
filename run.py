@@ -47,7 +47,7 @@ def run_bot_demo():
         print(clean_text)
         print("\n[INLINE KEYBOARD BUTTONS]:")
         for row in markup.get("inline_keyboard", []):
-            row_str = "  ".join(f"[ {btn['text']} ({btn['callback_data']}) ]" for btn in row)
+            row_str = "  ".join(f"[ {btn['text']} ({btn.get('callback_data') or btn.get('url')}) ]" for btn in row)
             print(f"  {row_str}")
 
     gif_url, caption, markup = bot.render_welcome_animation()

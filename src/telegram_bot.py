@@ -90,6 +90,43 @@ class PitchsideTelegramBot:
 
     WELCOME_GIF_URL: str = "https://media1.tenor.com/m/tgsrfDxv17MAAAAd/neyma.gif"
 
+    CLUB_THEMES: Dict[str, Dict[str, str]] = {
+        "barcelona": {"code": "FCB", "badge": "🔵🔴", "name": "Barcelona"},
+        "real-madrid": {"code": "RMA", "badge": "⚪🟣", "name": "Real Madrid"},
+        "atletico": {"code": "ATM", "badge": "🔴⚪", "name": "Atlético Madrid"},
+        "betis": {"code": "BET", "badge": "🟢⚪", "name": "Real Betis"},
+        "sociedad": {"code": "RSO", "badge": "⚪🔵", "name": "Real Sociedad"},
+        "sevilla": {"code": "SEV", "badge": "⚪🔴", "name": "Sevilla"},
+        "alaves": {"code": "ALV", "badge": "🔵⚪", "name": "Alavés"},
+        "celta": {"code": "CEL", "badge": "🩵", "name": "Celta Vigo"},
+        "deportivo": {"code": "DEP", "badge": "🔵⚪", "name": "Deportivo"},
+        "osasuna": {"code": "OSA", "badge": "🔴🔵", "name": "Osasuna"},
+        "athletic": {"code": "ATH", "badge": "🔴⚪", "name": "Athletic Club"},
+        "villarreal": {"code": "VIL", "badge": "🟡", "name": "Villarreal"},
+        "espanyol": {"code": "ESP", "badge": "⚪🔵", "name": "Espanyol"},
+        "rayo": {"code": "RAY", "badge": "⚪⚡", "name": "Rayo Vallecano"},
+        "getafe": {"code": "GET", "badge": "🔵", "name": "Getafe"},
+        "racing": {"code": "RAC", "badge": "🟢⚪", "name": "Racing Santander"},
+        "levante": {"code": "LEV", "badge": "🔴🔵", "name": "Levante"},
+        "elche": {"code": "ELC", "badge": "🟢⚪", "name": "Elche"},
+        "valencia": {"code": "VAL", "badge": "⚪🦇", "name": "Valencia"},
+        "malaga": {"code": "MAL", "badge": "⚪🔵", "name": "Málaga"},
+        "girona": {"code": "GIR", "badge": "🔴⚪", "name": "Girona"},
+        "mallorca": {"code": "MLL", "badge": "🔴⚫", "name": "Mallorca"},
+        "leganes": {"code": "LEG", "badge": "🔵⚪", "name": "Leganés"},
+        "valladolid": {"code": "VLL", "badge": "🟣⚪", "name": "Real Valladolid"},
+        "palmas": {"code": "LPA", "badge": "🟡🔵", "name": "Las Palmas"},
+    }
+
+    @classmethod
+    def get_club_theme(cls, slug_or_name: str) -> Dict[str, str]:
+        s = (slug_or_name or "").lower().replace(" ", "-")
+        for k, v in cls.CLUB_THEMES.items():
+            if k in s:
+                return v
+        code = "".join([part[0] for part in s.split("-") if part])[:3].upper() or "LAL"
+        return {"code": code, "badge": "⚽", "name": slug_or_name}
+
     def __init__(self, token: Optional[str] = None, db: Optional[Database] = None):
         self.token = token
         self.db = db or Database()
@@ -228,11 +265,42 @@ class PitchsideTelegramBot:
             {"command": "compare", "description": "⚔️ Compare 2 Players or Clubs Head-to-Head"},
             {"command": "help", "description": "ℹ️ Bot Guide & Features Overview"},
         ]
+        try:
+            self._api_call("setChatMenuButton", {"menu_button": {"type": "commands"}}, timeout=15)
+        except Exception:
+            pass
         return self._api_call("setMyCommands", {"commands": commands}, timeout=15)
 
     # =========================================================================
     # DATA & FORMATTING HELPERS
     # =========================================================================
+    @staticmethod
+    def _render_scoreboard_card(
+        h_code: str,
+        h_name: str,
+        h_score: Any,
+        a_code: str,
+        a_name: str,
+        a_score: Any,
+        status_sub: str,
+        width: int = 32,
+    ) -> str:
+        """
+        Renders a clean, monospaced card frame for scores and fixtures in <pre><code>.
+        """
+        h_line = f"{h_code:<4} {h_name[:15]:<15} {str(h_score):>4}"
+        a_line = f"{a_code:<4} {a_name[:15]:<15} {str(a_score):>4}"
+        sub_line = (status_sub or "")[:width - 4]
+        box = [
+            "┌" + ("─" * (width - 2)) + "┐",
+            f"│ {h_line:<{width - 4}} │",
+            f"│ {a_line:<{width - 4}} │",
+            "├" + ("─" * (width - 2)) + "┤",
+            f"│ {sub_line:<{width - 4}} │",
+            "└" + ("─" * (width - 2)) + "┘",
+        ]
+        return "<pre><code>" + "\n".join(box) + "</code></pre>"
+
     @staticmethod
     def _esc(val: Any) -> str:
         return html.escape(str(val if val is not None else ""))
@@ -472,7 +540,7 @@ class PitchsideTelegramBot:
     # =========================================================================
     # VIEW 1: DAILY MATCHES OF THE DAY & MAIN HUB (/today, day:<date>)
     # =========================================================================
-    def render_home_view(self, requested_date: Optional[str] = None) -> Tuple[str, Dict[str, Any]]:
+    def render_home_view(self, requested_date: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         from datetime import datetime
         today_str, active_date, is_exact_today = self._resolve_active_date(requested_date)
         all_dates = self._get_match_dates()
@@ -497,7 +565,7 @@ class PitchsideTelegramBot:
         lines = [
             "⚽ <b>PITCHSIDE · LA LIGA DAILY MATCH CENTER</b>",
             date_badge,
-            "━━━━━━━━━━━━━━━━━━━━━━",
+            "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
         ]
 
         kb = []
@@ -507,6 +575,8 @@ class PitchsideTelegramBot:
             for idx, f in enumerate(day_fixtures, 1):
                 h_name = f.get("home_nickname") or f.get("home_name") or "Home"
                 a_name = f.get("away_nickname") or f.get("away_name") or "Away"
+                h_theme = self.get_club_theme(f.get("home_slug") or h_name)
+                a_theme = self.get_club_theme(f.get("away_slug") or a_name)
                 h_rank = (standings_map.get(f.get("home_slug")) or {}).get("position") or "-"
                 a_rank = (standings_map.get(f.get("away_slug")) or {}).get("position") or "-"
                 st = f.get("status", "SCHEDULED")
@@ -519,21 +589,21 @@ class PitchsideTelegramBot:
                     scorers = ", ".join(f"{g.get('scorer')} {g.get('minute')}'" for g in goals[:3])
                     scorer_line = f"\n   └ ⚽ <i>{self._esc(scorers)}</i>" if scorers else ""
                     lines.append(
-                        f"\n🏁 <b>{idx}. {self._esc(h_name)} (#{h_rank})  <code>{hs} - {as_}</code>  {self._esc(a_name)} (#{a_rank})</b> (FT){scorer_line}"
+                        f"\n🏁 <b>{idx}. {h_theme['badge']} {h_theme['code']}  <code>{hs} - {as_}</code>  {a_theme['code']} {a_theme['badge']}</b> (FT){scorer_line}"
                     )
-                    btn_main = f"📊 {h_name[:10]} {hs}-{as_} {a_name[:10]}"
+                    btn_main = f"📊 {h_theme['code']} {hs}-{as_} {a_theme['code']}"
                 elif st == "LIVE":
                     hs, as_ = f.get("home_score", 0), f.get("away_score", 0)
                     lines.append(
-                        f"\n🔴 <b>{idx}. {self._esc(h_name)} (#{h_rank})  <code>{hs} - {as_}</code>  {self._esc(a_name)} (#{a_rank})</b> (LIVE)"
+                        f"\n🔴 <b>{idx}. {h_theme['badge']} {h_theme['code']}  <code>{hs} - {as_}</code>  {a_theme['code']} {a_theme['badge']}</b> (LIVE)"
                     )
-                    btn_main = f"🔴 {h_name[:10]} {hs}-{as_} {a_name[:10]}"
+                    btn_main = f"🔴 {h_theme['code']} {hs}-{as_} {a_theme['code']}"
                 else:
                     lines.append(
-                        f"\n🕒 <b>{idx}. [{ko_time} UTC] {self._esc(h_name)} (#{h_rank}) vs {self._esc(a_name)} (#{a_rank})</b>\n"
+                        f"\n🕒 <b>{idx}. [{ko_time} UTC] {h_theme['badge']} {h_theme['code']} vs {a_theme['code']} {a_theme['badge']}</b>\n"
                         f"   └ 🎲 Odds: <code>1: {o1}</code> · <code>X: {ox}</code> · <code>2: {o2}</code>"
                     )
-                    btn_main = f"🏟️ {h_name[:10]} vs {a_name[:10]}"
+                    btn_main = f"🏟️ {h_theme['code']} vs {a_theme['code']}"
 
                 kb.append([
                     {"text": btn_main, "callback_data": f"m:{f['id']}"},
@@ -564,6 +634,8 @@ class PitchsideTelegramBot:
 
         # "Move to Other Things" Navigation Hub
         current_md = self._get_active_matchday()
+        is_sub = self.is_subscribed(chat_id) if chat_id else True
+        sub_btn = {"text": "🔔 Daily Alerts: ON" if is_sub else "🔕 Daily Alerts: OFF", "callback_data": "sub:toggle"}
         kb.extend([
             [
                 {"text": "🏆 Standings & Form", "callback_data": "st:all"},
@@ -578,6 +650,7 @@ class PitchsideTelegramBot:
                 {"text": "🔄 Update Daily Data", "callback_data": "sync:now"},
             ],
             [
+                sub_btn,
                 {"text": "ℹ️ What Bot Does (GIF Guide)", "callback_data": "menu:welcome"},
             ],
         ])
@@ -790,7 +863,7 @@ class PitchsideTelegramBot:
     # =========================================================================
     # VIEW 4: SINGLE MATCH CENTER & TACTICAL PREVIEW (m:<fid>)
     # =========================================================================
-    def render_match_center(self, fixture_id: int) -> Tuple[str, Dict[str, Any]]:
+    def render_match_center(self, fixture_id: int, tab: str = "overview") -> Tuple[str, Dict[str, Any]]:
         detail = self._get_match_detail(fixture_id)
         if not detail:
             return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
@@ -803,19 +876,43 @@ class PitchsideTelegramBot:
 
         h_name = home.get("nickname") or home.get("name")
         a_name = away.get("nickname") or away.get("name")
+        h_theme = self.get_club_theme(home.get("slug") or h_name)
+        a_theme = self.get_club_theme(away.get("slug") or a_name)
         h_pos = home.get("position") or "-"
         a_pos = away.get("position") or "-"
         h_form = self._get_club_form_emojis(home.get("slug", ""), 5)
         a_form = self._get_club_form_emojis(away.get("slug", ""), 5)
+        stadium = home.get("stadium") or "Estadio Oficial"
 
         st = fx.get("status", "SCHEDULED")
+        hs = fx.get("home_score", 0)
+        as_ = fx.get("away_score", 0)
+
         if st == "FINISHED":
-            score_banner = f"🏁 <b>FINAL SCORE:  <code> {fx.get('home_score')} - {fx.get('away_score')} </code>  (FT)</b>"
+            card_sub = f"FT · {stadium}"
         elif st == "LIVE":
-            score_banner = f"🔴 <b>LIVE SCORE:  <code> {fx.get('home_score')} - {fx.get('away_score')} </code></b>"
+            card_sub = f"LIVE · {stadium}"
         else:
-            ko = (fx.get("kickoff_time") or "Upcoming").replace("T", " ")[:16]
-            score_banner = f"🕒 <b>KICKOFF:</b> <code>{self._esc(ko)}</code>"
+            ko_time = (fx.get("kickoff_time") or "19:00 UTC").replace("T", " ")[:16]
+            card_sub = f"KO {ko_time} · {stadium}"
+
+        scoreboard_card = self._render_scoreboard_card(
+            h_theme["code"], h_name, hs if st in ("FINISHED", "LIVE") else "-",
+            a_theme["code"], a_name, as_ if st in ("FINISHED", "LIVE") else "-",
+            card_sub
+        )
+
+        # Missing Players block (Injuries & Suspensions)
+        h_missing = (home.get("tactics") or {}).get("missing_players") or []
+        a_missing = (away.get("tactics") or {}).get("missing_players") or []
+        missing_lines = []
+        if h_missing:
+            hm_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in h_missing[:4])
+            missing_lines.append(f"• <b>{self._esc(h_name)} Out:</b> {self._esc(hm_str)}")
+        if a_missing:
+            am_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in a_missing[:4])
+            missing_lines.append(f"• <b>{self._esc(a_name)} Out:</b> {self._esc(am_str)}")
+        missing_block = ("\n🚫 <b>SUSPENSIONS &amp; INJURIES</b>\n" + "\n".join(missing_lines) + "\n") if missing_lines else ""
 
         # Forecast probabilities & implied odds
         h_prob = forecast.get("home_win_pct", 45.0)
@@ -835,7 +932,6 @@ class PitchsideTelegramBot:
         top_scores = forecast.get("top_scorelines") or []
         top_scores_str = " · ".join(f"<code>{s['score']}</code> ({s['probability']}%)" for s in top_scores[:3])
 
-        # Tactical Clash summary
         h_tac = clash.get("home") or {}
         a_tac = clash.get("away") or {}
         exp_poss = clash.get("expected_possession") or {"home": 50, "away": 50}
@@ -844,59 +940,108 @@ class PitchsideTelegramBot:
         h_fat = (home.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
         a_fat = (away.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
 
-        h_missing = (home.get("tactics") or {}).get("missing_players") or []
-        a_missing = (away.get("tactics") or {}).get("missing_players") or []
-        missing_lines = []
-        if h_missing:
-            hm_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in h_missing[:4])
-            missing_lines.append(f"• <b>{self._esc(h_name)} Out:</b> {self._esc(hm_str)}")
-        if a_missing:
-            am_str = ", ".join(f"{m.get('status_icon', '🚫')} {m.get('nickname') or m.get('name')} ({m.get('availability_reason', 'Out')})" for m in a_missing[:4])
-            missing_lines.append(f"• <b>{self._esc(a_name)} Out:</b> {self._esc(am_str)}")
-        missing_block = ("\n🚫 <b>SUSPENSIONS &amp; INJURIES</b>\n" + "\n".join(missing_lines) + "\n") if missing_lines else ""
+        if tab == "lineups":
+            h_formation = (home.get("tactics") or {}).get("formation", "4-3-3")
+            a_formation = (away.get("tactics") or {}).get("formation", "4-3-3")
+            h_xi = (home.get("tactics") or {}).get("starting_xi", [])[:11]
+            a_xi = (away.get("tactics") or {}).get("starting_xi", [])[:11]
 
-        text = (
-            f"🏟️ <b>LA LIGA MATCH CENTER · ROUND {fx.get('matchday')}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🏠 <b>{self._esc(h_name)}</b> (#{h_pos})  vs  ✈️ <b>{self._esc(a_name)}</b> (#{a_pos})\n"
-            f"{score_banner}\n"
-            f"📍 <i>{self._esc(home.get('stadium', 'Estadio Oficial'))}</i>\n\n"
-            f"📊 <b>FORM &amp; CONDITION</b>\n"
-            f"• <b>{self._esc(h_name)}:</b> {h_form} · {self._esc(h_fat)}\n"
-            f"• <b>{self._esc(a_name)}:</b> {a_form} · {self._esc(a_fat)}\n"
-            f"{missing_block}\n"
-            f"🎲 <b>DIXON-COLES PROBABILITY &amp; ODDS</b>\n"
-            f"{prob_bar}\n"
-            f"🟩 <b>{self._esc(h_name)}:</b> <code>{h_prob}%</code> (Odds <code>{o1:.2f}</code>)\n"
-            f"⬜ <b>Draw:</b> <code>{d_prob}%</code> (Odds <code>{ox:.2f}</code>)\n"
-            f"🟥 <b>{self._esc(a_name)}:</b> <code>{a_prob}%</code> (Odds <code>{o2:.2f}</code>)\n"
-            f"• <b>Projected xG:</b> <code>{xg_h:.2f}</code> vs <code>{xg_a:.2f}</code>\n"
-            f"• <b>Markets:</b> Over 2.5: <code>{o25}%</code> · BTTS: <code>{btts}%</code>\n"
-            f"• <b>Likely Scores:</b> {top_scores_str}\n\n"
-            f"🧠 <b>MANAGERIAL TACTICAL CLASH</b>\n"
-            f"• <b>{self._esc(h_name)} ({self._esc(h_tac.get('manager', 'Coach'))}):</b> {self._esc(h_tac.get('tactical_identity', ''))}\n"
-            f"• <b>{self._esc(a_name)} ({self._esc(a_tac.get('manager', 'Coach'))}):</b> {self._esc(a_tac.get('tactical_identity', ''))}\n"
-            f"• <b>Projected Ball Split:</b> <code>{exp_poss.get('home', 50)}% - {exp_poss.get('away', 50)}%</code>\n"
-            f"💬 <i>{self._esc(tac_narrative[:220])}</i>"
-        )
+            h_xi_lines = [f"  <code>{p.get('slot','POS'):<3}</code> #{p.get('shirt_number',99):<2} <b>{self._esc(p.get('nickname') or p.get('name'))}</b> ({p.get('overall_rating',75)})" for p in h_xi]
+            a_xi_lines = [f"  <code>{p.get('slot','POS'):<3}</code> #{p.get('shirt_number',99):<2} <b>{self._esc(p.get('nickname') or p.get('name'))}</b> ({p.get('overall_rating',75)})" for p in a_xi]
+
+            out_block = []
+            if missing_lines:
+                out_block.append("  🚫 <b>Unavailable / Out:</b>")
+                for mp in h_missing + a_missing:
+                    out_block.append(f"    {mp.get('status_icon','🚫')} <s>{self._esc(mp.get('nickname') or mp.get('name'))}</s> — <i>{self._esc(mp.get('availability_reason','Unavailable'))}</i>")
+
+            text = (
+                f"🏟️ <b>MATCH CENTER · STARTING XIs &amp; FORM</b>\n"
+                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"🛡️ <b>{h_theme['badge']} {self._esc(h_name)} ({h_formation})</b>\n"
+                + "\n".join(h_xi_lines) + "\n\n"
+                f"🛡️ <b>{a_theme['badge']} {self._esc(a_name)} ({a_formation})</b>\n"
+                + "\n".join(a_xi_lines) + "\n"
+                + ("\n".join(out_block) if out_block else "")
+            )
+        elif tab == "momentum":
+            poss_split = self._dual_bar(exp_poss.get("home", 50), exp_poss.get("away", 50), 12)
+            text = (
+                f"🏟️ <b>MATCH CENTER · PREDICTIVE TELEMETRY</b>\n"
+                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"🌊 <b>PROJECTED POSSESSION SPLIT</b>\n"
+                f"{poss_split}\n"
+                f"• {h_theme['code']} <code>{exp_poss.get('home', 50)}%</code> vs <code>{exp_poss.get('away', 50)}%</code> {a_theme['code']}\n\n"
+                f"📈 <b>EXPECTED GOALS &amp; MARKET METRICS</b>\n"
+                f"• <b>Projected xG:</b> <code>{xg_h:.2f}</code> ({h_theme['code']}) vs <code>{xg_a:.2f}</code> ({a_theme['code']})\n"
+                f"• <b>Over 2.5 Goals:</b> <code>{o25}%</code>\n"
+                f"• <b>Both Teams to Score (BTTS):</b> <code>{btts}%</code>\n"
+                f"• <b>Likeliest Scorelines:</b> {top_scores_str}\n\n"
+                f"🎲 <b>DIXON-COLES PROBABILITY</b>\n"
+                f"{prob_bar}\n"
+                f"🟩 {h_theme['code']}: <code>{h_prob}%</code> · ⬜ Draw: <code>{d_prob}%</code> · 🟥 {a_theme['code']}: <code>{a_prob}%</code>"
+            )
+        elif tab == "tactics":
+            text = (
+                f"🏟️ <b>MATCH CENTER · TACTICAL CLASH</b>\n"
+                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"🧠 <b>MANAGERIAL DUEL</b>\n"
+                f"• <b>{h_theme['code']}:</b> {self._esc(h_tac.get('manager', 'Manager'))}\n"
+                f"  └ <i>{self._esc(h_tac.get('tactical_identity', 'Structured Football'))}</i>\n"
+                f"• <b>{a_theme['code']}:</b> {self._esc(a_tac.get('manager', 'Manager'))}\n"
+                f"  └ <i>{self._esc(a_tac.get('tactical_identity', 'Structured Football'))}</i>\n\n"
+                f"⚔️ <b>TACTICAL KEY BATTLE</b>\n"
+                f"💬 <i>{self._esc(tac_narrative)}</i>\n\n"
+                f"• <b>{h_theme['code']} Strengths:</b> {self._esc(h_tac.get('key_strength', 'Technical midfield combinations'))}\n"
+                f"• <b>{h_theme['code']} Vulnerabilities:</b> {self._esc(h_tac.get('key_weakness', 'High line space'))}\n"
+                f"• <b>{a_theme['code']} Strengths:</b> {self._esc(a_tac.get('key_strength', 'Direct transition speed'))}\n"
+                f"• <b>{a_theme['code']} Vulnerabilities:</b> {self._esc(a_tac.get('key_weakness', 'Set piece defending'))}"
+            )
+        else:  # overview
+            goals = fx.get("goals") or []
+            scorers_str = ", ".join(f"{g.get('scorer')} {g.get('minute')}'" for g in goals[:4])
+            scorers_line = f"⚽ <b>Goals:</b> <i>{self._esc(scorers_str)}</i>\n" if scorers_str else ""
+            text = (
+                f"🏟️ <b>LA LIGA MATCH CENTER · ROUND {fx.get('matchday')}</b>\n"
+                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> (#{h_pos})  vs  <b>{self._esc(a_name)}</b> (#{a_pos}) {a_theme['badge']}\n"
+                f"{scoreboard_card}\n"
+                f"{scorers_line}"
+                f"📊 <b>FORM &amp; CONDITION</b>\n"
+                f"• <b>{h_theme['code']}:</b> {h_form} · {self._esc(h_fat)}\n"
+                f"• <b>{a_theme['code']}:</b> {a_form} · {self._esc(a_fat)}\n"
+                f"{missing_block}\n"
+                f"🎲 <b>DIXON-COLES WIN PROBABILITY &amp; ODDS</b>\n"
+                f"{prob_bar}\n"
+                f"🟩 <b>{h_theme['code']}:</b> <code>{h_prob}%</code> (Odds <code>{o1:.2f}</code>)\n"
+                f"⬜ <b>Draw:</b> <code>{d_prob}%</code> (Odds <code>{ox:.2f}</code>)\n"
+                f"🟥 <b>{a_theme['code']}:</b> <code>{a_prob}%</code> (Odds <code>{o2:.2f}</code>)\n"
+                f"• <b>Projected xG:</b> <code>{xg_h:.2f}</code> vs <code>{xg_a:.2f}</code> · <b>Likely:</b> {top_scores_str}"
+            )
+
+        tab_row = [
+            {"text": "• 📊 Overview •" if tab == "overview" else "📊 Overview", "callback_data": f"m:{fixture_id}:overview"},
+            {"text": "• 📋 XIs •" if tab == "lineups" else "📋 XIs", "callback_data": f"m:{fixture_id}:lineups"},
+            {"text": "• 🌊 Momentum •" if tab == "momentum" else "🌊 Momentum", "callback_data": f"m:{fixture_id}:momentum"},
+            {"text": "• 🧠 Tactics •" if tab == "tactics" else "🧠 Tactics", "callback_data": f"m:{fixture_id}:tactics"},
+        ]
 
         kb = [
+            tab_row,
             [{"text": "⚡ SIMULATE 90' MATCH + TRENDS ▶", "callback_data": f"sim:{fixture_id}"}],
             [
-                {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
-                {"text": "📊 6-Axis Tactical Radar", "callback_data": f"mrad:{fixture_id}"},
+                {"text": f"🔄 Sub {h_theme['code']}", "callback_data": f"msub:{fixture_id}:h"},
+                {"text": f"🔄 Sub {a_theme['code']}", "callback_data": f"msub:{fixture_id}:a"},
             ],
             [
-                {"text": f"🔄 Sub {h_name[:10]}", "callback_data": f"msub:{fixture_id}:h"},
-                {"text": f"🔄 Sub {a_name[:10]}", "callback_data": f"msub:{fixture_id}:a"},
-            ],
-            [
-                {"text": f"🛡️ {h_name[:12]} DNA", "callback_data": f"c:{home.get('id')}"},
-                {"text": f"🛡️ {a_name[:12]} DNA", "callback_data": f"c:{away.get('id')}"},
+                {"text": f"🛡️ {h_theme['code']} DNA", "callback_data": f"c:{home.get('id')}"},
+                {"text": f"🛡️ {a_theme['code']} DNA", "callback_data": f"c:{away.get('id')}"},
             ],
             [
                 {"text": f"◀ Matchday {fx.get('matchday')}", "callback_data": f"md:{fx.get('matchday')}"},
-                {"text": "🏠 Main Menu", "callback_data": "menu:home"},
+                {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
         ]
         return text, {"inline_keyboard": kb}
@@ -982,6 +1127,16 @@ class PitchsideTelegramBot:
                     f"🏠<code>{snap['home_prob']:>4.1f}%</code> · 🤝<code>{snap['draw_prob']:>4.1f}%</code> · ✈️<code>{snap['away_prob']:>4.1f}%</code>"
                 )
 
+        h_theme = self.get_club_theme(home.get("slug") or h_name)
+        a_theme = self.get_club_theme(away.get("slug") or a_name)
+        stadium = home.get("stadium") or "Estadio Oficial"
+
+        card = self._render_scoreboard_card(
+            h_theme["code"], h_name, hs,
+            a_theme["code"], a_name, as_,
+            f"FT · {stadium}"
+        )
+
         sub_banner = ""
         if custom_subs:
             sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>"
@@ -990,13 +1145,12 @@ class PitchsideTelegramBot:
 
         text = (
             f"⚡ <b>90' FULL-TIME SIMULATION REPORT · MD {fx.get('matchday')}</b>{sub_banner}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🏠 <b>{self._esc(h_name)}</b>   <code>  {hs}  -  {as_}  </code>   <b>{self._esc(a_name)}</b> ✈️\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{h_theme['badge']} <b>{h_theme['code']}  {hs} - {as_}  {a_theme['code']}</b> {a_theme['badge']}\n"
+            f"{card}\n"
             f"⏱️ <b>MATCH INCIDENT TIMELINE</b>\n"
             + "\n".join(events_lines)
             + f"\n\n📊 <b>TELEMETRY &amp; EXPECTED GOALS (xG)</b>\n"
-            f"🟩 {self._esc(h_name)} vs 🟦 {self._esc(a_name)}\n"
+            f"🟩 {h_theme['code']} vs 🟦 {a_theme['code']}\n"
             f"{poss_bar}\n"
             f"• <b>Possession:</b> <code>{h_poss}%</code> vs <code>{a_poss}%</code>\n"
             f"• <b>Expected Goals (xG):</b> <code>{h_xg:.2f}</code> vs <code>{a_xg:.2f}</code>\n"
@@ -1012,18 +1166,24 @@ class PitchsideTelegramBot:
             f"• <b>Match Flow:</b> <i>{self._esc(verdict_txt)}</i>"
         )
 
+        share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}+on+La+Liga+EA+SPORTS!"
+
         kb = [
             [
-                {"text": f"🔄 Sub {h_name[:11]} & Re-Sim", "callback_data": f"msub:{fixture_id}:h"},
-                {"text": f"🔄 Sub {a_name[:11]} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
+                {"text": f"🔄 Sub {h_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:h"},
+                {"text": f"🔄 Sub {a_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
             ],
             [
                 {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
                 {"text": "📊 6-Axis Tactical Radar", "callback_data": f"mrad:{fixture_id}"},
             ],
             [
-                {"text": "◀ Match Preview", "callback_data": f"m:{fixture_id}"},
+                {"text": "📤 Share Simulation to Chat", "url": share_url},
+                {"text": "◀ Match Center", "callback_data": f"m:{fixture_id}"},
+            ],
+            [
                 {"text": f"📅 Matchday {fx.get('matchday')}", "callback_data": f"md:{fx.get('matchday')}"},
+                {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
         ]
         return text, {"inline_keyboard": kb}
@@ -1198,8 +1358,8 @@ class PitchsideTelegramBot:
         lines = [
             "🏆 <b>LA LIGA EA SPORTS STANDINGS</b>",
             f"<i>{subtitle}</i>",
-            "━━━━━━━━━━━━━━━━━━━━━━",
-            "<code> #  CLUB              MP   GD  PTS</code>",
+            "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
+            "<code> #  TAG CLUB        MP  GD PT</code>",
         ]
 
         club_buttons = []
@@ -1218,7 +1378,9 @@ class PitchsideTelegramBot:
             else:
                 zone = "⬜"
 
-            name = (c.get("nickname") or c.get("name") or "Club")[:15]
+            theme = self.get_club_theme(c.get("slug", "") or c.get("name", ""))
+            tag = theme["code"]
+            name = (c.get("nickname") or c.get("name") or "Club")[:11]
             mp = c.get("played", 0)
             gd = c.get("goal_difference", 0)
             gd_s = f"+{gd}" if gd > 0 else str(gd)
@@ -1227,15 +1389,15 @@ class PitchsideTelegramBot:
 
             if mode in ("top", "bot"):
                 lines.append(
-                    f"{zone} <code>{pos:>2}. {name:<15} {mp:>2} {gd_s:>4}  {pts:>2}</code>  {form}"
+                    f"{zone} <code>{pos:>2} {tag:<3} {name:<11} {mp:>2} {gd_s:>3} {pts:>2}</code> {form}"
                 )
             else:
                 lines.append(
-                    f"{zone} <code>{pos:>2}. {name:<15} {mp:>2} {gd_s:>4}  {pts:>2}</code>"
+                    f"{zone} <code>{pos:>2} {tag:<3} {name:<11} {mp:>2} {gd_s:>3} {pts:>2}</code>"
                 )
 
             if len(club_buttons) < 4:
-                row_btns.append({"text": f"#{pos} {name[:11]}", "callback_data": f"c:{c['id']}"})
+                row_btns.append({"text": f"#{pos} {theme['badge']} {name[:10]}", "callback_data": f"c:{c['id']}"})
                 if len(row_btns) == 2:
                     club_buttons.append(row_btns)
                     row_btns = []
@@ -1273,9 +1435,10 @@ class PitchsideTelegramBot:
         row = []
         for c in standings:
             pos = c.get("position", 0)
-            name = (c.get("nickname") or c.get("name") or "Club")[:14]
+            name = (c.get("nickname") or c.get("name") or "Club")[:12]
+            theme = self.get_club_theme(c.get("slug") or c.get("name"))
             ovr = c.get("overall_rating", 75)
-            row.append({"text": f"#{pos} {name} ({ovr})", "callback_data": f"c:{c['id']}"})
+            row.append({"text": f"#{pos} {theme['badge']} {name}", "callback_data": f"c:{c['id']}"})
             if len(row) == 2:
                 kb.append(row)
                 row = []
@@ -1293,6 +1456,7 @@ class PitchsideTelegramBot:
         c = profile.get("club") or {}
         scores = profile.get("scores") or {}
         slug = c.get("slug", "")
+        theme = self.get_club_theme(slug or c.get("name"))
         dna = ClubTacticsRegistry.get_profile(slug)
         metrics = dna.get("metrics") or {}
         form_dots = self._get_club_form_emojis(slug, 5)
@@ -1309,7 +1473,7 @@ class PitchsideTelegramBot:
         df = scores.get("def_rating") or c.get("def_rating", 75)
 
         text = (
-            f"🛡️ <b>{self._esc(c.get('name') or c.get('nickname'))} — TACTICAL DOSSIER</b>\n"
+            f"🛡️ {theme['badge']} <b>{self._esc(c.get('name') or c.get('nickname'))} — TACTICAL DOSSIER</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🏆 <b>Rank:</b> <code>#{pos}</code> · <b>Points:</b> <code>{pts}</code> (<code>{w}W-{d}D-{l}L</code>)\n"
             f"⚽ <b>Goals:</b> <code>{gf} GF : {ga} GA</code> (GD <code>{gd_str}</code>)\n"
@@ -1774,6 +1938,34 @@ class PitchsideTelegramBot:
             subs.add(int(env_chat))
         return sorted(subs)
 
+    def is_subscribed(self, chat_id: int) -> bool:
+        """Returns True if the user has daily match alerts enabled."""
+        self._ensure_subscribers_table()
+        try:
+            with self.db.get_connection() as conn:
+                row = conn.execute("SELECT subscribed FROM bot_subscribers WHERE chat_id = ?", (int(chat_id),)).fetchone()
+                if row is not None:
+                    return bool(row["subscribed"] if isinstance(row, dict) or hasattr(row, "keys") else row[0])
+        except Exception:
+            pass
+        return True
+
+    def toggle_subscription(self, chat_id: int) -> bool:
+        """Toggles daily matchday alert subscription on/off for a user."""
+        self._ensure_subscribers_table()
+        cur = self.is_subscribed(chat_id)
+        new_val = 0 if cur else 1
+        try:
+            with self.db.get_connection() as conn:
+                conn.execute(
+                    "UPDATE bot_subscribers SET subscribed = ? WHERE chat_id = ?",
+                    (new_val, int(chat_id)),
+                )
+                conn.commit()
+        except Exception:
+            pass
+        return bool(new_val)
+
     def refresh_daily_data(self) -> Dict[str, Any]:
         """Runs the full data pipeline (football-data + ESPN + Standings + Elo + Odds) and clears caches."""
         try:
@@ -1803,10 +1995,10 @@ class PitchsideTelegramBot:
     # =========================================================================
     # DISPATCHERS (COMMANDS, TEXT & CALLBACK QUERIES)
     # =========================================================================
-    def handle_command_or_text(self, text: str) -> Tuple[str, Dict[str, Any]]:
+    def handle_command_or_text(self, text: str, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         raw = (text or "").strip()
         if not raw:
-            return self.render_home_view("today")
+            return self.render_home_view("today", chat_id=chat_id)
 
         parts = raw.split(maxsplit=1)
         cmd = parts[0].lower().split("@")[0]  # strip @bot_username if in group chat
@@ -1815,7 +2007,7 @@ class PitchsideTelegramBot:
         if cmd in ("/start", "/help", "/about", "/welcome", "/guide"):
             return self.render_welcome_text()
         if cmd in ("/today", "/menu"):
-            return self.render_home_view(arg if arg else "today")
+            return self.render_home_view(arg if arg else "today", chat_id=chat_id)
         if cmd in ("/matches", "/fixtures", "/schedule"):
             md = int(arg) if arg.isdigit() else None
             return self.render_matchday_view(md)
@@ -1847,7 +2039,7 @@ class PitchsideTelegramBot:
         # Free-text search
         return self.render_smart_search(raw)
 
-    def handle_callback_data(self, data: str) -> Tuple[str, Dict[str, Any], Optional[str]]:
+    def handle_callback_data(self, data: str, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any], Optional[str]]:
         """
         Processes inline button callback_data and returns:
         (message_html, reply_markup, toast_notification)
@@ -1855,24 +2047,30 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "sub":
+            cid = chat_id or (self.get_active_subscribers()[-1] if self.get_active_subscribers() else 0)
+            new_state = self.toggle_subscription(cid) if cid else True
+            toast = "🔔 Daily Match Alerts Enabled!" if new_state else "🔕 Daily Match Alerts Paused."
+            return (*self.render_home_view("today", chat_id=cid), toast)
         if prefix in ("welcome", "about") or data in ("menu:welcome", "menu:about"):
             return (*self.render_welcome_text(), "ℹ️ Pitchside Features & Guide")
         if prefix == "menu":
-            return (*self.render_home_view("today"), None)
+            return (*self.render_home_view("today", chat_id=chat_id), None)
         if prefix == "day" and len(parts) >= 2:
-            return (*self.render_home_view(parts[1]), f"📅 Date: {parts[1]}")
+            return (*self.render_home_view(parts[1], chat_id=chat_id), f"📅 Date: {parts[1]}")
         if prefix == "daysim" and len(parts) >= 2:
             return (*self.render_daily_simulation(parts[1]), f"⚡ Simulated {parts[1]} Matches!")
         if prefix == "sync":
             self.refresh_daily_data()
-            return (*self.render_home_view("today"), "✅ Daily Matches & Standings Updated!")
+            return (*self.render_home_view("today", chat_id=chat_id), "✅ Daily Matches & Standings Updated!")
         if prefix == "md" and len(parts) >= 2:
             md_val = self._get_active_matchday() if parts[1] == "current" else int(parts[1])
             return (*self.render_matchday_view(md_val), f"Matchday {md_val}")
         if prefix == "mdsim" and len(parts) >= 2:
             return (*self.render_matchday_simulation(int(parts[1])), f"⚡ Simulated Matchday {parts[1]}!")
         if prefix == "m" and len(parts) >= 2:
-            return (*self.render_match_center(int(parts[1])), None)
+            tab = parts[2] if len(parts) >= 3 else "overview"
+            return (*self.render_match_center(int(parts[1]), tab=tab), None)
         if prefix == "sim" and len(parts) >= 2:
             return (*self.render_match_simulation(int(parts[1])), "⚡ 90' Match Simulation Complete!")
         if prefix == "mxi" and len(parts) >= 2:
@@ -1907,7 +2105,7 @@ class PitchsideTelegramBot:
         if prefix == "qcmp" and len(parts) >= 3:
             return (*self.render_compare_menu(f"{parts[1]} vs {parts[2]}"), None)
 
-        return (*self.render_home_view("today"), None)
+        return (*self.render_home_view("today", chat_id=chat_id), None)
 
     # =========================================================================
     # LONG-POLLING LOOP (WITH DAILY AUTO-UPDATE & GITHUB ACTIONS RUNTIME CAP)
@@ -1930,7 +2128,7 @@ class PitchsideTelegramBot:
                     gif_url, caption, markup = self.render_welcome_animation()
                     self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
                 else:
-                    resp_text, markup = self.handle_command_or_text(text)
+                    resp_text, markup = self.handle_command_or_text(text, chat_id=chat_id)
                     self.send_message(chat_id, resp_text, reply_markup=markup)
 
         elif "callback_query" in update:
@@ -1949,7 +2147,7 @@ class PitchsideTelegramBot:
                     first_name=chat.get("first_name", ""),
                 )
             if chat_id and data:
-                resp_text, markup, toast = self.handle_callback_data(data)
+                resp_text, markup, toast = self.handle_callback_data(data, chat_id=chat_id)
                 if cb_id:
                     self.answer_callback(cb_id, text=toast)
                 self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup)

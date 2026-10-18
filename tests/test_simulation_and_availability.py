@@ -460,3 +460,82 @@ def test_telegram_bot_welcome_animation_and_features_guide():
     assert sent_animations[0][0] == 987654321
     assert sent_animations[0][1] == expected_gif
     assert "WELCOME TO PITCHSIDE" in sent_animations[0][2]
+
+
+def test_telegram_bot_automated_theme_cards_and_tabs():
+    """
+    Verifies that:
+    1. CLUB_THEMES accurately maps club slugs/names to 3-letter codes and emoji badges.
+    2. _render_scoreboard_card() generates a monospaced frame in <pre><code>.
+    3. render_match_center() accurately renders all 4 tabs: overview, lineups, momentum, tactics.
+    4. render_match_simulation() includes the scoreboard card and share link.
+    5. render_standings_view() includes 3-letter club codes in columns.
+    6. Daily Alerts toggle works automatically in the database (toggle_subscription & is_subscribed).
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+
+    # 1. Club theme mappings
+    rma = bot.get_club_theme("real-madrid")
+    fcb = bot.get_club_theme("fc-barcelona")
+    atm = bot.get_club_theme("atletico-madrid")
+    assert rma["code"] == "RMA" and "⚪" in rma["badge"]
+    assert fcb["code"] == "FCB" and "🔵" in fcb["badge"]
+    assert atm["code"] == "ATM" and "🔴" in atm["badge"]
+
+    # 2. Scoreboard card
+    card = bot._render_scoreboard_card("RMA", "Real Madrid", 2, "FCB", "Barcelona", 1, "FT · Santiago Bernabéu")
+    assert "<pre><code>" in card and "</code></pre>" in card
+    assert "RMA" in card and "FCB" in card and "2" in card and "1" in card
+    assert "┌" in card and "└" in card
+
+    # 3. Match Center 4 Tabs
+    # Tab 1: Overview
+    t_over, kb_over = bot.render_match_center(2, tab="overview")
+    assert "<pre><code>" in t_over
+    assert "• 📊 Overview •" in str(kb_over)
+    assert "DIXON-COLES" in t_over
+
+    # Tab 2: Lineups
+    t_line, kb_line = bot.render_match_center(2, tab="lineups")
+    assert "• 📋 XIs •" in str(kb_line)
+    assert "STARTING XIs" in t_line or "XI" in t_line
+
+    # Tab 3: Momentum
+    t_mom, kb_mom = bot.render_match_center(2, tab="momentum")
+    assert "• 🌊 Momentum •" in str(kb_mom)
+    assert "PROJECTED POSSESSION" in t_mom
+
+    # Tab 4: Tactics
+    t_tac, kb_tac = bot.render_match_center(2, tab="tactics")
+    assert "• 🧠 Tactics •" in str(kb_tac)
+    assert "MANAGERIAL DUEL" in t_tac
+
+    # 4. Simulation report with scoreboard card and share link
+    sim_text, sim_kb = bot.render_match_simulation(2)
+    assert "<pre><code>" in sim_text
+    assert any("Share" in btn.get("text", "") for row in sim_kb["inline_keyboard"] for btn in row)
+
+    # 5. Standings with 3-letter codes
+    st_text, _ = bot.render_standings_view("all")
+    assert "TAG" in st_text or any(code in st_text for code in ("FCB", "ATM", "RMA"))
+
+    # 6. Automated alerts toggle
+    test_chat = 777888999
+    bot.register_subscriber(test_chat, username="football_fan", first_name="Fan")
+    assert bot.is_subscribed(test_chat) is True
+
+    # Toggle off
+    new_state = bot.toggle_subscription(test_chat)
+    assert new_state is False
+    assert bot.is_subscribed(test_chat) is False
+
+    # Toggle on
+    new_state = bot.toggle_subscription(test_chat)
+    assert new_state is True
+    assert bot.is_subscribed(test_chat) is True
+
+    # Callback toggle
+    cb_text, cb_kb, toast = bot.handle_callback_data("sub:toggle", chat_id=test_chat)
+    assert toast is not None
+    assert any("Daily Alerts" in btn.get("text", "") for row in cb_kb["inline_keyboard"] for btn in row)
