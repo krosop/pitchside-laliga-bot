@@ -88,6 +88,8 @@ class PitchsideTelegramBot:
     Full-featured Telegram Bot engine for La Liga EA SPORTS Analytics & Match Simulation.
     """
 
+    WELCOME_GIF_URL: str = "https://media1.tenor.com/m/tgsrfDxv17MAAAAd/neyma.gif"
+
     def __init__(self, token: Optional[str] = None, db: Optional[Database] = None):
         self.token = token
         self.db = db or Database()
@@ -153,6 +155,36 @@ class PitchsideTelegramBot:
             payload["reply_markup"] = reply_markup
         return self._api_call("sendMessage", payload)
 
+    def send_animation(
+        self,
+        chat_id: int,
+        animation: str,
+        caption: Optional[str] = None,
+        reply_markup: Optional[Dict[str, Any]] = None,
+        parse_mode: str = "HTML",
+    ) -> Dict[str, Any]:
+        """
+        Sends an animation/GIF to a Telegram chat via sendAnimation API.
+        Respects Telegram's 1024-character caption limit and automatically
+        falls back to sendMessage if animation delivery fails.
+        """
+        if caption and len(caption) > 1024:
+            caption = caption[:1020] + "..."
+        payload: Dict[str, Any] = {
+            "chat_id": chat_id,
+            "animation": animation,
+            "parse_mode": parse_mode,
+        }
+        if caption:
+            payload["caption"] = caption
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        res = self._api_call("sendAnimation", payload)
+        if not res.get("ok"):
+            # Fallback to standard text message if animation dispatch fails
+            return self.send_message(chat_id, caption or "", reply_markup=reply_markup, parse_mode=parse_mode)
+        return res
+
     def edit_or_send(
         self,
         chat_id: int,
@@ -186,7 +218,7 @@ class PitchsideTelegramBot:
 
     def register_commands(self):
         commands = [
-            {"command": "start", "description": "🟢 Today's Matches & Main Hub"},
+            {"command": "start", "description": "🟢 Welcome & What This Bot Does (GIF Guide)"},
             {"command": "today", "description": "📅 Matches of the Day, Odds & Quick Sim"},
             {"command": "matches", "description": "⚽ All 38 Matchdays Schedule & Results"},
             {"command": "simulate", "description": "⚡ 90-Minute Match Simulator & Trends"},
@@ -194,6 +226,7 @@ class PitchsideTelegramBot:
             {"command": "clubs", "description": "🛡️ All 20 Club Tactical DNA Dossiers"},
             {"command": "players", "description": "🌟 Leaderboards, Ratings & Player Search"},
             {"command": "compare", "description": "⚔️ Compare 2 Players or Clubs Head-to-Head"},
+            {"command": "help", "description": "ℹ️ Bot Guide & Features Overview"},
         ]
         return self._api_call("setMyCommands", {"commands": commands}, timeout=15)
 
@@ -370,7 +403,74 @@ class PitchsideTelegramBot:
         return self.db.get_player_by_slug(ident)
 
     # =========================================================================
-    # VIEW 1: DAILY MATCHES OF THE DAY & MAIN HUB (/start, /today, day:<date>)
+    # VIEW 0: WELCOME & WHAT BOT DOES (GIF + CAPTION) (/start, /help, /about)
+    # =========================================================================
+    def render_welcome_animation(self) -> Tuple[str, str, Dict[str, Any]]:
+        """
+        Returns (gif_url, caption_html, reply_markup) explaining all bot capabilities.
+        Caption is formatted in HTML and strictly within Telegram's 1024-char limit.
+        """
+        caption, markup = self.render_welcome_text()
+        return self.WELCOME_GIF_URL, caption, markup
+
+    def render_welcome_text(self) -> Tuple[str, Dict[str, Any]]:
+        """
+        Renders the comprehensive overview of what the bot does with interactive buttons.
+        """
+        caption = (
+            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT!</b> ⚽\n\n"
+            "Your elite real-time <b>La Liga tactical terminal &amp; match simulation engine</b> directly in Telegram!\n\n"
+            "🔥 <b>What I Can Do For You:</b>\n"
+            "• 📅 <b>Matches of the Day:</b> Daily schedule, real-time status &amp; betting odds\n"
+            "• ⚡ <b>90' Tactical Match Simulator:</b> Dixon-Coles Poisson engine, club tactical DNA, player form &amp; European fatigue\n"
+            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Automatic detection of red cards &amp; injuries, excluding sidelined players &amp; updating live ratings\n"
+            "• 🌊 <b>Predictive Telemetry:</b> 6-phase match dominance, attack momentum wave, cumulative xG &amp; win probability flow\n"
+            "• 🏆 <b>Live Standings &amp; Form Guide:</b> 20-club league table, UCL/UEL zones &amp; 5-match form dots\n"
+            "• 🛡️ <b>Club Tactical DNA &amp; Scouting:</b> In-depth dossiers for all 20 clubs &amp; 500+ players\n"
+            "• ⚔️ <b>Head-to-Head Compare:</b> Club vs Club &amp; Player vs Player duels\n\n"
+            "<i>Select an option below to start exploring! 👇</i>"
+        )
+        current_md = self._get_active_matchday()
+        kb = [
+            [
+                {"text": "📅 Matches of the Day", "callback_data": "day:today"},
+                {"text": "⚡ Sim Today", "callback_data": "daysim:today"},
+            ],
+            [
+                {"text": "⚽ All 38 Matchdays", "callback_data": f"md:{current_md}"},
+                {"text": "🏆 Standings & Form", "callback_data": "st:all"},
+            ],
+            [
+                {"text": "🛡️ 20 Clubs Tactical DNA", "callback_data": "clubs"},
+                {"text": "🌟 Top Scorers & Scouting", "callback_data": "ldr:goals"},
+            ],
+            [
+                {"text": "⚔️ Compare H2H", "callback_data": "cmp"},
+                {"text": "🔄 Sync Live Data", "callback_data": "sync"},
+            ],
+        ]
+        return caption, {"inline_keyboard": kb}
+
+    def send_welcome(self, chat_id: int) -> Dict[str, Any]:
+        """Sends the welcome Neymar animation and guide to a specific chat_id."""
+        gif_url, caption, markup = self.render_welcome_animation()
+        return self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
+
+    def send_welcome_to_all_subscribers(self) -> int:
+        """Broadcasts the welcome animation and guide to all registered subscribers."""
+        subs = self.get_subscribers()
+        gif_url, caption, markup = self.render_welcome_animation()
+        sent = 0
+        for s in subs:
+            cid = s.get("chat_id")
+            if cid:
+                res = self.send_animation(cid, gif_url, caption=caption, reply_markup=markup)
+                if res.get("ok"):
+                    sent += 1
+        return sent
+
+    # =========================================================================
+    # VIEW 1: DAILY MATCHES OF THE DAY & MAIN HUB (/today, day:<date>)
     # =========================================================================
     def render_home_view(self, requested_date: Optional[str] = None) -> Tuple[str, Dict[str, Any]]:
         from datetime import datetime
@@ -476,6 +576,9 @@ class PitchsideTelegramBot:
             [
                 {"text": "⚔️ Compare H2H", "callback_data": "cmp:menu"},
                 {"text": "🔄 Update Daily Data", "callback_data": "sync:now"},
+            ],
+            [
+                {"text": "ℹ️ What Bot Does (GIF Guide)", "callback_data": "menu:welcome"},
             ],
         ])
         return "\n".join(lines), {"inline_keyboard": kb}
@@ -1709,7 +1812,9 @@ class PitchsideTelegramBot:
         cmd = parts[0].lower().split("@")[0]  # strip @bot_username if in group chat
         arg = parts[1].strip() if len(parts) > 1 else ""
 
-        if cmd in ("/start", "/menu", "/help", "/today"):
+        if cmd in ("/start", "/help", "/about", "/welcome", "/guide"):
+            return self.render_welcome_text()
+        if cmd in ("/today", "/menu"):
             return self.render_home_view(arg if arg else "today")
         if cmd in ("/matches", "/fixtures", "/schedule"):
             md = int(arg) if arg.isdigit() else None
@@ -1750,6 +1855,8 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix in ("welcome", "about") or data in ("menu:welcome", "menu:about"):
+            return (*self.render_welcome_text(), "ℹ️ Pitchside Features & Guide")
         if prefix == "menu":
             return (*self.render_home_view("today"), None)
         if prefix == "day" and len(parts) >= 2:
@@ -1818,8 +1925,13 @@ class PitchsideTelegramBot:
                     first_name=chat.get("first_name", ""),
                 )
             if chat_id and text:
-                resp_text, markup = self.handle_command_or_text(text)
-                self.send_message(chat_id, resp_text, reply_markup=markup)
+                raw_cmd = text.strip().split()[0].lower().split("@")[0] if text.strip() else ""
+                if raw_cmd in ("/start", "/help", "/about", "/welcome", "/guide"):
+                    gif_url, caption, markup = self.render_welcome_animation()
+                    self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
+                else:
+                    resp_text, markup = self.handle_command_or_text(text)
+                    self.send_message(chat_id, resp_text, reply_markup=markup)
 
         elif "callback_query" in update:
             cb = update["callback_query"]

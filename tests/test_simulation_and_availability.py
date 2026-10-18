@@ -378,3 +378,85 @@ def test_telegram_bot_renders_missing_players():
     assert "Unavailable / Out:" in xi_text
     assert "Bellingham" in xi_text and "Red Card Suspension" in xi_text
     assert "Lewandowski" in xi_text and "Knee Injury" in xi_text
+
+
+def test_telegram_bot_welcome_animation_and_features_guide():
+    """
+    Verifies that:
+    1. WELCOME_GIF_URL matches the Neymar GIF requested by the user.
+    2. render_welcome_animation() produces a valid GIF URL, HTML caption, and keyboard.
+    3. Caption length is strictly <= 1024 characters (Telegram sendAnimation limit).
+    4. Caption explicitly explains what the bot does:
+       - Matches of the Day
+       - 90' Match Simulator
+       - Suspension & Injury Tracking
+       - Predictive Telemetry
+       - Standings & Form Guide
+       - Club Tactical DNA & Scouting
+       - Head-to-Head Compare
+    5. Commands /start, /help, /about, /welcome trigger the welcome explanation.
+    6. Callback data 'menu:welcome' returns the welcome view.
+    7. process_update() dispatches send_animation() with the Neymar GIF for /start.
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+
+    # 1. Verify GIF URL
+    expected_gif = "https://media1.tenor.com/m/tgsrfDxv17MAAAAd/neyma.gif"
+    assert bot.WELCOME_GIF_URL == expected_gif
+
+    # 2. Verify render_welcome_animation
+    gif_url, caption, markup = bot.render_welcome_animation()
+    assert gif_url == expected_gif
+
+    # 3. Caption length must be <= 1024 characters
+    assert len(caption) <= 1024, f"Caption length {len(caption)} exceeds Telegram limit of 1024"
+    assert len(caption) > 200
+
+    # 4. Verify feature explanations
+    assert "Matches of the Day" in caption
+    assert "Simulator" in caption
+    assert "Suspension" in caption
+    assert "Telemetry" in caption or "Predictive" in caption
+    assert "Standings" in caption
+    assert "Tactical DNA" in caption
+    assert "Head-to-Head" in caption
+
+    # 5. Verify inline keyboard buttons
+    all_buttons = [btn for row in markup["inline_keyboard"] for btn in row]
+    cb_datas = {btn["callback_data"] for btn in all_buttons}
+    assert "day:today" in cb_datas
+    assert "daysim:today" in cb_datas
+    assert "st:all" in cb_datas
+    assert "clubs" in cb_datas
+
+    # 6. Verify command handling
+    for cmd in ("/start", "/help", "/about", "/welcome", "/guide"):
+        text, kb = bot.handle_command_or_text(cmd)
+        assert "WELCOME TO PITCHSIDE LA LIGA BOT" in text
+        assert len(text) <= 1024
+
+    # 7. Verify callback handling
+    cb_text, cb_kb, toast = bot.handle_callback_data("menu:welcome")
+    assert "WELCOME TO PITCHSIDE LA LIGA BOT" in cb_text
+    assert toast is not None
+
+    # 8. Verify process_update dispatches animation for /start
+    sent_animations = []
+    def mock_send_animation(chat_id, animation, caption=None, reply_markup=None, parse_mode="HTML"):
+        sent_animations.append((chat_id, animation, caption, reply_markup))
+        return {"ok": True, "result": {"message_id": 999}}
+
+    bot.send_animation = mock_send_animation
+    bot.process_update({
+        "update_id": 100,
+        "message": {
+            "message_id": 50,
+            "chat": {"id": 987654321, "username": "testuser"},
+            "text": "/start"
+        }
+    })
+    assert len(sent_animations) == 1
+    assert sent_animations[0][0] == 987654321
+    assert sent_animations[0][1] == expected_gif
+    assert "WELCOME TO PITCHSIDE" in sent_animations[0][2]

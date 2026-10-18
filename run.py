@@ -50,7 +50,9 @@ def run_bot_demo():
             row_str = "  ".join(f"[ {btn['text']} ({btn['callback_data']}) ]" for btn in row)
             print(f"  {row_str}")
 
-    show_screen("/start (Main Dashboard)", *bot.render_home_view())
+    gif_url, caption, markup = bot.render_welcome_animation()
+    show_screen(f"GIF Welcome & Features Guide (Animation: {gif_url})", caption, markup)
+    show_screen("Today's Matches Hub (/today)", *bot.render_home_view())
     md = bot._get_active_matchday()
     show_screen(f"/matches (Matchday {md} Hub)", *bot.render_matchday_view(md))
     fxs = [f for f in bot._get_all_fixtures() if f.get("matchday") == md]
