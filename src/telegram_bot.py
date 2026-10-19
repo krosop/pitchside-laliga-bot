@@ -145,8 +145,8 @@ class PitchsideTelegramBot:
         if send_new_messages is not None:
             self.send_new_messages: bool = bool(send_new_messages)
         else:
-            env_val = os.environ.get("TELEGRAM_SEND_NEW_MESSAGES", "1").strip().lower()
-            self.send_new_messages = env_val not in ("0", "false", "no", "edit")
+            env_val = os.environ.get("TELEGRAM_SEND_NEW_MESSAGES", "0").strip().lower()
+            self.send_new_messages = env_val in ("1", "true", "yes", "new")
 
     # =========================================================================
     # TELEGRAM HTTP API HELPERS
@@ -255,7 +255,14 @@ class PitchsideTelegramBot:
             res = self._api_call("editMessageText", payload)
             if res.get("ok"):
                 return res
+            # If editMessageText failed (e.g. previous message was an animation/photo),
+            # delete the old message so the screen updates cleanly in-place!
+            self.delete_message(chat_id, message_id)
         return self.send_message(chat_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+
+    def delete_message(self, chat_id: int, message_id: int) -> Dict[str, Any]:
+        """Deletes a message from a chat via deleteMessage API."""
+        return self._api_call("deleteMessage", {"chat_id": chat_id, "message_id": message_id}, timeout=10)
 
     def answer_callback(self, callback_query_id: str, text: Optional[str] = None, show_alert: bool = False):
         payload: Dict[str, Any] = {"callback_query_id": callback_query_id, "show_alert": show_alert}
@@ -548,19 +555,19 @@ class PitchsideTelegramBot:
         return sent
 
     def render_msgmode_view(self) -> Tuple[str, Dict[str, Any]]:
-        """Renders the message delivery mode toggle card (New Messages vs In-Place Edits)."""
+        """Renders the message delivery mode toggle card (In-Place Updates vs New Messages)."""
         mode_desc = (
-            "🆕 <b>Fresh New Messages</b> (every tap drops a new message into the chat)"
-            if self.send_new_messages
-            else "✏️ <b>In-Place Edits</b> (taps update the existing message in-place)"
+            "✏️ <b>In-Place Updates (Default)</b> — Button clicks edit and update the current message in-place"
+            if not self.send_new_messages
+            else "🆕 <b>Fresh New Messages</b> — Button clicks send a new message into the chat"
         )
-        next_action = "In-Place Edits" if self.send_new_messages else "New Messages"
+        next_action = "New Messages" if not self.send_new_messages else "In-Place Updates"
         resp = (
             f"💬 <b>NAVIGATION MESSAGE MODE</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"Current Mode: {mode_desc}\n\n"
-            f"• <b>New Messages (Default)</b>: Every button click drops a fresh card into the chat so you never lose context, can scroll back up to today's matches, and can compare simulation results side-by-side.\n"
-            f"• <b>In-Place Edits</b>: Button clicks update the existing message in-place to keep chat history compact.\n\n"
+            f"• <b>In-Place Updates (Default)</b>: Every button click cleanly updates the existing message without chat clutter.\n"
+            f"• <b>New Messages</b>: Button clicks send fresh cards into the chat to preserve history.\n\n"
             f"<i>Tap the button below or type <code>/msgmode</code> to toggle anytime.</i>"
         )
         kb = [
