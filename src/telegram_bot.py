@@ -169,6 +169,7 @@ class PitchsideTelegramBot:
         self._standings_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
         self._fixtures_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
         self.chat_leagues: Dict[int, str] = {}
+        self.chat_sim_modes: Dict[int, str] = {}
         self._running = False
         self._offset = 0
         if send_new_messages is not None:
@@ -188,6 +189,19 @@ class PitchsideTelegramBot:
         s = (league or "").strip().lower()
         norm = "serie_a" if "serie" in s or "ita" in s or "italy" in s else "laliga"
         self.chat_leagues[chat_id] = norm
+        return norm
+
+    def get_chat_sim_mode(self, chat_id: Optional[int]) -> str:
+        """Returns active simulation display mode for a chat ('simple' or 'advanced'). Defaults to 'simple'."""
+        if not chat_id:
+            return "simple"
+        return self.chat_sim_modes.get(chat_id, "simple")
+
+    def set_chat_sim_mode(self, chat_id: int, mode: str) -> str:
+        """Sets active simulation display mode ('simple' or 'advanced')."""
+        s = (mode or "").strip().lower()
+        norm = "advanced" if ("adv" in s or "deep" in s or "detail" in s) else "simple"
+        self.chat_sim_modes[chat_id] = norm
         return norm
 
     # =========================================================================
@@ -231,15 +245,29 @@ class PitchsideTelegramBot:
         text: str,
         reply_markup: Optional[Dict[str, Any]] = None,
         parse_mode: str = "HTML",
+        disable_web_page_preview: Optional[bool] = None,
     ) -> Dict[str, Any]:
         if len(text) > 4050:
             text = text[:4040] + "\n..."
+        if disable_web_page_preview is None:
+            has_media = text.startswith('<a href="http')
+            disable_web_page_preview = not has_media
         payload: Dict[str, Any] = {
             "chat_id": chat_id,
             "text": text,
             "parse_mode": parse_mode,
-            "disable_web_page_preview": True,
+            "disable_web_page_preview": disable_web_page_preview,
         }
+        if not disable_web_page_preview and '<a href="' in text:
+            try:
+                first_url = text.split('<a href="')[1].split('"')[0]
+                payload["link_preview_options"] = {
+                    "url": first_url,
+                    "prefer_large_media": True,
+                    "show_above_text": True,
+                }
+            except Exception:
+                pass
         if reply_markup:
             payload["reply_markup"] = reply_markup
         return self._api_call("sendMessage", payload)
@@ -281,17 +309,31 @@ class PitchsideTelegramBot:
         text: str,
         reply_markup: Optional[Dict[str, Any]] = None,
         parse_mode: str = "HTML",
+        disable_web_page_preview: Optional[bool] = None,
     ) -> Dict[str, Any]:
         if len(text) > 4050:
             text = text[:4040] + "\n..."
+        if disable_web_page_preview is None:
+            has_media = text.startswith('<a href="http')
+            disable_web_page_preview = not has_media
         if message_id:
             payload: Dict[str, Any] = {
                 "chat_id": chat_id,
                 "message_id": message_id,
                 "text": text,
                 "parse_mode": parse_mode,
-                "disable_web_page_preview": True,
+                "disable_web_page_preview": disable_web_page_preview,
             }
+            if not disable_web_page_preview and '<a href="' in text:
+                try:
+                    first_url = text.split('<a href="')[1].split('"')[0]
+                    payload["link_preview_options"] = {
+                        "url": first_url,
+                        "prefer_large_media": True,
+                        "show_above_text": True,
+                    }
+                except Exception:
+                    pass
             if reply_markup:
                 payload["reply_markup"] = reply_markup
             res = self._api_call("editMessageText", payload)
@@ -300,7 +342,13 @@ class PitchsideTelegramBot:
             # If editMessageText failed (e.g. previous message was an animation/photo),
             # delete the old message so the screen updates cleanly in-place!
             self.delete_message(chat_id, message_id)
-        return self.send_message(chat_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+        return self.send_message(
+            chat_id,
+            text,
+            reply_markup=reply_markup,
+            parse_mode=parse_mode,
+            disable_web_page_preview=disable_web_page_preview,
+        )
 
     def delete_message(self, chat_id: int, message_id: int) -> Dict[str, Any]:
         """Deletes a message from a chat via deleteMessage API."""
@@ -316,9 +364,11 @@ class PitchsideTelegramBot:
         commands = [
             {"command": "start", "description": "🟢 Welcome & What This Bot Does (GIF Guide)"},
             {"command": "today", "description": "📅 Matches of the Day, Odds & Quick Sim"},
+            {"command": "mode", "description": "⚙️ Switch Mode (🟢 Simple vs ⚙️ Advanced)"},
+            {"command": "league", "description": "🏆 Switch League (🇪🇸 La Liga vs 🇮🇹 Serie A)"},
             {"command": "matches", "description": "⚽ All 38 Matchdays Schedule & Results"},
             {"command": "simulate", "description": "⚡ 90-Minute Match Simulator & Trends"},
-            {"command": "standings", "description": "🏆 Live La Liga Table & Form Guide"},
+            {"command": "standings", "description": "🏆 Live Standings & Form Guide"},
             {"command": "clubs", "description": "🛡️ All 20 Club Tactical DNA Dossiers"},
             {"command": "players", "description": "🌟 Leaderboards, Ratings & Player Search"},
             {"command": "compare", "description": "⚔️ Compare 2 Players or Clubs Head-to-Head"},
@@ -330,6 +380,16 @@ class PitchsideTelegramBot:
         except Exception:
             pass
         return self._api_call("setMyCommands", {"commands": commands}, timeout=15)
+
+    @staticmethod
+    def _render_media_header(shield_url: Optional[str]) -> str:
+        """
+        Embeds an invisible zero-width anchor pointing to the team's official shield URL.
+        Telegram renders this as an authentic, high-resolution media banner above the card!
+        """
+        if shield_url and str(shield_url).startswith("http"):
+            return f'<a href="{shield_url}">&#8205;</a>'
+        return ""
 
     # =========================================================================
     # DATA & FORMATTING HELPERS
@@ -627,6 +687,34 @@ class PitchsideTelegramBot:
         ]
         return resp, {"inline_keyboard": kb}
 
+    def render_mode_switcher(self, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        """
+        Renders the Simulation & Display Mode selector (Simple Mode vs Advanced Mode).
+        """
+        current_mode = self.get_chat_sim_mode(chat_id)
+        is_simple = current_mode == "simple"
+        text = (
+            "⚙️ <b>MATCH SIMULATION &amp; DISPLAY MODE</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Choose your default experience when simulating and viewing matches:\n\n"
+            f"• <b>🟢 SIMPLE MODE</b> {'(Active ✅)' if is_simple else ''}\n"
+            "  Fast, clean scorelines, key goalscorers with exact minutes, match winner banner, and instant 3-way win probabilities. Perfect for a quick 5-second check.\n\n"
+            f"• <b>⚙️ ADVANCED MODE</b> {'(Active ✅)' if not is_simple else ''}\n"
+            "  Deep tactical analytics, Dixon-Coles expected goals (xG), 6-phase match dominance breakdown, attack momentum timeline, and tactical radar.\n\n"
+            "<i>Tap a mode below to switch instantly:</i>"
+        )
+        kb = [
+            [
+                {"text": "🟢 Simple Mode" + (" ✅" if is_simple else ""), "callback_data": "mode:simple"},
+                {"text": "⚙️ Advanced Mode" + (" ✅" if not is_simple else ""), "callback_data": "mode:advanced"},
+            ],
+            [
+                {"text": "📅 Matches of the Day", "callback_data": "day:today"},
+                {"text": "🏠 Main Menu", "callback_data": "menu:home"},
+            ],
+        ]
+        return text, {"inline_keyboard": kb}
+
     # =========================================================================
     # VIEW 1: DAILY MATCHES OF THE DAY & MAIN HUB (/today, day:<date>)
     # =========================================================================
@@ -752,7 +840,10 @@ class PitchsideTelegramBot:
                 {"text": "🔄 Update Daily Data", "callback_data": "sync:now"},
             ],
             [
+                {"text": f"⚙️ Mode ({'🟢 Simple' if self.get_chat_sim_mode(chat_id) == 'simple' else '⚙️ Adv'})", "callback_data": "menu:mode"},
                 sub_btn,
+            ],
+            [
                 {"text": "ℹ️ What Bot Does (GIF Guide)", "callback_data": "menu:welcome"},
             ],
         ])
@@ -981,6 +1072,10 @@ class PitchsideTelegramBot:
         a_name = away.get("nickname") or away.get("name")
         h_theme = self.get_club_theme(home.get("slug") or h_name)
         a_theme = self.get_club_theme(away.get("slug") or a_name)
+        h_shield = home.get("shield_url") or home.get("shield")
+        a_shield = away.get("shield_url") or away.get("shield")
+        media_hdr = self._render_media_header(h_shield)
+
         h_pos = home.get("position") or "-"
         a_pos = away.get("position") or "-"
         h_form = self._get_club_form_emojis(home.get("slug", ""), 5)
@@ -1043,6 +1138,9 @@ class PitchsideTelegramBot:
         h_fat = (home.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
         a_fat = (away.get("fatigue") or {}).get("freshness_badge", "⚡ Rested")
 
+        crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
+        crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
+
         if tab == "lineups":
             h_formation = (home.get("tactics") or {}).get("formation", "4-3-3")
             a_formation = (away.get("tactics") or {}).get("formation", "4-3-3")
@@ -1059,8 +1157,8 @@ class PitchsideTelegramBot:
                     out_block.append(f"    {mp.get('status_icon','🚫')} <s>{self._esc(mp.get('nickname') or mp.get('name'))}</s> — <i>{self._esc(mp.get('availability_reason','Unavailable'))}</i>")
 
             text = (
-                f"🏟️ <b>MATCH CENTER · STARTING XIs &amp; FORM</b>\n"
-                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"{media_hdr}🏟️ <b>MATCH CENTER · STARTING XIs &amp; FORM</b>\n"
+                f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
                 f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
                 f"🛡️ <b>{h_theme['badge']} {self._esc(h_name)} ({h_formation})</b>\n"
                 + "\n".join(h_xi_lines) + "\n\n"
@@ -1071,8 +1169,8 @@ class PitchsideTelegramBot:
         elif tab == "momentum":
             poss_split = self._dual_bar(exp_poss.get("home", 50), exp_poss.get("away", 50), 12)
             text = (
-                f"🏟️ <b>MATCH CENTER · PREDICTIVE TELEMETRY</b>\n"
-                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"{media_hdr}🏟️ <b>MATCH CENTER · PREDICTIVE TELEMETRY</b>\n"
+                f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
                 f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
                 f"🌊 <b>PROJECTED POSSESSION SPLIT</b>\n"
                 f"{poss_split}\n"
@@ -1088,8 +1186,8 @@ class PitchsideTelegramBot:
             )
         elif tab == "tactics":
             text = (
-                f"🏟️ <b>MATCH CENTER · TACTICAL CLASH</b>\n"
-                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}\n"
+                f"{media_hdr}🏟️ <b>MATCH CENTER · TACTICAL CLASH</b>\n"
+                f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
                 f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
                 f"🧠 <b>MANAGERIAL DUEL</b>\n"
                 f"• <b>{h_theme['code']}:</b> {self._esc(h_tac.get('manager', 'Manager'))}\n"
@@ -1108,8 +1206,8 @@ class PitchsideTelegramBot:
             scorers_str = ", ".join(f"{g.get('scorer')} {g.get('minute')}'" for g in goals[:4])
             scorers_line = f"⚽ <b>Goals:</b> <i>{self._esc(scorers_str)}</i>\n" if scorers_str else ""
             text = (
-                f"🏟️ <b>LA LIGA MATCH CENTER · ROUND {fx.get('matchday')}</b>\n"
-                f"{h_theme['badge']} <b>{self._esc(h_name)}</b> (#{h_pos})  vs  <b>{self._esc(a_name)}</b> (#{a_pos}) {a_theme['badge']}\n"
+                f"{media_hdr}🏟️ <b>LA LIGA MATCH CENTER · ROUND {fx.get('matchday')}</b>\n"
+                f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> (#{h_pos})  vs  <b>{self._esc(a_name)}</b> (#{a_pos}) {a_theme['badge']}{crest_a_link}\n"
                 f"{scoreboard_card}\n"
                 f"{scorers_line}"
                 f"📊 <b>FORM &amp; CONDITION</b>\n"
@@ -1131,9 +1229,22 @@ class PitchsideTelegramBot:
             {"text": "• 🧠 Tactics •" if tab == "tactics" else "🧠 Tactics", "callback_data": f"m:{fixture_id}:tactics"},
         ]
 
+        crest_row = []
+        if h_shield and h_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
+        if a_shield and a_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
+
         kb = [
             tab_row,
-            [{"text": "⚡ SIMULATE 90' MATCH + TRENDS ▶", "callback_data": f"sim:{fixture_id}"}],
+            [
+                {"text": "⚡ SIMULATE (Simple) ▶", "callback_data": f"simmode:simple:{fixture_id}"},
+                {"text": "⚙️ ADVANCED SIM ▶", "callback_data": f"simmode:advanced:{fixture_id}"},
+            ],
+        ]
+        if crest_row:
+            kb.append(crest_row)
+        kb.extend([
             [
                 {"text": f"🔄 Sub {h_theme['code']}", "callback_data": f"msub:{fixture_id}:h"},
                 {"text": f"🔄 Sub {a_theme['code']}", "callback_data": f"msub:{fixture_id}:a"},
@@ -1146,16 +1257,29 @@ class PitchsideTelegramBot:
                 {"text": f"◀ Matchday {fx.get('matchday')}", "callback_data": f"md:{fx.get('matchday')}"},
                 {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
-        ]
+        ])
         return text, {"inline_keyboard": kb}
 
     # =========================================================================
-    # VIEW 5: 90-MINUTE SIMULATION REPORT + TRENDS (sim:<fid>)
+    # VIEW 5: 90-MINUTE SIMULATION REPORT + MODES (sim:<fid>, simmode:<mode>:<fid>)
     # =========================================================================
     def render_match_simulation(
         self,
         fixture_id: int,
+        mode: Optional[str] = None,
         custom_subs: Optional[List[Dict[str, Any]]] = None,
+        chat_id: Optional[int] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        target_mode = mode or self.get_chat_sim_mode(chat_id)
+        if target_mode == "simple":
+            return self.render_match_simulation_simple(fixture_id, custom_subs=custom_subs, chat_id=chat_id)
+        return self.render_match_simulation_advanced(fixture_id, custom_subs=custom_subs, chat_id=chat_id)
+
+    def render_match_simulation_simple(
+        self,
+        fixture_id: int,
+        custom_subs: Optional[List[Dict[str, Any]]] = None,
+        chat_id: Optional[int] = None,
     ) -> Tuple[str, Dict[str, Any]]:
         detail = self._get_match_detail(fixture_id)
         if not detail:
@@ -1167,6 +1291,118 @@ class PitchsideTelegramBot:
         away = detail["away_team"]
         h_name = home.get("nickname") or home.get("name")
         a_name = away.get("nickname") or away.get("name")
+        h_shield = home.get("shield_url") or home.get("shield")
+        a_shield = away.get("shield_url") or away.get("shield")
+
+        hs = sim["home_score"]
+        as_ = sim["away_score"]
+        stats = sim["stats"]
+        h_theme = self.get_club_theme(home.get("slug") or h_name)
+        a_theme = self.get_club_theme(away.get("slug") or a_name)
+        stadium = home.get("stadium") or "Estadio Oficial"
+
+        media_hdr = self._render_media_header(h_shield)
+
+        # Winner result line
+        if hs > as_:
+            winner_line = f"🏆 <b>Match Winner:</b> <b>{self._esc(h_name)}</b> (+{hs - as_} GD)"
+        elif as_ > hs:
+            winner_line = f"🏆 <b>Match Winner:</b> <b>{self._esc(a_name)}</b> (+{as_ - hs} GD)"
+        else:
+            winner_line = "🤝 <b>Match Result:</b> <b>Draw (Honours Even)</b>"
+
+        # Goalscorers with minutes
+        goal_events = [e for e in sim.get("events", []) if e.get("type") == "goal"]
+        if goal_events:
+            g_lines = []
+            for g in goal_events:
+                side_ico = "🏠" if g.get("team") == "home" else "✈️"
+                ast = f" <i>(ast. {self._esc(g['assist'])})</i>" if g.get("assist") else ""
+                g_lines.append(f"• <code>{g.get('minute', 0):>2}'</code> ⚽ <b>{self._esc(g.get('scorer'))}</b> {side_ico}{ast}")
+            goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n" + "\n".join(g_lines)
+        else:
+            goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n• <i>0'–90' No goals scored. Both backlines held resolute!</i>"
+
+        trends = sim.get("trends") or {}
+        win_prob = trends.get("win_probability") or []
+        init_wp = win_prob[0] if win_prob else {}
+        hp = init_wp.get("home_prob", 45.0)
+        dp = init_wp.get("draw_prob", 25.0)
+        ap = init_wp.get("away_prob", 30.0)
+        prob_bar = self._prob_bar(hp, dp, ap, width=12)
+
+        h_xg = stats["xg"]["home"]
+        a_xg = stats["xg"]["away"]
+        card = self._render_scoreboard_card(
+            h_theme["code"], h_name, hs,
+            a_theme["code"], a_name, as_,
+            f"FT · {stadium}",
+        )
+
+        sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>\n" if custom_subs else ""
+        narrative = trends.get("narrative") or {}
+        verdict = narrative.get("headline") or narrative.get("flow_summary") or "End-to-end tactical football battle."
+
+        crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
+        crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
+
+        text = (
+            f"{media_hdr}⚡ <b>90' MATCH SIMULATION · SIMPLE MODE</b> 🟢{sub_banner}\n"
+            f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}  {hs} - {as_}  {self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
+            f"{card}\n"
+            f"{winner_line}\n\n"
+            f"{goals_block}\n\n"
+            f"🎲 <b>WIN PROBABILITY &amp; xG</b>\n"
+            f"{prob_bar}\n"
+            f"🟩 {h_theme['code']} <code>{hp:.1f}%</code> · ⬜ Draw <code>{dp:.1f}%</code> · 🟥 {a_theme['code']} <code>{ap:.1f}%</code>\n"
+            f"• <b>Expected Goals (xG):</b> <code>{h_xg:.2f}</code> vs <code>{a_xg:.2f}</code>\n\n"
+            f"💬 <i>\"{self._esc(verdict)}\"</i>"
+        )
+
+        share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}!"
+
+        crest_row = []
+        if h_shield and h_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
+        if a_shield and a_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
+
+        kb = [
+            [{"text": "⚙️ Switch to Advanced Tactical Mode", "callback_data": f"simmode:advanced:{fixture_id}"}],
+            [{"text": "🔄 Re-Simulate Match", "callback_data": f"simmode:simple:{fixture_id}"}],
+        ]
+        if crest_row:
+            kb.append(crest_row)
+        kb.extend([
+            [
+                {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
+                {"text": "📤 Share Simulation", "url": share_url},
+            ],
+            [
+                {"text": "◀ Match Center", "callback_data": f"m:{fixture_id}"},
+                {"text": "🏠 Today's Matches", "callback_data": "day:today"},
+            ],
+        ])
+        return text, {"inline_keyboard": kb}
+
+    def render_match_simulation_advanced(
+        self,
+        fixture_id: int,
+        custom_subs: Optional[List[Dict[str, Any]]] = None,
+        chat_id: Optional[int] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        detail = self._get_match_detail(fixture_id)
+        if not detail:
+            return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
+
+        sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs)
+        fx = detail["fixture"]
+        home = detail["home_team"]
+        away = detail["away_team"]
+        h_name = home.get("nickname") or home.get("name")
+        a_name = away.get("nickname") or away.get("name")
+        h_shield = home.get("shield_url") or home.get("shield")
+        a_shield = away.get("shield_url") or away.get("shield")
 
         hs = sim["home_score"]
         as_ = sim["away_score"]
@@ -1245,10 +1481,13 @@ class PitchsideTelegramBot:
             sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>"
 
         verdict_txt = narrative.get("flow_summary") or narrative.get("tactical_verdict") or ""
+        media_hdr = self._render_media_header(h_shield)
+        crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
+        crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
 
         text = (
-            f"⚡ <b>90' FULL-TIME SIMULATION REPORT · MD {fx.get('matchday')}</b>{sub_banner}\n"
-            f"{h_theme['badge']} <b>{h_theme['code']}  {hs} - {as_}  {a_theme['code']}</b> {a_theme['badge']}\n"
+            f"{media_hdr}⚡ <b>90' FULL-TIME SIMULATION · ADVANCED MODE</b> ⚙️{sub_banner}\n"
+            f"{crest_h_link}{h_theme['badge']} <b>{h_theme['code']}  {hs} - {as_}  {a_theme['code']}</b> {a_theme['badge']}{crest_a_link}\n"
             f"{card}\n"
             f"⏱️ <b>MATCH INCIDENT TIMELINE</b>\n"
             + "\n".join(events_lines)
@@ -1269,9 +1508,16 @@ class PitchsideTelegramBot:
             f"• <b>Match Flow:</b> <i>{self._esc(verdict_txt)}</i>"
         )
 
-        share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}+on+La+Liga+EA+SPORTS!"
+        share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}!"
+
+        crest_row = []
+        if h_shield and h_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
+        if a_shield and a_shield.startswith("http"):
+            crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
 
         kb = [
+            [{"text": "🟢 Switch to Simple Mode", "callback_data": f"simmode:simple:{fixture_id}"}],
             [
                 {"text": f"🔄 Sub {h_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:h"},
                 {"text": f"🔄 Sub {a_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
@@ -1280,6 +1526,10 @@ class PitchsideTelegramBot:
                 {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
                 {"text": "📊 6-Axis Tactical Radar", "callback_data": f"mrad:{fixture_id}"},
             ],
+        ]
+        if crest_row:
+            kb.append(crest_row)
+        kb.extend([
             [
                 {"text": "📤 Share Simulation to Chat", "url": share_url},
                 {"text": "◀ Match Center", "callback_data": f"m:{fixture_id}"},
@@ -1288,7 +1538,7 @@ class PitchsideTelegramBot:
                 {"text": f"📅 Matchday {fx.get('matchday')}", "callback_data": f"md:{fx.get('matchday')}"},
                 {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
-        ]
+        ])
         return text, {"inline_keyboard": kb}
 
     # =========================================================================
@@ -1569,6 +1819,9 @@ class PitchsideTelegramBot:
         dna = ClubTacticsRegistry.get_profile(slug)
         metrics = dna.get("metrics") or {}
         form_dots = self._get_club_form_emojis(slug, 5)
+        shield = c.get("shield_url") or c.get("shield")
+        media_hdr = self._render_media_header(shield)
+        crest_icon = f'<a href="{shield}">🛡️</a> ' if shield else ""
 
         pos = c.get("position", "-")
         pts = c.get("points", 0)
@@ -1582,7 +1835,7 @@ class PitchsideTelegramBot:
         df = scores.get("def_rating") or c.get("def_rating", 75)
 
         text = (
-            f"🛡️ {theme['badge']} <b>{self._esc(c.get('name') or c.get('nickname'))} — TACTICAL DOSSIER</b>\n"
+            f"{media_hdr}{crest_icon}{theme['badge']} <b><a href=\"{shield}\">{self._esc(c.get('name') or c.get('nickname'))}</a> — TACTICAL DOSSIER</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🏆 <b>Rank:</b> <code>#{pos}</code> · <b>Points:</b> <code>{pts}</code> (<code>{w}W-{d}D-{l}L</code>)\n"
             f"⚽ <b>Goals:</b> <code>{gf} GF : {ga} GA</code> (GD <code>{gd_str}</code>)\n"
@@ -1607,17 +1860,22 @@ class PitchsideTelegramBot:
         )
 
         cid = c.get("id")
+        crest_btn = [{"text": f"🛡️ {theme['code']} Official Crest (HQ)", "url": shield}] if shield and str(shield).startswith("http") else []
         kb = [
             [
                 {"text": "📋 Starting XI & Squad", "callback_data": f"cros:{cid}"},
                 {"text": "📅 Club Fixtures & Sim", "callback_data": f"cfx:{cid}"},
             ],
+        ]
+        if crest_btn:
+            kb.append(crest_btn)
+        kb.extend([
             [
-                {"text": "🛡️ All 20 Clubs", "callback_data": "clubs:list"},
+                {"text": "🛡️ All Clubs", "callback_data": "clubs:list"},
                 {"text": "🏆 Standings", "callback_data": "st:all"},
             ],
             [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
-        ]
+        ])
         return text, {"inline_keyboard": kb}
 
     def render_club_roster(self, club_id: int) -> Tuple[str, Dict[str, Any]]:
@@ -1860,9 +2118,14 @@ class PitchsideTelegramBot:
                     s1 = c_cmp["club1"]["scores"]
                     s2 = c_cmp["club2"]["scores"]
                     verdict = c_cmp.get("verdict", "")
+                    c1_shield = c1.get("shield_url") or c1.get("shield")
+                    c2_shield = c2.get("shield_url") or c2.get("shield")
+                    media_hdr = self._render_media_header(c1_shield)
+                    crest_c1 = f'<a href="{c1_shield}">🛡️</a> ' if c1_shield else ""
+                    crest_c2 = f' <a href="{c2_shield}">🛡️</a>' if c2_shield else ""
                     text = (
-                        f"⚔️ <b>CLUB HEAD-TO-HEAD COMPARISON</b>\n"
-                        f"🏠 <b>{self._esc(c1['name'])}</b>  vs  ✈️ <b>{self._esc(c2['name'])}</b>\n"
+                        f"{media_hdr}⚔️ <b>CLUB HEAD-TO-HEAD COMPARISON</b>\n"
+                        f"{crest_c1}<b><a href=\"{c1_shield}\">{self._esc(c1['name'])}</a></b>  vs  <b><a href=\"{c2_shield}\">{self._esc(c2['name'])}</a></b>{crest_c2}\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"• <b>Rank:</b> <code>#{c1.get('position')}</code> vs <code>#{c2.get('position')}</code>\n"
                         f"• <b>Points:</b> <code>{c1.get('points')}</code> vs <code>{c2.get('points')}</code>\n"
@@ -1872,15 +2135,21 @@ class PitchsideTelegramBot:
                         f"• <b>Defense:</b> <code>{s1.get('def_rating')}</code> vs <code>{s2.get('def_rating')}</code>\n\n"
                         f"🧠 <b>Verdict:</b> <i>{self._esc(verdict)}</i>"
                     )
-                    return text, {
-                        "inline_keyboard": [
-                            [
-                                {"text": f"🛡️ {c1['name'][:14]}", "callback_data": f"c:{c1['id']}"},
-                                {"text": f"🛡️ {c2['name'][:14]}", "callback_data": f"c:{c2['id']}"},
-                            ],
-                            [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
-                        ]
-                    }
+                    crest_btns = []
+                    if c1_shield and str(c1_shield).startswith("http"):
+                        crest_btns.append({"text": f"🛡️ {c1['name'][:10]} Crest", "url": c1_shield})
+                    if c2_shield and str(c2_shield).startswith("http"):
+                        crest_btns.append({"text": f"🛡️ {c2['name'][:10]} Crest", "url": c2_shield})
+                    kb = [
+                        [
+                            {"text": f"🛡️ {c1['name'][:14]}", "callback_data": f"c:{c1['id']}"},
+                            {"text": f"🛡️ {c2['name'][:14]}", "callback_data": f"c:{c2['id']}"},
+                        ],
+                    ]
+                    if crest_btns:
+                        kb.append(crest_btns)
+                    kb.append([{"text": "🏠 Main Menu", "callback_data": "menu:home"}])
+                    return text, {"inline_keyboard": kb}
                 # Try player comparison
                 p_cmp = self.comparator.compare_players(parts[0], parts[1])
                 if p_cmp:
@@ -2184,7 +2453,21 @@ class PitchsideTelegramBot:
             return self.render_smart_search(arg) if arg else self.render_leaders_view("overall_rating")
         if cmd == "/compare":
             return self.render_compare_menu(arg)
-        if cmd in ("/msgmode", "/mode"):
+        if cmd == "/mode":
+            if arg in ("simple", "s", "quick", "clean"):
+                self.set_chat_sim_mode(chat_id or 0, "simple")
+                return self.render_mode_switcher(chat_id=chat_id)
+            if arg in ("advanced", "adv", "a", "deep", "tactical"):
+                self.set_chat_sim_mode(chat_id or 0, "advanced")
+                return self.render_mode_switcher(chat_id=chat_id)
+            return self.render_mode_switcher(chat_id=chat_id)
+        if cmd in ("/simple", "/quick"):
+            self.set_chat_sim_mode(chat_id or 0, "simple")
+            return self.render_mode_switcher(chat_id=chat_id)
+        if cmd in ("/advanced", "/tactical"):
+            self.set_chat_sim_mode(chat_id or 0, "advanced")
+            return self.render_mode_switcher(chat_id=chat_id)
+        if cmd == "/msgmode":
             if arg in ("new", "fresh", "send", "messages"):
                 self.send_new_messages = True
             elif arg in ("edit", "inplace", "compact", "update"):
@@ -2204,6 +2487,18 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "simmode" and len(parts) >= 3:
+            submode = parts[1]
+            fid = int(parts[2])
+            toast = "🟢 Simple Mode" if submode == "simple" else "⚙️ Advanced Tactical Mode"
+            return (*self.render_match_simulation(fid, mode=submode, chat_id=chat_id), toast)
+        if prefix == "mode" and len(parts) >= 2:
+            target_mode = parts[1]
+            norm = self.set_chat_sim_mode(chat_id or 0, target_mode)
+            toast = "🟢 Switched to Simple Mode!" if norm == "simple" else "⚙️ Switched to Advanced Mode!"
+            return (*self.render_mode_switcher(chat_id=chat_id), toast)
+        if data in ("menu:mode", "mode"):
+            return (*self.render_mode_switcher(chat_id=chat_id), "⚙️ Simulation Mode")
         if prefix == "lg" and len(parts) >= 2:
             target_league = parts[1].lower().strip()
             norm = self.set_chat_league(chat_id or 0, target_league)
@@ -2245,7 +2540,8 @@ class PitchsideTelegramBot:
             tab = parts[2] if len(parts) >= 3 else "overview"
             return (*self.render_match_center(int(parts[1]), tab=tab), None)
         if prefix == "sim" and len(parts) >= 2:
-            return (*self.render_match_simulation(int(parts[1])), "⚡ 90' Match Simulation Complete!")
+            mode = self.get_chat_sim_mode(chat_id)
+            return (*self.render_match_simulation(int(parts[1]), mode=mode, chat_id=chat_id), "⚡ 90' Match Simulation Complete!")
         if prefix == "mxi" and len(parts) >= 2:
             return (*self.render_match_lineups(int(parts[1])), "Starting XIs & Live Form")
         if prefix == "mrad" and len(parts) >= 2:

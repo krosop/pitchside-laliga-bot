@@ -40,12 +40,12 @@ def _build_squad_test_db() -> Database:
             )
         """)
         conn.execute(
-            "INSERT INTO clubs (id, slug, name, nickname, position, overall_rating) "
-            "VALUES (1, 'real-madrid', 'Real Madrid', 'Real Madrid', 1, 88)"
+            "INSERT INTO clubs (id, slug, name, nickname, position, overall_rating, shield_url) "
+            "VALUES (1, 'real-madrid', 'Real Madrid', 'Real Madrid', 1, 88, 'https://media.api-sports.io/football/teams/541.png')"
         )
         conn.execute(
-            "INSERT INTO clubs (id, slug, name, nickname, position, overall_rating) "
-            "VALUES (2, 'fc-barcelona', 'FC Barcelona', 'Barcelona', 2, 87)"
+            "INSERT INTO clubs (id, slug, name, nickname, position, overall_rating, shield_url) "
+            "VALUES (2, 'fc-barcelona', 'FC Barcelona', 'Barcelona', 2, 87, 'https://media.api-sports.io/football/teams/529.png')"
         )
 
         # Insert 16 players for Real Madrid (club_id=1):
@@ -782,3 +782,126 @@ def test_telegram_bot_multi_league_navigation_and_themes():
     assert bot.get_chat_league(chat_id) == "laliga"
     assert "Switched to La Liga" in toast_2
     assert "LA LIGA" in resp_text_2
+
+
+def test_real_team_logos_and_dual_simulation_modes():
+    """
+    Verifies:
+    1. Authentic real team crest URLs exist in database and are embedded via
+       `<a href="{shield_url}">&#8205;</a>` media headers.
+    2. Club Dossiers feature real crest media header, clickable crest link, and HQ crest button.
+    3. Match Center renders home and away crest links and direct crest buttons.
+    4. Simple Mode vs Advanced Mode:
+       - Simple Mode renders concise scoreboard, winner banner, goalscorers with minutes,
+         Dixon-Coles win probability bar, and '⚙️ Switch to Advanced Tactical Mode' button.
+       - Advanced Mode renders exhaustive 6-phase attack momentum, telemetry xG, win probability
+         evolution, tactical narrative, and '🟢 Switch to Simple Mode' button.
+       - 1-click toggle between modes updates in-place seamlessly.
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+    chat_id = 998877
+
+    # 1. Media header formatting
+    sample_shield = "https://a.espncdn.com/i/teamlogos/soccer/500/110.png"
+    hdr = bot._render_media_header(sample_shield)
+    assert hdr == f'<a href="{sample_shield}">&#8205;</a>'
+    assert bot._render_media_header(None) == ""
+
+    # 2. Club dossier crest embedding
+    rma_dossier, rma_kb = bot.render_club_dossier("real-madrid")
+    assert '<a href="https://media.api-sports.io/football/teams/541.png">&#8205;</a>' in rma_dossier
+    assert "Real Madrid" in rma_dossier
+    all_rma_btns = [btn for row in rma_kb["inline_keyboard"] for btn in row]
+    assert any("Crest (HQ)" in btn.get("text", "") and "541.png" in btn.get("url", "") for btn in all_rma_btns)
+
+    # 3. Match Center crest embedding & dual simulation buttons
+    mc_text, mc_kb = bot.render_match_center(2, tab="overview")
+    assert '<a href="http' in mc_text
+    all_mc_btns = [btn for row in mc_kb["inline_keyboard"] for btn in row]
+    mc_cb_set = {btn.get("callback_data") for btn in all_mc_btns if btn.get("callback_data")}
+    assert "simmode:simple:2" in mc_cb_set
+    assert "simmode:advanced:2" in mc_cb_set
+    assert any("Crest" in btn.get("text", "") and btn.get("url") for btn in all_mc_btns)
+
+    # 4. Simple Mode Simulation
+    sim_s_text, sim_s_kb = bot.render_match_simulation(2, mode="simple", chat_id=chat_id)
+    assert "SIMPLE MODE" in sim_s_text
+    assert "🟢" in sim_s_text
+    assert "<pre><code>" in sim_s_text
+    assert "GOALS &amp; SCORERS" in sim_s_text
+    assert "WIN PROBABILITY &amp; xG" in sim_s_text
+    all_s_btns = [btn for row in sim_s_kb["inline_keyboard"] for btn in row]
+    s_cb_set = {btn.get("callback_data") for btn in all_s_btns if btn.get("callback_data")}
+    assert "simmode:advanced:2" in s_cb_set
+    assert "simmode:simple:2" in s_cb_set
+    assert any("Share Simulation" in btn.get("text", "") for btn in all_s_btns)
+
+    # 5. Advanced Mode Simulation
+    sim_a_text, sim_a_kb = bot.render_match_simulation(2, mode="advanced", chat_id=chat_id)
+    assert "ADVANCED MODE" in sim_a_text
+    assert "⚙️" in sim_a_text
+    assert "<pre><code>" in sim_a_text
+    assert "6-PHASE ATTACK MOMENTUM" in sim_a_text
+    assert "WIN PROBABILITY EVOLUTION" in sim_a_text
+    assert "TACTICAL TREND NARRATIVE" in sim_a_text
+    all_a_btns = [btn for row in sim_a_kb["inline_keyboard"] for btn in row]
+    a_cb_set = {btn.get("callback_data") for btn in all_a_btns if btn.get("callback_data")}
+    assert "simmode:simple:2" in a_cb_set
+    assert any("Share Simulation" in btn.get("text", "") for btn in all_a_btns)
+
+
+def test_mode_switching_and_preservation_of_about_message():
+    """
+    Verifies:
+    1. /mode command and mode switcher UI with inline toggle buttons.
+    2. /simple and /advanced command shortcuts.
+    3. Callbacks mode:simple and mode:advanced update default chat mode.
+    4. Callbacks simmode:simple:<fid> and simmode:advanced:<fid> toggle card mode.
+    5. About/Welcome message remains strictly preserved under 1024 chars with original GIF.
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+    chat_id = 881122
+
+    # Default is simple mode
+    assert bot.get_chat_sim_mode(chat_id) == "simple"
+
+    # 1. /mode menu
+    mode_text, mode_kb = bot.handle_command_or_text("/mode", chat_id=chat_id)
+    assert "MATCH SIMULATION &amp; DISPLAY MODE" in mode_text
+    all_mode_btns = [btn for row in mode_kb["inline_keyboard"] for btn in row]
+    mode_cbs = {btn.get("callback_data") for btn in all_mode_btns if btn.get("callback_data")}
+    assert "mode:simple" in mode_cbs
+    assert "mode:advanced" in mode_cbs
+
+    # 2. Switch to Advanced via command /advanced or /mode advanced
+    resp_adv, _ = bot.handle_command_or_text("/advanced", chat_id=chat_id)
+    assert bot.get_chat_sim_mode(chat_id) == "advanced"
+    assert "ADVANCED MODE" in resp_adv
+
+    # 3. Switch to Simple via callback mode:simple
+    cb_text, cb_kb, toast = bot.handle_callback_data("mode:simple", chat_id=chat_id)
+    assert bot.get_chat_sim_mode(chat_id) == "simple"
+    assert "Simple Mode" in toast
+
+    # 4. Instant simulation card mode toggle via simmode callback
+    sim_adv_text, sim_adv_kb, sim_toast = bot.handle_callback_data("simmode:advanced:2", chat_id=chat_id)
+    assert "ADVANCED MODE" in sim_adv_text
+    assert "Advanced Tactical Mode" in sim_toast
+
+    sim_smp_text, sim_smp_kb, smp_toast = bot.handle_callback_data("simmode:simple:2", chat_id=chat_id)
+    assert "SIMPLE MODE" in sim_smp_text
+    assert "Simple Mode" in smp_toast
+
+    # 5. Strictly verify about/welcome message preservation
+    gif_url, caption, markup = bot.render_welcome_animation()
+    assert gif_url == "https://media1.tenor.com/m/tgsrfDxv17MAAAAd/neyma.gif"
+    assert len(caption) <= 1024
+    assert "WELCOME TO PITCHSIDE LA LIGA BOT" in caption
+    assert "Matches of the Day" in caption
+    assert "Simulator" in caption
+    assert "Suspension" in caption
+    assert "Standings" in caption
+    assert "Tactical DNA" in caption
+    assert "Head-to-Head" in caption
