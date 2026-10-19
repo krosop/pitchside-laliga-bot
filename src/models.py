@@ -33,6 +33,11 @@ class Club:
     points: int = 0
     qualification: Optional[str] = None
     formation: Optional[str] = '4-3-3'
+    competition: str = 'laliga'
+    att_rating: int = 50
+    mid_rating: int = 50
+    def_rating: int = 50
+    overall_rating: int = 50
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

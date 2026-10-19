@@ -673,6 +673,651 @@ CLUB_TACTICAL_DNA: Dict[str, Dict[str, Any]] = {
         "vs_underdog_tactics": "Direct attacking transitions with heavy cross volume.",
         "key_strength": "Combative physical spirit and direct crossing.",
         "vulnerability": "Can be drawn out of defensive shape by patient positional play."
+    },
+
+    # =========================================================================
+    # ITALIAN SERIE A CLUBS (20 AUTHENTIC TACTICAL DNA PROFILES)
+    # =========================================================================
+    # 21. Inter Milan
+    "inter": {
+        "club_name": "FC Internazionale Milano",
+        "nickname": "Inter",
+        "manager": "Simone Inzaghi",
+        "manager_moniker": "The Master of Cup Finals",
+        "formation": "3-5-2",
+        "tactical_identity": "Fluid Positional Interchanges & Dual Wing-Back Overloads",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 59,
+            "pressing_intensity": 78,
+            "defensive_line_height": 74,
+            "build_up_tempo": 80,
+            "counter_threat": 88,
+            "tactical_fouls_rate": 55,
+            "lead_preservation": 90,
+            "late_chase_intensity": 92
+        },
+        "vs_elite_tactics": "Structured 3-5-2 rest defense with lightning vertical ball releases through Çalhanoğlu to Lautaro & Thuram.",
+        "vs_underdog_tactics": "Relentless positional rotations; center-backs (Bastoni) pushing forward into wide half-spaces to deliver crosses.",
+        "key_strength": "Automated midfield chemistry, lethal two-striker synergy, and devastating transitional power.",
+        "vulnerability": "Susceptible to quick counters in the channels when both wing-backs are caught high."
+    },
+    "internazionale": {
+        "club_name": "FC Internazionale Milano",
+        "nickname": "Inter",
+        "manager": "Simone Inzaghi",
+        "manager_moniker": "The Master of Cup Finals",
+        "formation": "3-5-2",
+        "tactical_identity": "Fluid Positional Interchanges & Dual Wing-Back Overloads",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 59,
+            "pressing_intensity": 78,
+            "defensive_line_height": 74,
+            "build_up_tempo": 80,
+            "counter_threat": 88,
+            "tactical_fouls_rate": 55,
+            "lead_preservation": 90,
+            "late_chase_intensity": 92
+        },
+        "vs_elite_tactics": "Structured 3-5-2 rest defense with lightning vertical ball releases through Çalhanoğlu to Lautaro & Thuram.",
+        "vs_underdog_tactics": "Relentless positional rotations; center-backs (Bastoni) pushing forward into wide half-spaces to deliver crosses.",
+        "key_strength": "Automated midfield chemistry, lethal two-striker synergy, and devastating transitional power.",
+        "vulnerability": "Susceptible to quick counters in the channels when both wing-backs are caught high."
+    },
+
+    # 22. AC Milan
+    "ac-milan": {
+        "club_name": "AC Milan",
+        "nickname": "Milan",
+        "manager": "Paulo Fonseca",
+        "manager_moniker": "The Rossoneri Strategist",
+        "formation": "4-2-3-1",
+        "tactical_identity": "High Transition & Asymmetric Left-Sided Dynamism",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 55,
+            "pressing_intensity": 82,
+            "defensive_line_height": 70,
+            "build_up_tempo": 85,
+            "counter_threat": 94,
+            "tactical_fouls_rate": 62,
+            "lead_preservation": 76,
+            "late_chase_intensity": 90
+        },
+        "vs_elite_tactics": "Direct vertical balls down the left flank to unleash Rafael Leão and Theo Hernández in open field.",
+        "vs_underdog_tactics": "Sustained territory domination with Christian Pulisic drifting inside to create numerical overloads.",
+        "key_strength": "Explosive 1v1 dribbling and unmatched pace in open transitions.",
+        "vulnerability": "Can leave the defensive pivot exposed during aggressive attacking transitions."
+    },
+    "milan": {
+        "club_name": "AC Milan",
+        "nickname": "Milan",
+        "manager": "Paulo Fonseca",
+        "manager_moniker": "The Rossoneri Strategist",
+        "formation": "4-2-3-1",
+        "tactical_identity": "High Transition & Asymmetric Left-Sided Dynamism",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 55,
+            "pressing_intensity": 82,
+            "defensive_line_height": 70,
+            "build_up_tempo": 85,
+            "counter_threat": 94,
+            "tactical_fouls_rate": 62,
+            "lead_preservation": 76,
+            "late_chase_intensity": 90
+        },
+        "vs_elite_tactics": "Direct vertical balls down the left flank to unleash Rafael Leão and Theo Hernández in open field.",
+        "vs_underdog_tactics": "Sustained territory domination with Christian Pulisic drifting inside to create numerical overloads.",
+        "key_strength": "Explosive 1v1 dribbling and unmatched pace in open transitions.",
+        "vulnerability": "Can leave the defensive pivot exposed during aggressive attacking transitions."
+    },
+
+    # 23. Juventus FC
+    "juventus": {
+        "club_name": "Juventus FC",
+        "nickname": "Juventus",
+        "manager": "Thiago Motta",
+        "manager_moniker": "The Positional Architect",
+        "formation": "4-2-3-1",
+        "tactical_identity": "Controlled Positional Structure, Clean Build-Up & Compact Rest Defense",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 58,
+            "pressing_intensity": 80,
+            "defensive_line_height": 72,
+            "build_up_tempo": 74,
+            "counter_threat": 80,
+            "tactical_fouls_rate": 60,
+            "lead_preservation": 92,
+            "late_chase_intensity": 86
+        },
+        "vs_elite_tactics": "Patient, impenetrable positional shape; suppresses opponent xG to near zero and attacks on calculated turnovers.",
+        "vs_underdog_tactics": "Probing positional possession; fluid rotations between Douglas Luiz, Koopmeiners and Yildiz around Vlahović.",
+        "key_strength": "Impenetrable defensive solidity, pristine clean-sheet rate, and tactical discipline.",
+        "vulnerability": "Occasionally risks dropping points in low-scoring draws if unable to breach deep blocks."
+    },
+
+    # 24. SSC Napoli
+    "napoli": {
+        "club_name": "SSC Napoli",
+        "nickname": "Napoli",
+        "manager": "Antonio Conte",
+        "manager_moniker": "The Intensity General",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Intense Physical Aggression, Vertical Directness & Deadly Flank Delivery",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 53,
+            "pressing_intensity": 88,
+            "defensive_line_height": 68,
+            "build_up_tempo": 84,
+            "counter_threat": 92,
+            "tactical_fouls_rate": 74,
+            "lead_preservation": 94,
+            "late_chase_intensity": 94
+        },
+        "vs_elite_tactics": "Relentless mid-block duel winning; explosive vertical outlets into Romelu Lukaku holding up for Kvaratskhelia.",
+        "vs_underdog_tactics": "Suffocating physical pressure, high cross volume from wing-backs, and powerful box overloads.",
+        "key_strength": "Elite stamina, terrifying physical intensity, and ruthless finishing in the box.",
+        "vulnerability": "Heavy emotional investment and physical fatigue if games are drawn out."
+    },
+
+    # 25. Atalanta BC
+    "atalanta": {
+        "club_name": "Atalanta BC",
+        "nickname": "Atalanta",
+        "manager": "Gian Piero Gasperini",
+        "manager_moniker": "The Gegenpress Sorcerer",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Extreme Man-to-Man Gegenpress & Aggressive Centre-Back Overlaps",
+        "style_category": "high_press_intensity",
+        "metrics": {
+            "possession_target": 56,
+            "pressing_intensity": 96,
+            "defensive_line_height": 84,
+            "build_up_tempo": 88,
+            "counter_threat": 90,
+            "tactical_fouls_rate": 78,
+            "lead_preservation": 78,
+            "late_chase_intensity": 98
+        },
+        "vs_elite_tactics": "Fearless pitch-wide 1v1 man-marking duels; suffocates elite midfielders and forces high turnovers (UEL Champions style).",
+        "vs_underdog_tactics": "Complete territorial bombardment; both wide center-backs and wing-backs flood the penalty area (Lookman, De Ketelaere, Retegui).",
+        "key_strength": "Fearsome goalscoring power, world-class high press, and infinite physical energy.",
+        "vulnerability": "High defensive line leaves massive spaces behind if the first press is broken."
+    },
+
+    # 26. AS Roma
+    "as-roma": {
+        "club_name": "AS Roma",
+        "nickname": "Roma",
+        "manager": "Ivan Jurić",
+        "manager_moniker": "The Giallorossi Fighter",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Aggressive Midfield Pressing, Dynamic Half-Spaces & Rapid Counter-Strikes",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 52,
+            "pressing_intensity": 85,
+            "defensive_line_height": 66,
+            "build_up_tempo": 78,
+            "counter_threat": 84,
+            "tactical_fouls_rate": 76,
+            "lead_preservation": 80,
+            "late_chase_intensity": 90
+        },
+        "vs_elite_tactics": "Fierce dueling in the middle third; direct balls to Dovbyk with Dybala floating in dangerous pockets.",
+        "vs_underdog_tactics": "Sustained pressure from wide areas with heavy set-piece emphasis (Mancini, Ndicka).",
+        "key_strength": "Dybala's unpredictable individual genius and set-piece danger.",
+        "vulnerability": "Defensive vulnerabilities in recovery runs when countered quickly."
+    },
+    "roma": {
+        "club_name": "AS Roma",
+        "nickname": "Roma",
+        "manager": "Ivan Jurić",
+        "manager_moniker": "The Giallorossi Fighter",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Aggressive Midfield Pressing, Dynamic Half-Spaces & Rapid Counter-Strikes",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 52,
+            "pressing_intensity": 85,
+            "defensive_line_height": 66,
+            "build_up_tempo": 78,
+            "counter_threat": 84,
+            "tactical_fouls_rate": 76,
+            "lead_preservation": 80,
+            "late_chase_intensity": 90
+        },
+        "vs_elite_tactics": "Fierce dueling in the middle third; direct balls to Dovbyk with Dybala floating in dangerous pockets.",
+        "vs_underdog_tactics": "Sustained pressure from wide areas with heavy set-piece emphasis (Mancini, Ndicka).",
+        "key_strength": "Dybala's unpredictable individual genius and set-piece danger.",
+        "vulnerability": "Defensive vulnerabilities in recovery runs when countered quickly."
+    },
+
+    # 27. SS Lazio
+    "lazio": {
+        "club_name": "SS Lazio",
+        "nickname": "Lazio",
+        "manager": "Marco Baroni",
+        "manager_moniker": "The High-Velocity Tactician",
+        "formation": "4-2-3-1",
+        "tactical_identity": "Vertical Directness, High-Paced Transitions & Wide Cutbacks",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 52,
+            "pressing_intensity": 84,
+            "defensive_line_height": 68,
+            "build_up_tempo": 86,
+            "counter_threat": 88,
+            "tactical_fouls_rate": 66,
+            "lead_preservation": 78,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "High-speed vertical counters through Zaccagni, Isaksen, and Castellanos.",
+        "vs_underdog_tactics": "High-tempo flank interchanges with Guendouzi arriving late into the box.",
+        "key_strength": "Speed in wide areas and lethal execution on breakaways.",
+        "vulnerability": "Aggressive forward commitment leaves gaps in wide defensive areas."
+    },
+
+    # 28. ACF Fiorentina
+    "fiorentina": {
+        "club_name": "ACF Fiorentina",
+        "nickname": "Fiorentina",
+        "manager": "Raffaele Palladino",
+        "manager_moniker": "The Viola Stylist",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Technical Midfield Progression, Wing-Back Crosses & High Defensive Line",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 56,
+            "pressing_intensity": 80,
+            "defensive_line_height": 72,
+            "build_up_tempo": 76,
+            "counter_threat": 80,
+            "tactical_fouls_rate": 60,
+            "lead_preservation": 76,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "Technical possession courage; works the ball through Gudmundsson and Colpani to release Moise Kean.",
+        "vs_underdog_tactics": "Wide overloads from Dodô and Gosens delivering dangerous crosses into the 6-yard box.",
+        "key_strength": "Moise Kean's physical resurgence, Gosens' back-post finishing, and creative midfielders.",
+        "vulnerability": "Susceptible to rapid diagonal counter-attacks when dominating high up the pitch."
+    },
+
+    # 29. Bologna FC
+    "bologna": {
+        "club_name": "Bologna FC 1909",
+        "nickname": "Bologna",
+        "manager": "Vincenzo Italiano",
+        "manager_moniker": "The High-Press Enthusiast",
+        "formation": "4-3-3",
+        "tactical_identity": "Intense Frontline Pressing, Wide Isolation & Positional Courage",
+        "style_category": "high_press_intensity",
+        "metrics": {
+            "possession_target": 57,
+            "pressing_intensity": 88,
+            "defensive_line_height": 78,
+            "build_up_tempo": 80,
+            "counter_threat": 82,
+            "tactical_fouls_rate": 68,
+            "lead_preservation": 74,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "Brave high pressing to disrupt elite construction; forces turnovers near the opponent's box.",
+        "vs_underdog_tactics": "Fast 1v1 isolation for wingers (Orsolini, Ndoye) and high crossing frequency.",
+        "key_strength": "Orsolini's magical left-foot curlers and relentless energetic pressing.",
+        "vulnerability": "High defensive line can be exploited by fast strikers running in behind."
+    },
+
+    # 30. Torino FC
+    "torino": {
+        "club_name": "Torino FC",
+        "nickname": "Torino",
+        "manager": "Paolo Vanoli",
+        "manager_moniker": "The Granata General",
+        "formation": "3-5-2",
+        "tactical_identity": "Disciplined Defensive Block, Aerial Dominance & Physical Midfield",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 47,
+            "pressing_intensity": 76,
+            "defensive_line_height": 52,
+            "build_up_tempo": 74,
+            "counter_threat": 82,
+            "tactical_fouls_rate": 78,
+            "lead_preservation": 88,
+            "late_chase_intensity": 82
+        },
+        "vs_elite_tactics": "Ironclad Granata defensive mid-block; absorbs pressure and hits through Zapata/Sanabria direct hold-up.",
+        "vs_underdog_tactics": "Physical aerial bombardment and aggressive set-piece overloads in the box.",
+        "key_strength": "Outstanding physical resilience and legendary Granata grit at home.",
+        "vulnerability": "Creative deficit when forced to break down ultra-defensive setups."
+    },
+
+    # 31. Udinese Calcio
+    "udinese": {
+        "club_name": "Udinese Calcio",
+        "nickname": "Udinese",
+        "manager": "Kosta Runjaic",
+        "manager_moniker": "The Friulian Rebuilder",
+        "formation": "3-5-2",
+        "tactical_identity": "Heavy Physicality, Athletic Counter-Attacking & Set-Piece Might",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 44,
+            "pressing_intensity": 76,
+            "defensive_line_height": 50,
+            "build_up_tempo": 80,
+            "counter_threat": 88,
+            "tactical_fouls_rate": 82,
+            "lead_preservation": 86,
+            "late_chase_intensity": 84
+        },
+        "vs_elite_tactics": "Deep physical wall in own half; unleashes Florian Thauvin's technical vision and Lorenzo Lucca's 2.01m aerial power.",
+        "vs_underdog_tactics": "Direct transitions, corner kick routines, and long throw-in threats.",
+        "key_strength": "Lucca's immense aerial dominance and Thauvin's Champions-League quality technique.",
+        "vulnerability": "Low possession percentage can wear down defenders late in games."
+    },
+
+    # 32. Genoa CFC
+    "genoa": {
+        "club_name": "Genoa CFC",
+        "nickname": "Genoa",
+        "manager": "Alberto Gilardino",
+        "manager_moniker": "The Marassi Maestro",
+        "formation": "3-5-2",
+        "tactical_identity": "Resilient Marassi Fortitude, Solid Defensive Structure & Rapid Breakouts",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 45,
+            "pressing_intensity": 78,
+            "defensive_line_height": 50,
+            "build_up_tempo": 76,
+            "counter_threat": 82,
+            "tactical_fouls_rate": 78,
+            "lead_preservation": 88,
+            "late_chase_intensity": 84
+        },
+        "vs_elite_tactics": "Unbelievable Marassi atmospheric backing; compact 5-3-2 low-block frustrating top clubs.",
+        "vs_underdog_tactics": "Disciplined mid-block; focuses on quick diagonal balls to wide wingbacks.",
+        "key_strength": "Passionate Luigi Ferraris home ground and collective tactical compactness.",
+        "vulnerability": "Struggles to generate high goal tallies if falling behind early."
+    },
+
+    # 33. Parma Calcio
+    "parma": {
+        "club_name": "Parma Calcio 1913",
+        "nickname": "Parma",
+        "manager": "Fabio Pecchia",
+        "manager_moniker": "The Fast-Track Tactician",
+        "formation": "4-2-3-1",
+        "tactical_identity": "Fearless Vertical Transition, Electric Wing Pace & Dynamic Young Attackers",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 46,
+            "pressing_intensity": 82,
+            "defensive_line_height": 62,
+            "build_up_tempo": 90,
+            "counter_threat": 94,
+            "tactical_fouls_rate": 68,
+            "lead_preservation": 72,
+            "late_chase_intensity": 90
+        },
+        "vs_elite_tactics": "One of the most dangerous counter-attacking teams in Europe; Dennis Man and Mihăilă explode behind defenses.",
+        "vs_underdog_tactics": "High-octane direct vertical attacks into striker Ange-Yoan Bonny.",
+        "key_strength": "Blistering breakaway speed and fearless young attacking flair.",
+        "vulnerability": "Open defensive structure leads to conceding high-quality chances."
+    },
+
+    # 34. Como 1907
+    "como": {
+        "club_name": "Como 1907",
+        "nickname": "Como",
+        "manager": "Cesc Fàbregas",
+        "manager_moniker": "The Lake Maestro",
+        "formation": "4-2-3-1",
+        "tactical_identity": "Spanish-style Juego de Posición, Short-Passing Build-Up & Creative Half-Spaces",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 57,
+            "pressing_intensity": 82,
+            "defensive_line_height": 72,
+            "build_up_tempo": 74,
+            "counter_threat": 76,
+            "tactical_fouls_rate": 62,
+            "lead_preservation": 74,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "Refuses to abandon beautiful positional football; plays through Nico Paz and Sergi Roberto in the middle.",
+        "vs_underdog_tactics": "Fluid short-passing carousel, triangular overloads, and clever through-balls into the box.",
+        "key_strength": "Nico Paz's world-class technique and Cesc Fàbregas' innovative tactical vision.",
+        "vulnerability": "Defensive vulnerabilities against direct, physical aerial teams."
+    },
+
+    # 35. Cagliari Calcio
+    "cagliari": {
+        "club_name": "Cagliari Calcio",
+        "nickname": "Cagliari",
+        "manager": "Davide Nicola",
+        "manager_moniker": "The Survival Miracle Worker",
+        "formation": "3-5-2",
+        "tactical_identity": "Sardinian Fighting Spirit, Compact Defensive Lines & Direct Set-Piece Battles",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 43,
+            "pressing_intensity": 78,
+            "defensive_line_height": 48,
+            "build_up_tempo": 76,
+            "counter_threat": 80,
+            "tactical_fouls_rate": 84,
+            "lead_preservation": 86,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "Deep sardinian trench warfare; dense 5-man backline absorbing waves and counter-punching with Piccoli & Luvumbo.",
+        "vs_underdog_tactics": "Direct aerial supply into the mixer, high physical duel commitment, and corner set-pieces.",
+        "key_strength": "Fierce fighting spirit and home fortress at Unipol Domus.",
+        "vulnerability": "Low possession share and limited technical creativity in open play."
+    },
+
+    # 36. Hellas Verona
+    "hellas-verona": {
+        "club_name": "Hellas Verona FC",
+        "nickname": "Verona",
+        "manager": "Paolo Zanetti",
+        "manager_moniker": "The Bentegodi Battler",
+        "formation": "3-4-2-1",
+        "tactical_identity": "High Physical Contact, Direct Long Progression & Fast Secondary Balls",
+        "style_category": "direct_aerial_combat",
+        "metrics": {
+            "possession_target": 42,
+            "pressing_intensity": 82,
+            "defensive_line_height": 54,
+            "build_up_tempo": 84,
+            "counter_threat": 84,
+            "tactical_fouls_rate": 86,
+            "lead_preservation": 84,
+            "late_chase_intensity": 84
+        },
+        "vs_elite_tactics": "Disruptive physical pressing; breaks up elite passing rhythm with hard tackles and quick long releases to Tengstedt.",
+        "vs_underdog_tactics": "Direct long balls, aggressive fight for second balls, and high aerial presence.",
+        "key_strength": "High tackle win rate and aggressive physical duels.",
+        "vulnerability": "High foul count leads to dangerous free kicks conceded around the box."
+    },
+    "verona": {
+        "club_name": "Hellas Verona FC",
+        "nickname": "Verona",
+        "manager": "Paolo Zanetti",
+        "manager_moniker": "The Bentegodi Battler",
+        "formation": "3-4-2-1",
+        "tactical_identity": "High Physical Contact, Direct Long Progression & Fast Secondary Balls",
+        "style_category": "direct_aerial_combat",
+        "metrics": {
+            "possession_target": 42,
+            "pressing_intensity": 82,
+            "defensive_line_height": 54,
+            "build_up_tempo": 84,
+            "counter_threat": 84,
+            "tactical_fouls_rate": 86,
+            "lead_preservation": 84,
+            "late_chase_intensity": 84
+        },
+        "vs_elite_tactics": "Disruptive physical pressing; breaks up elite passing rhythm with hard tackles and quick long releases to Tengstedt.",
+        "vs_underdog_tactics": "Direct long balls, aggressive fight for second balls, and high aerial presence.",
+        "key_strength": "High tackle win rate and aggressive physical duels.",
+        "vulnerability": "High foul count leads to dangerous free kicks conceded around the box."
+    },
+
+    # 37. Empoli FC
+    "empoli": {
+        "club_name": "Empoli FC",
+        "nickname": "Empoli",
+        "manager": "Roberto D'Aversa",
+        "manager_moniker": "The Tactical Disciplinarian",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Methodical Mid-Block, Disciplined Defensive Geometry & Clinical Transitions",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 44,
+            "pressing_intensity": 78,
+            "defensive_line_height": 52,
+            "build_up_tempo": 76,
+            "counter_threat": 82,
+            "tactical_fouls_rate": 74,
+            "lead_preservation": 90,
+            "late_chase_intensity": 80
+        },
+        "vs_elite_tactics": "Rock-solid 5-4-1 defensive barrier; Devis Vásquez pulling off saves and Sebastiano Esposito sparking counters.",
+        "vs_underdog_tactics": "Patient mid-block; allows opponent to overextend before punishing them on the break.",
+        "key_strength": "Elite defensive organization and very low xG conceded per game.",
+        "vulnerability": "Rarely produces high goal tallies (often relies on 1-0 victories)."
+    },
+
+    # 38. US Lecce
+    "lecce": {
+        "club_name": "US Lecce",
+        "nickname": "Lecce",
+        "manager": "Luca Gotti",
+        "manager_moniker": "The Salento Stoic",
+        "formation": "4-2-3-1",
+        "tactical_identity": "Deep Compact Low Block & Explosive Counter-Attacks on Wings",
+        "style_category": "compact_low_block",
+        "metrics": {
+            "possession_target": 43,
+            "pressing_intensity": 74,
+            "defensive_line_height": 48,
+            "build_up_tempo": 80,
+            "counter_threat": 84,
+            "tactical_fouls_rate": 80,
+            "lead_preservation": 84,
+            "late_chase_intensity": 82
+        },
+        "vs_elite_tactics": "Ultra-disciplined deep bunker; launches rapid counter-attacks through Patrick Dorgu and Krstović.",
+        "vs_underdog_tactics": "Direct vertical progressions and quick wing crosses into Nikola Krstović.",
+        "key_strength": "Patrick Dorgu's dynamic athleticism and defensive grit in own half.",
+        "vulnerability": "Low goal threat when dominating possession in the final third."
+    },
+
+    # 39. Venezia FC
+    "venezia": {
+        "club_name": "Venezia FC",
+        "nickname": "Venezia",
+        "manager": "Eusebio Di Francesco",
+        "manager_moniker": "The Lagoon Idealist",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Expansive High-Energy Possession, Wing-Back Overloads & High Risk",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 51,
+            "pressing_intensity": 82,
+            "defensive_line_height": 66,
+            "build_up_tempo": 82,
+            "counter_threat": 80,
+            "tactical_fouls_rate": 70,
+            "lead_preservation": 70,
+            "late_chase_intensity": 86
+        },
+        "vs_elite_tactics": "Brave build-up from the back through Busio and Pohjanpalo; refuses to park the bus but risks costly turnovers.",
+        "vs_underdog_tactics": "Fast wing play and box presence from Joel Pohjanpalo.",
+        "key_strength": "Pohjanpalo's predatory box finishing and stylish passing sequences.",
+        "vulnerability": "High defensive line leaves them open to conceding high-xG counter chances."
+    },
+
+    # 40. AC Monza
+    "monza": {
+        "club_name": "AC Monza",
+        "nickname": "Monza",
+        "manager": "Alessandro Nesta",
+        "manager_moniker": "The Elegant Defender",
+        "formation": "3-4-2-1",
+        "tactical_identity": "Controlled Technical Possession, Deep Patient Build-Up & Tactical Patience",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 53,
+            "pressing_intensity": 76,
+            "defensive_line_height": 60,
+            "build_up_tempo": 72,
+            "counter_threat": 76,
+            "tactical_fouls_rate": 66,
+            "lead_preservation": 82,
+            "late_chase_intensity": 82
+        },
+        "vs_elite_tactics": "Patient ball circulation to take the sting out of elite opponents; hits through Daniel Maldini's elegance.",
+        "vs_underdog_tactics": "Control of tempo and territory through Pessina and Kyriakopoulos.",
+        "key_strength": "Technical composure, Daniel Maldini's creative sparkle, and solid back-three structure.",
+        "vulnerability": "Can lack explosive finishing and vertical urgency in close games."
+    },
+
+    # 41. US Sassuolo Calcio
+    "sassuolo": {
+        "club_name": "US Sassuolo Calcio",
+        "nickname": "Sassuolo",
+        "manager": "Fabio Grosso",
+        "manager_moniker": "The World Cup Hero",
+        "formation": "4-3-3",
+        "tactical_identity": "Fluid Attacking Combinations, Wide Isolation & Technical Front Three",
+        "style_category": "possession_heavy",
+        "metrics": {
+            "possession_target": 56,
+            "pressing_intensity": 78,
+            "defensive_line_height": 66,
+            "build_up_tempo": 82,
+            "counter_threat": 86,
+            "tactical_fouls_rate": 58,
+            "lead_preservation": 76,
+            "late_chase_intensity": 88
+        },
+        "vs_elite_tactics": "Domenico Berardi and Armand Laurienté isolate fullbacks in 1v1 duels with quick diagonals.",
+        "vs_underdog_tactics": "High-possession territorial domination with aggressive wing overloads.",
+        "key_strength": "Domenico Berardi's world-class chance creation and Laurienté's 1v1 flair.",
+        "vulnerability": "Vulnerable to aerial duels and physical set-piece defending."
+    },
+
+    # 42. Frosinone Calcio
+    "frosinone": {
+        "club_name": "Frosinone Calcio",
+        "nickname": "Frosinone",
+        "manager": "Vincenzo Vivarini",
+        "manager_moniker": "The Ciociari Tactician",
+        "formation": "3-4-2-1",
+        "tactical_identity": "High-Tempo Transitional Threat & Direct Wing Progression",
+        "style_category": "pragmatic_transitional",
+        "metrics": {
+            "possession_target": 46,
+            "pressing_intensity": 80,
+            "defensive_line_height": 58,
+            "build_up_tempo": 84,
+            "counter_threat": 88,
+            "tactical_fouls_rate": 72,
+            "lead_preservation": 74,
+            "late_chase_intensity": 86
+        },
+        "vs_elite_tactics": "Direct vertical balls down the channels to exploit vacated spaces behind aggressive wingbacks.",
+        "vs_underdog_tactics": "Direct transitions, wide crosses, and rapid box penetrations.",
+        "key_strength": "Fearless attacking tempo and direct transition speed.",
+        "vulnerability": "Can get stretched vertically, conceding space in central midfield."
     }
 }
 
@@ -740,9 +1385,13 @@ class ClubTacticsRegistry:
         h_metrics = h["metrics"]
         a_metrics = a["metrics"]
 
-        # Opponent Tier determination (Top 4 / elite)
-        is_h_elite = home_rank <= 4 or home_slug in ["real-madrid", "fc-barcelona", "atletico-de-madrid", "atletico-madrid"]
-        is_a_elite = away_rank <= 4 or away_slug in ["real-madrid", "fc-barcelona", "atletico-de-madrid", "atletico-madrid"]
+        # Opponent Tier determination (Top 4 / elite clubs in La Liga and Serie A)
+        elite_slugs = {
+            "real-madrid", "fc-barcelona", "atletico-de-madrid", "atletico-madrid",
+            "inter", "internazionale", "juventus", "milan", "ac-milan", "napoli", "atalanta", "as-roma", "roma", "lazio"
+        }
+        is_h_elite = home_rank <= 4 or home_slug in elite_slugs
+        is_a_elite = away_rank <= 4 or away_slug in elite_slugs
 
         h_approach = h["vs_elite_tactics"] if is_a_elite else h["vs_underdog_tactics"]
         a_approach = a["vs_elite_tactics"] if is_h_elite else a["vs_underdog_tactics"]

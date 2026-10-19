@@ -91,6 +91,7 @@ class PitchsideTelegramBot:
     WELCOME_GIF_URL: str = "https://media1.tenor.com/m/tgsrfDxv17MAAAAd/neyma.gif"
 
     CLUB_THEMES: Dict[str, Dict[str, str]] = {
+        # La Liga EA SPORTS
         "barcelona": {"code": "FCB", "badge": "🔵🔴", "name": "Barcelona"},
         "real-madrid": {"code": "RMA", "badge": "⚪🟣", "name": "Real Madrid"},
         "atletico": {"code": "ATM", "badge": "🔴⚪", "name": "Atlético Madrid"},
@@ -116,6 +117,33 @@ class PitchsideTelegramBot:
         "leganes": {"code": "LEG", "badge": "🔵⚪", "name": "Leganés"},
         "valladolid": {"code": "VLL", "badge": "🟣⚪", "name": "Real Valladolid"},
         "palmas": {"code": "LPA", "badge": "🟡🔵", "name": "Las Palmas"},
+        # Italian Serie A Enilive
+        "inter": {"code": "INT", "badge": "🔵⚫", "name": "Inter"},
+        "internazionale": {"code": "INT", "badge": "🔵⚫", "name": "Inter"},
+        "ac-milan": {"code": "MIL", "badge": "🔴⚫", "name": "AC Milan"},
+        "milan": {"code": "MIL", "badge": "🔴⚫", "name": "AC Milan"},
+        "juventus": {"code": "JUV", "badge": "⚪⚫", "name": "Juventus"},
+        "napoli": {"code": "NAP", "badge": "🔵⚪", "name": "Napoli"},
+        "atalanta": {"code": "ATA", "badge": "🔵⚫", "name": "Atalanta"},
+        "as-roma": {"code": "ROM", "badge": "🟡🔴", "name": "AS Roma"},
+        "roma": {"code": "ROM", "badge": "🟡🔴", "name": "AS Roma"},
+        "lazio": {"code": "LAZ", "badge": "⚪🩵", "name": "Lazio"},
+        "fiorentina": {"code": "FIO", "badge": "🟣⚪", "name": "Fiorentina"},
+        "bologna": {"code": "BOL", "badge": "🔴🔵", "name": "Bologna"},
+        "torino": {"code": "TOR", "badge": "🟤⚪", "name": "Torino"},
+        "udinese": {"code": "UDI", "badge": "⚪⚫", "name": "Udinese"},
+        "genoa": {"code": "GEN", "badge": "🔴🔵", "name": "Genoa"},
+        "parma": {"code": "PAR", "badge": "🟡🔵", "name": "Parma"},
+        "como": {"code": "COM", "badge": "🔵⚪", "name": "Como"},
+        "cagliari": {"code": "CAG", "badge": "🔴🔵", "name": "Cagliari"},
+        "hellas-verona": {"code": "VER", "badge": "🟡🔵", "name": "Verona"},
+        "verona": {"code": "VER", "badge": "🟡🔵", "name": "Verona"},
+        "empoli": {"code": "EMP", "badge": "🔵⚪", "name": "Empoli"},
+        "lecce": {"code": "LEC", "badge": "🟡🔴", "name": "Lecce"},
+        "venezia": {"code": "VEN", "badge": "🟠🟢", "name": "Venezia"},
+        "monza": {"code": "MON", "badge": "🔴⚪", "name": "Monza"},
+        "sassuolo": {"code": "SAS", "badge": "🟢⚫", "name": "Sassuolo"},
+        "frosinone": {"code": "FRO", "badge": "🟡🔵", "name": "Frosinone"},
     }
 
     @classmethod
@@ -138,8 +166,9 @@ class PitchsideTelegramBot:
         self.sim_engine = SimulationEngine(self.db)
         self.comparator = PlayerComparator(self.db)
         self._detail_cache: Dict[int, Tuple[float, Dict[str, Any]]] = {}
-        self._standings_cache: Optional[Tuple[float, List[Dict[str, Any]]]] = None
-        self._fixtures_cache: Optional[Tuple[float, List[Dict[str, Any]]]] = None
+        self._standings_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
+        self._fixtures_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
+        self.chat_leagues: Dict[int, str] = {}
         self._running = False
         self._offset = 0
         if send_new_messages is not None:
@@ -147,6 +176,19 @@ class PitchsideTelegramBot:
         else:
             env_val = os.environ.get("TELEGRAM_SEND_NEW_MESSAGES", "0").strip().lower()
             self.send_new_messages = env_val in ("1", "true", "yes", "new")
+
+    def get_chat_league(self, chat_id: Optional[int]) -> str:
+        """Returns the active competition for a chat ('laliga' or 'serie_a')."""
+        if not chat_id:
+            return "laliga"
+        return self.chat_leagues.get(chat_id, "laliga")
+
+    def set_chat_league(self, chat_id: int, league: str) -> str:
+        """Sets active competition for a chat ('laliga' or 'serie_a')."""
+        s = (league or "").strip().lower()
+        norm = "serie_a" if "serie" in s or "ita" in s or "italy" in s else "laliga"
+        self.chat_leagues[chat_id] = norm
+        return norm
 
     # =========================================================================
     # TELEGRAM HTTP API HELPERS
@@ -350,19 +392,23 @@ class PitchsideTelegramBot:
                 a_b -= 1
         return ("🟩" * h_b) + ("⬜" * d_b) + ("🟥" * a_b)
 
-    def _get_standings(self) -> List[Dict[str, Any]]:
+    def _get_standings(self, competition: Optional[str] = None) -> List[Dict[str, Any]]:
+        comp_key = str(competition or "laliga").lower()
         now = time.time()
-        if self._standings_cache and now - self._standings_cache[0] < 30.0:
-            return self._standings_cache[1]
-        st = self.db.get_standings()
-        self._standings_cache = (now, st)
+        cached = self._standings_cache.get(comp_key)
+        if cached and now - cached[0] < 30.0:
+            return cached[1]
+        st = self.db.get_standings(competition=competition)
+        self._standings_cache[comp_key] = (now, st)
         return st
 
-    def _get_all_fixtures(self) -> List[Dict[str, Any]]:
+    def _get_all_fixtures(self, competition: Optional[str] = None) -> List[Dict[str, Any]]:
+        comp_key = str(competition or "laliga").lower()
         now = time.time()
-        if self._fixtures_cache and now - self._fixtures_cache[0] < 30.0:
-            return self._fixtures_cache[1]
-        raw_fx = self.db.get_fixtures()
+        cached = self._fixtures_cache.get(comp_key)
+        if cached and now - cached[0] < 30.0:
+            return cached[1]
+        raw_fx = self.db.get_fixtures(competition=competition)
         status_prio = {"LIVE": 0, "FINISHED": 1, "SCHEDULED": 2}
         raw_fx.sort(
             key=lambda x: (
@@ -381,15 +427,15 @@ class PitchsideTelegramBot:
             seen.add(key)
             fx.append(f)
 
-        self._fixtures_cache = (now, fx)
+        self._fixtures_cache[comp_key] = (now, fx)
         return fx
 
-    def _get_match_dates(self) -> List[str]:
-        fixtures = self._get_all_fixtures()
+    def _get_match_dates(self, competition: Optional[str] = None) -> List[str]:
+        fixtures = self._get_all_fixtures(competition=competition)
         dates = sorted({(f.get("kickoff_time") or "")[:10] for f in fixtures if (f.get("kickoff_time") or "")[:10]})
         return dates
 
-    def _resolve_active_date(self, requested_date: Optional[str] = None) -> Tuple[str, str, bool]:
+    def _resolve_active_date(self, requested_date: Optional[str] = None, competition: Optional[str] = None) -> Tuple[str, str, bool]:
         """
         Returns (today_iso, resolved_match_date_iso, is_exact_today).
         If today has matches, resolved_match_date == today.
@@ -397,7 +443,7 @@ class PitchsideTelegramBot:
         """
         from datetime import datetime
         today_str = datetime.now().strftime("%Y-%m-%d")
-        dates = self._get_match_dates()
+        dates = self._get_match_dates(competition=competition)
         if not dates:
             return today_str, today_str, True
 
@@ -412,10 +458,10 @@ class PitchsideTelegramBot:
             return today_str, upcoming[0], False
         return today_str, dates[-1], False
 
-    def _get_active_matchday(self) -> int:
+    def _get_active_matchday(self, competition: Optional[str] = None) -> int:
         """Finds the current active/upcoming matchday based on today's date."""
-        _, active_date, _ = self._resolve_active_date("today")
-        fixtures = self._get_all_fixtures()
+        _, active_date, _ = self._resolve_active_date("today", competition=competition)
+        fixtures = self._get_all_fixtures(competition=competition)
         day_fxs = [f for f in fixtures if (f.get("kickoff_time") or "")[:10] == active_date]
         if day_fxs and day_fxs[0].get("matchday"):
             return int(day_fxs[0]["matchday"])
@@ -504,20 +550,25 @@ class PitchsideTelegramBot:
         Renders the comprehensive overview of what the bot does with interactive buttons.
         """
         caption = (
-            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT!</b> ⚽\n\n"
-            "Your elite real-time <b>La Liga tactical terminal &amp; match simulation engine</b> directly in Telegram!\n\n"
+            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT &amp; SERIE A!</b> ⚽\n\n"
+            "Your elite real-time <b>La Liga 🇪🇸 &amp; Serie A 🇮🇹 tactical terminal &amp; simulation engine</b> directly in Telegram!\n\n"
             "🔥 <b>What I Can Do For You:</b>\n"
-            "• 📅 <b>Matches of the Day:</b> Daily schedule, real-time status &amp; betting odds\n"
-            "• ⚡ <b>90' Tactical Match Simulator:</b> Dixon-Coles Poisson engine, club tactical DNA, player form &amp; European fatigue\n"
-            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Automatic detection of red cards &amp; injuries, excluding sidelined players &amp; updating live ratings\n"
-            "• 🌊 <b>Predictive Telemetry:</b> 6-phase match dominance, attack momentum wave, cumulative xG &amp; win probability flow\n"
-            "• 🏆 <b>Live Standings &amp; Form Guide:</b> 20-club league table, UCL/UEL zones &amp; 5-match form dots\n"
-            "• 🛡️ <b>Club Tactical DNA &amp; Scouting:</b> In-depth dossiers for all 20 clubs &amp; 500+ players\n"
-            "• ⚔️ <b>Head-to-Head Compare:</b> Club vs Club &amp; Player vs Player duels\n\n"
+            "• 🇪🇸/🇮🇹 <b>Dual League Hub:</b> Toggle between La Liga &amp; Serie A (/league)\n"
+            "• 📅 <b>Matches of the Day:</b> Daily schedule, live scores &amp; odds\n"
+            "• ⚡ <b>90' Tactical Match Simulator:</b> Calibrated Dixon-Coles Poisson engine &amp; club DNA\n"
+            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Red cards &amp; injuries handled automatically\n"
+            "• 🌊 <b>Predictive Telemetry:</b> Attack momentum, dominance &amp; cumulative xG\n"
+            "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table, European zones &amp; form dots\n"
+            "• 🛡️ <b>Tactical DNA:</b> In-depth dossiers for 40+ clubs &amp; starting XIs\n"
+            "• ⚔️ <b>Head-to-Head:</b> Club vs Club &amp; Player vs Player duels\n\n"
             "<i>Select an option below to start exploring! 👇</i>"
         )
         current_md = self._get_active_matchday()
         kb = [
+            [
+                {"text": "🇪🇸 La Liga", "callback_data": "lg:laliga"},
+                {"text": "🇮🇹 Serie A", "callback_data": "lg:serie_a"},
+            ],
             [
                 {"text": "📅 Matches of the Day", "callback_data": "day:today"},
                 {"text": "⚡ Sim Today", "callback_data": "daysim:today"},
@@ -581,17 +632,21 @@ class PitchsideTelegramBot:
     # =========================================================================
     def render_home_view(self, requested_date: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         from datetime import datetime
-        today_str, active_date, is_exact_today = self._resolve_active_date(requested_date)
-        all_dates = self._get_match_dates()
-        fixtures = self._get_all_fixtures()
+        comp = self.get_chat_league(chat_id)
+        today_str, active_date, is_exact_today = self._resolve_active_date(requested_date, competition=comp)
+        all_dates = self._get_match_dates(competition=comp)
+        fixtures = self._get_all_fixtures(competition=comp)
         day_fixtures = [f for f in fixtures if (f.get("kickoff_time") or "")[:10] == active_date]
-        standings_map = {c["slug"]: c for c in self._get_standings()}
+        standings_map = {c["slug"]: c for c in self._get_standings(competition=comp)}
 
         try:
             dt_obj = datetime.strptime(active_date, "%Y-%m-%d")
             pretty_date = dt_obj.strftime("%A, %d %b %Y")
         except Exception:
             pretty_date = active_date
+
+        league_title = "SERIE A ENILIVE" if comp == "serie_a" else "LA LIGA EA SPORTS"
+        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
 
         if active_date == today_str:
             date_badge = f"🟢 <b>TODAY'S MATCHES · {self._esc(pretty_date.upper())}</b>"
@@ -602,14 +657,15 @@ class PitchsideTelegramBot:
             )
 
         lines = [
-            "⚽ <b>PITCHSIDE · LA LIGA DAILY MATCH CENTER</b>",
+            f"⚽ <b>PITCHSIDE · {league_flag} {league_title} MATCH CENTER</b>",
             date_badge,
             "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
         ]
 
         kb = []
+        league_name = "Serie A" if comp == "serie_a" else "La Liga"
         if not day_fixtures:
-            lines.append("\n<i>No La Liga fixtures scheduled on this date. Use the date buttons below to browse match days!</i>")
+            lines.append(f"\n<i>No {league_name} fixtures scheduled on this date. Use the date buttons below to browse match days!</i>")
         else:
             for idx, f in enumerate(day_fixtures, 1):
                 h_name = f.get("home_nickname") or f.get("home_name") or "Home"
@@ -671,17 +727,24 @@ class PitchsideTelegramBot:
         if nav_dates:
             kb.append(nav_dates)
 
+        # League Switcher Row
+        lg_row = [
+            {"text": "🇪🇸 La Liga" + (" ✅" if comp == "laliga" else ""), "callback_data": "lg:laliga"},
+            {"text": "🇮🇹 Serie A" + (" ✅" if comp == "serie_a" else ""), "callback_data": "lg:serie_a"},
+        ]
+
         # "Move to Other Things" Navigation Hub
-        current_md = self._get_active_matchday()
+        current_md = self._get_active_matchday(competition=comp)
         is_sub = self.is_subscribed(chat_id) if chat_id else True
         sub_btn = {"text": "🔔 Daily Alerts: ON" if is_sub else "🔕 Daily Alerts: OFF", "callback_data": "sub:toggle"}
         kb.extend([
+            lg_row,
             [
-                {"text": "🏆 Standings & Form", "callback_data": "st:all"},
+                {"text": "🏆 Standings & Form", "callback_data": f"st:all:{comp}"},
                 {"text": f"📅 All 38 Matchdays", "callback_data": f"md:{current_md}"},
             ],
             [
-                {"text": "🛡️ 20 Clubs & DNA", "callback_data": "clubs:list"},
+                {"text": "🛡️ 20 Clubs & DNA", "callback_data": f"clubs:list:{comp}"},
                 {"text": "🌟 Top Scorers & Players", "callback_data": "ldr:goals"},
             ],
             [
@@ -695,11 +758,12 @@ class PitchsideTelegramBot:
         ])
         return "\n".join(lines), {"inline_keyboard": kb}
 
-    def render_daily_simulation(self, date_str: str) -> Tuple[str, Dict[str, Any]]:
+    def render_daily_simulation(self, date_str: str, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         """Simulates all matches scheduled on a specific calendar date (daysim:<YYYY-MM-DD>)."""
-        fixtures = [f for f in self._get_all_fixtures() if (f.get("kickoff_time") or "")[:10] == date_str]
+        comp = self.get_chat_league(chat_id)
+        fixtures = [f for f in self._get_all_fixtures(competition=comp) if (f.get("kickoff_time") or "")[:10] == date_str]
         if not fixtures:
-            return self.render_home_view(date_str)
+            return self.render_home_view(date_str, chat_id=chat_id)
 
         lines = [
             f"⚡ <b>DAILY MATCHES SIMULATION · {self._esc(date_str)}</b>",
@@ -1380,10 +1444,14 @@ class PitchsideTelegramBot:
         return "\n".join(lines), {"inline_keyboard": kb}
 
     # =========================================================================
-    # VIEW 8: LA LIGA STANDINGS & FORM TABLE (/standings, st:<mode>)
+    # VIEW 8: STANDINGS & FORM TABLE (/standings, st:<mode>)
     # =========================================================================
-    def render_standings_view(self, mode: str = "all") -> Tuple[str, Dict[str, Any]]:
-        standings = self._get_standings()
+    def render_standings_view(self, mode: str = "all", competition: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        comp = competition or self.get_chat_league(chat_id)
+        standings = self._get_standings(competition=comp)
+        league_title = "SERIE A ENILIVE" if comp == "serie_a" else "LA LIGA EA SPORTS"
+        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
+
         if mode == "top":
             subset = standings[:10]
             subtitle = "TOP 10 · CHAMPIONS LEAGUE &amp; EUROPEAN RACE"
@@ -1395,7 +1463,7 @@ class PitchsideTelegramBot:
             subtitle = "OFFICIAL 20-CLUB LEAGUE TABLE &amp; FORM"
 
         lines = [
-            "🏆 <b>LA LIGA EA SPORTS STANDINGS</b>",
+            f"🏆 <b>{league_flag} {league_title} STANDINGS</b>",
             f"<i>{subtitle}</i>",
             "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
             "<code> #  TAG CLUB        MP  GD PT</code>",
@@ -1450,11 +1518,11 @@ class PitchsideTelegramBot:
 
         kb = [
             [
-                {"text": "📋 Full 20 Table" if mode != "all" else "• 📋 Full 20 Table •", "callback_data": "st:all"},
-                {"text": "🏆 Top 10 + Form" if mode != "top" else "• 🏆 Top 10 + Form •", "callback_data": "st:top"},
-                {"text": "⚠️ Bottom 10 + Form" if mode != "bot" else "• ⚠️ Bottom 10 •", "callback_data": "st:bot"},
+                {"text": "📋 Full 20 Table" if mode != "all" else "• 📋 Full 20 Table •", "callback_data": f"st:all:{comp}"},
+                {"text": "🏆 Top 10 + Form" if mode != "top" else "• 🏆 Top 10 + Form •", "callback_data": f"st:top:{comp}"},
+                {"text": "⚠️ Bottom 10 + Form" if mode != "bot" else "• ⚠️ Bottom 10 •", "callback_data": f"st:bot:{comp}"},
             ],
-            [{"text": "🛡️ Browse All 20 Club Tactical Dossiers", "callback_data": "clubs:list"}],
+            [{"text": f"🛡️ Browse All 20 Club Tactical Dossiers", "callback_data": f"clubs:list:{comp}"}],
             [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
         ]
         return "\n".join(lines), {"inline_keyboard": kb}
@@ -1462,10 +1530,13 @@ class PitchsideTelegramBot:
     # =========================================================================
     # VIEW 9: CLUBS DIRECTORY & TACTICAL DNA DOSSIER (/clubs, c:<id>)
     # =========================================================================
-    def render_clubs_directory(self) -> Tuple[str, Dict[str, Any]]:
-        standings = self._get_standings()
+    def render_clubs_directory(self, competition: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        comp = competition or self.get_chat_league(chat_id)
+        standings = self._get_standings(competition=comp)
+        league_title = "SERIE A" if comp == "serie_a" else "LA LIGA"
+        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
         lines = [
-            "🛡️ <b>LA LIGA 20 CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
+            f"🛡️ <b>{league_flag} {league_title} 20 CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
             "━━━━━━━━━━━━━━━━━━━━━━",
             "Select any club below to inspect its <b>Managerial Philosophy, Tactical DNA Metrics, Starting XI Lineup, Form Guide &amp; Upcoming Schedule</b>:",
         ]
@@ -1476,7 +1547,6 @@ class PitchsideTelegramBot:
             pos = c.get("position", 0)
             name = (c.get("nickname") or c.get("name") or "Club")[:12]
             theme = self.get_club_theme(c.get("slug") or c.get("name"))
-            ovr = c.get("overall_rating", 75)
             row.append({"text": f"#{pos} {theme['badge']} {name}", "callback_data": f"c:{c['id']}"})
             if len(row) == 2:
                 kb.append(row)
@@ -2006,15 +2076,25 @@ class PitchsideTelegramBot:
         return bool(new_val)
 
     def refresh_daily_data(self) -> Dict[str, Any]:
-        """Runs the full data pipeline (football-data + ESPN + Standings + Elo + Odds) and clears caches."""
+        """Runs the full data pipeline (La Liga + Serie A + ESPN + Standings + Elo + Odds) and clears caches."""
+        report: Dict[str, Any] = {}
         try:
             from .data_pipeline import refresh as _pipeline_refresh
             report = _pipeline_refresh(with_timelines=False, backup=False)
         except Exception as e:
-            report = {"status": "error", "error": str(e)}
+            report = {"status": "partial", "laliga_error": str(e)}
+
+        try:
+            from .serie_a import sync_serie_a_standings, sync_serie_a_fixtures
+            st_res = sync_serie_a_standings(self.db)
+            fx_res = sync_serie_a_fixtures(self.db)
+            report["serie_a"] = {"standings": st_res, "fixtures": fx_res}
+        except Exception as e:
+            report["serie_a_error"] = str(e)
+
         self._detail_cache.clear()
-        self._standings_cache = None
-        self._fixtures_cache = None
+        self._standings_cache.clear()
+        self._fixtures_cache.clear()
         return report
 
     def send_daily_digest(self) -> Dict[str, Any]:
@@ -2022,7 +2102,7 @@ class PitchsideTelegramBot:
         sync_report = self.refresh_daily_data()
         subscribers = self.get_active_subscribers()
         text, markup = self.render_home_view("today")
-        digest_header = "🔔 <b>DAILY LA LIGA UPDATE — MATCHES OF THE DAY</b>\n"
+        digest_header = "🔔 <b>DAILY FOOTBALL UPDATE — MATCHES OF THE DAY</b>\n"
         full_text = digest_header + text
         sent = 0
         for cid in subscribers:
@@ -2047,6 +2127,35 @@ class PitchsideTelegramBot:
             return self.render_welcome_text()
         if cmd in ("/today", "/menu"):
             return self.render_home_view(arg if arg else "today", chat_id=chat_id)
+        if cmd in ("/league", "/competition", "/switcher"):
+            if arg:
+                norm = self.set_chat_league(chat_id or 0, arg)
+                return self.render_home_view("today", chat_id=chat_id)
+            comp = self.get_chat_league(chat_id)
+            msg = (
+                "🏆 <b>PITCHSIDE MULTI-LEAGUE SWITCHER</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "Select your preferred domestic championship to explore:\n\n"
+                f"• <b>🇪🇸 La Liga EA SPORTS</b> {'(Active ✅)' if comp == 'laliga' else ''}\n"
+                f"• <b>🇮🇹 Serie A Enilive</b> {'(Active ✅)' if comp == 'serie_a' else ''}\n\n"
+                "<i>Tap a button below to switch:</i>"
+            )
+            kb = [
+                [
+                    {"text": "🇪🇸 La Liga" + (" ✅" if comp == "laliga" else ""), "callback_data": "lg:laliga"},
+                    {"text": "🇮🇹 Serie A" + (" ✅" if comp == "serie_a" else ""), "callback_data": "lg:serie_a"},
+                ],
+                [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
+            ]
+            return msg, {"inline_keyboard": kb}
+        if cmd in ("/seriea", "/serie_a", "/italy"):
+            if chat_id:
+                self.set_chat_league(chat_id, "serie_a")
+            return self.render_home_view("today", chat_id=chat_id)
+        if cmd in ("/laliga", "/spain"):
+            if chat_id:
+                self.set_chat_league(chat_id, "laliga")
+            return self.render_home_view("today", chat_id=chat_id)
         if cmd in ("/matches", "/fixtures", "/schedule"):
             md = int(arg) if arg.isdigit() else None
             return self.render_matchday_view(md)
@@ -2056,16 +2165,17 @@ class PitchsideTelegramBot:
                 if num <= 38:
                     return self.render_matchday_simulation(num)
                 return self.render_match_simulation(num)
-            _, active_date, _ = self._resolve_active_date("today")
-            return self.render_daily_simulation(active_date)
+            comp = self.get_chat_league(chat_id)
+            _, active_date, _ = self._resolve_active_date("today", competition=comp)
+            return self.render_daily_simulation(active_date, chat_id=chat_id)
         if cmd in ("/standings", "/table"):
-            return self.render_standings_view("all")
+            return self.render_standings_view("all", chat_id=chat_id)
         if cmd in ("/clubs", "/teams"):
             if arg:
                 return self.render_club_dossier(arg)
-            return self.render_clubs_directory()
+            return self.render_clubs_directory(chat_id=chat_id)
         if cmd == "/club":
-            return self.render_club_dossier(arg) if arg else self.render_clubs_directory()
+            return self.render_club_dossier(arg) if arg else self.render_clubs_directory(chat_id=chat_id)
         if cmd in ("/players", "/leaders", "/scorers"):
             if arg:
                 return self.render_smart_search(arg)
@@ -2094,6 +2204,11 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "lg" and len(parts) >= 2:
+            target_league = parts[1].lower().strip()
+            norm = self.set_chat_league(chat_id or 0, target_league)
+            toast = "🇮🇹 Switched to Serie A Enilive!" if norm == "serie_a" else "🇪🇸 Switched to La Liga EA SPORTS!"
+            return (*self.render_home_view("today", chat_id=chat_id), toast)
         if prefix == "msgmode":
             target = parts[1] if len(parts) >= 2 else "toggle"
             if target in ("new", "fresh", "send"):
@@ -2116,12 +2231,13 @@ class PitchsideTelegramBot:
         if prefix == "day" and len(parts) >= 2:
             return (*self.render_home_view(parts[1], chat_id=chat_id), f"📅 Date: {parts[1]}")
         if prefix == "daysim" and len(parts) >= 2:
-            return (*self.render_daily_simulation(parts[1]), f"⚡ Simulated {parts[1]} Matches!")
+            return (*self.render_daily_simulation(parts[1], chat_id=chat_id), f"⚡ Simulated {parts[1]} Matches!")
         if prefix == "sync":
             self.refresh_daily_data()
             return (*self.render_home_view("today", chat_id=chat_id), "✅ Daily Matches & Standings Updated!")
         if prefix == "md" and len(parts) >= 2:
-            md_val = self._get_active_matchday() if parts[1] == "current" else int(parts[1])
+            comp = self.get_chat_league(chat_id)
+            md_val = self._get_active_matchday(competition=comp) if parts[1] == "current" else int(parts[1])
             return (*self.render_matchday_view(md_val), f"Matchday {md_val}")
         if prefix == "mdsim" and len(parts) >= 2:
             return (*self.render_matchday_simulation(int(parts[1])), f"⚡ Simulated Matchday {parts[1]}!")
@@ -2144,9 +2260,11 @@ class PitchsideTelegramBot:
             subs = [{"team": side, "side": side, "out_id": out_id, "in_id": in_id}]
             return (*self.render_match_simulation(fid, custom_subs=subs), "🔄 Substitution Applied & Match Re-Simulated!")
         if prefix == "st" and len(parts) >= 2:
-            return (*self.render_standings_view(parts[1]), None)
+            comp = parts[2] if len(parts) >= 3 else None
+            return (*self.render_standings_view(parts[1], competition=comp, chat_id=chat_id), None)
         if prefix == "clubs":
-            return (*self.render_clubs_directory(), None)
+            comp = parts[2] if len(parts) >= 3 else (parts[1] if len(parts) >= 2 and parts[1] in ("laliga", "serie_a") else None)
+            return (*self.render_clubs_directory(competition=comp, chat_id=chat_id), None)
         if prefix == "c" and len(parts) >= 2:
             return (*self.render_club_dossier(parts[1]), None)
         if prefix == "cros" and len(parts) >= 2:

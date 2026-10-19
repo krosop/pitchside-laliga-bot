@@ -119,6 +119,7 @@ class Database:
                 ("def_rating", "INTEGER DEFAULT 50"),
                 ("overall_rating", "INTEGER DEFAULT 50"),
                 ("formation", "TEXT DEFAULT '4-3-3'"),
+                ("competition", "TEXT DEFAULT 'laliga'"),
             ]
             for col_name, col_type in new_club_cols:
                 try:
@@ -274,6 +275,10 @@ class Database:
                 cursor.execute("ALTER TABLE fixtures ADD COLUMN cards_json TEXT")
             except sqlite3.OperationalError:
                 pass
+            try:
+                cursor.execute("ALTER TABLE fixtures ADD COLUMN competition TEXT DEFAULT 'laliga'")
+            except sqlite3.OperationalError:
+                pass
             for col_name, col_type in [
                 ("player_key", "TEXT"),
                 ("player_name", "TEXT"),
@@ -303,14 +308,20 @@ class Database:
     def upsert_club(self, club: Club):
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            comp = getattr(club, "competition", "laliga") or "laliga"
+            att = getattr(club, "att_rating", 50) or 50
+            mid = getattr(club, "mid_rating", 50) or 50
+            df = getattr(club, "def_rating", 50) or 50
+            ovr = getattr(club, "overall_rating", 50) or 50
             cursor.execute("""
                 INSERT INTO clubs (
                     id, slug, name, nickname, shortname, foundation, shield_url,
                     color, color_secondary, stadium, stadium_name, stadium_image_url,
                     president, address, web_url, position, played, won, drawn, lost,
-                    goals_for, goals_against, goal_difference, points, qualification, formation
+                    goals_for, goals_against, goal_difference, points, qualification, formation,
+                    competition, att_rating, mid_rating, def_rating, overall_rating
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     slug=excluded.slug,
                     name=excluded.name,
@@ -336,7 +347,12 @@ class Database:
                     goal_difference=COALESCE(excluded.goal_difference, clubs.goal_difference),
                     points=COALESCE(excluded.points, clubs.points),
                     qualification=COALESCE(excluded.qualification, clubs.qualification),
-                    formation=COALESCE(excluded.formation, clubs.formation)
+                    formation=COALESCE(excluded.formation, clubs.formation),
+                    competition=COALESCE(excluded.competition, clubs.competition),
+                    att_rating=COALESCE(excluded.att_rating, clubs.att_rating),
+                    mid_rating=COALESCE(excluded.mid_rating, clubs.mid_rating),
+                    def_rating=COALESCE(excluded.def_rating, clubs.def_rating),
+                    overall_rating=COALESCE(excluded.overall_rating, clubs.overall_rating)
             """, (
                 club.id, club.slug, club.name, club.nickname, club.shortname,
                 club.foundation, club.shield_url, club.color, club.color_secondary,
@@ -344,7 +360,8 @@ class Database:
                 club.president, club.address, club.web_url,
                 club.position, club.played, club.won, club.drawn, club.lost,
                 club.goals_for, club.goals_against, club.goal_difference,
-                club.points, club.qualification, club.formation
+                club.points, club.qualification, club.formation,
+                comp, att, mid, df, ovr
             ))
             conn.commit()
 
@@ -890,25 +907,32 @@ class Database:
                 results.append(item)
             return results
 
-    def get_all_clubs(self) -> List[Dict[str, Any]]:
+    def get_all_clubs(self, competition: Optional[str] = None) -> List[Dict[str, Any]]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            query = """
                 SELECT c.*, COUNT(p.id) AS squad_count
                 FROM clubs c
                 LEFT JOIN players p ON c.id = p.club_id
                 WHERE c.position IS NOT NULL AND c.position >= 1 AND c.position <= 20
+            """
+            params = []
+            if competition:
+                query += " AND (c.competition = ? OR (? = 'laliga' AND c.competition IS NULL))"
+                params.extend([competition, competition])
+            query += """
                 GROUP BY c.id
                 ORDER BY c.position ASC
-            """)
+            """
+            cursor.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
 
     
     def get_fixtures(self, matchday=None, club_slug=None, season: Optional[int] = None,
-                     all_seasons: bool = False) -> List[Dict[str, Any]]:
+                     all_seasons: bool = False, competition: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fixture list. By default scoped to the CURRENT season; pass an
         explicit `season` for a historical one or `all_seasons=True` for the
-        full mirror archive (used by the Elo engine)."""
+        full mirror archive (used by the Elo engine). Supports competition filtering."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
@@ -923,6 +947,9 @@ class Database:
                 WHERE 1=1
             '''
             params = []
+            if competition:
+                query += " AND (f.competition = ? OR (? = 'laliga' AND f.competition IS NULL))"
+                params.extend([competition, competition])
             if not all_seasons:
                 if season is None:
                     season = self.get_current_season()
@@ -1245,20 +1272,25 @@ class Database:
                     })
             return profiles
 
-    def get_standings(self) -> List[Dict[str, Any]]:
-        """Returns official league table sorted by position."""
+    def get_standings(self, competition: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Returns official league table sorted by position with optional competition filtering."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            query = """
                 SELECT
                     id, slug, name, nickname, shortname, shield_url,
                     position, played, won, drawn, lost,
                     goals_for, goals_against, goal_difference, points, qualification, formation,
-                    att_rating, mid_rating, def_rating, overall_rating
+                    att_rating, mid_rating, def_rating, overall_rating, competition
                 FROM clubs
                 WHERE position IS NOT NULL AND position >= 1 AND position <= 20
-                ORDER BY position ASC, points DESC
-            """)
+            """
+            params = []
+            if competition:
+                query += " AND (competition = ? OR (? = 'laliga' AND competition IS NULL))"
+                params.extend([competition, competition])
+            query += " ORDER BY position ASC, points DESC"
+            cursor.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
 
     def export_clubs_to_json(self, output_path: Optional[str] = None) -> str:
@@ -1401,11 +1433,49 @@ class Database:
                 {"slot": "LW", "pos": "Forward", "x": 22, "y": 24},
                 {"slot": "ST", "pos": "Forward", "x": 50, "y": 16},
                 {"slot": "RW", "pos": "Forward", "x": 78, "y": 24}
+            ],
+            "3-5-2": [
+                {"slot": "GK", "pos": "Goalkeeper", "x": 50, "y": 88},
+                {"slot": "LCB", "pos": "Defender", "x": 26, "y": 75},
+                {"slot": "CB", "pos": "Defender", "x": 50, "y": 77},
+                {"slot": "RCB", "pos": "Defender", "x": 74, "y": 75},
+                {"slot": "LWB", "pos": "Midfielder", "x": 12, "y": 54},
+                {"slot": "LCM", "pos": "Midfielder", "x": 34, "y": 52},
+                {"slot": "CM", "pos": "Midfielder", "x": 50, "y": 50},
+                {"slot": "RCM", "pos": "Midfielder", "x": 66, "y": 52},
+                {"slot": "RWB", "pos": "Midfielder", "x": 88, "y": 54},
+                {"slot": "LST", "pos": "Forward", "x": 38, "y": 18},
+                {"slot": "RST", "pos": "Forward", "x": 62, "y": 18}
+            ],
+            "3-4-2-1": [
+                {"slot": "GK", "pos": "Goalkeeper", "x": 50, "y": 88},
+                {"slot": "LCB", "pos": "Defender", "x": 26, "y": 75},
+                {"slot": "CB", "pos": "Defender", "x": 50, "y": 77},
+                {"slot": "RCB", "pos": "Defender", "x": 74, "y": 75},
+                {"slot": "LWB", "pos": "Midfielder", "x": 12, "y": 54},
+                {"slot": "LCM", "pos": "Midfielder", "x": 38, "y": 54},
+                {"slot": "RCM", "pos": "Midfielder", "x": 62, "y": 54},
+                {"slot": "RWB", "pos": "Midfielder", "x": 88, "y": 54},
+                {"slot": "LAM", "pos": "Forward", "x": 32, "y": 28},
+                {"slot": "RAM", "pos": "Forward", "x": 68, "y": 28},
+                {"slot": "ST", "pos": "Forward", "x": 50, "y": 14}
             ]
         }
 
         def build_lineup(club_slug, club_name):
-            t_info = club_tactics.get(club_slug, {"formation": "4-2-3-1", "manager": "Head Coach", "style": "Organized Balanced Unit"})
+            if club_slug in club_tactics:
+                t_info = club_tactics[club_slug]
+            else:
+                try:
+                    from .club_tactics import ClubTacticsRegistry
+                    prof = ClubTacticsRegistry.get_profile(club_slug)
+                    t_info = {
+                        "formation": prof.get("formation", "4-2-3-1"),
+                        "manager": prof.get("manager", "Head Coach"),
+                        "style": prof.get("tactical_identity", "Organized Balanced Unit"),
+                    }
+                except Exception:
+                    t_info = {"formation": "4-2-3-1", "manager": "Head Coach", "style": "Organized Balanced Unit"}
             form_name = t_info["formation"]
             slots = formation_slots.get(form_name, formation_slots["4-2-3-1"])
 

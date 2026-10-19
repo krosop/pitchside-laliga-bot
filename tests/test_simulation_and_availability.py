@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.database import Database
 from src.simulation_engine import SimulationEngine
 from src.telegram_bot import PitchsideTelegramBot
+from src.club_tactics import ClubTacticsRegistry
 
 _TMPDIR = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
 _DB_COUNTER = 0
@@ -644,3 +645,140 @@ def test_telegram_bot_updates_inplace_by_default_on_callback():
     }
     bot.process_update(mode_switch_cb)
     assert bot.send_new_messages is False
+
+
+def test_simulation_decoupled_accuracy_and_variety():
+    """
+    Verifies that the upgraded simulation engine:
+    1. Calibrates competition parameters for Serie A (rho=-0.082) vs La Liga (rho=-0.075)
+    2. Decouples Attack vs Defense metrics into 2D expected goals
+    3. Produces realistic scoreline variety (eliminates 1-0 mode collapse)
+    4. Guarantees 100% deterministic reproducibility for the same fixture ID
+    """
+    db = _build_squad_test_db()
+    sim_engine = SimulationEngine(db)
+
+    # 1. Verify competition-specific calibration
+    laliga_match = {
+        "fixture": {"id": 1001, "competition": "laliga", "kickoff_time": "2026-10-25T19:00:00Z"},
+        "home_team": {"id": 1, "slug": "real-madrid", "name": "Real Madrid", "position": 1, "competition": "laliga",
+                      "tactics": {"starting_xi": [{"id": 10, "effective_rating": 88, "position": "Forward"}]}},
+        "away_team": {"id": 2, "slug": "fc-barcelona", "name": "FC Barcelona", "position": 2, "competition": "laliga",
+                      "tactics": {"starting_xi": [{"id": 20, "effective_rating": 87, "position": "Forward"}]}},
+    }
+    serie_a_match = {
+        "fixture": {"id": 2001, "competition": "serie_a", "kickoff_time": "2026-10-25T19:00:00Z"},
+        "home_team": {"id": 201, "slug": "inter", "name": "Inter", "position": 1, "competition": "serie_a",
+                      "tactics": {"starting_xi": [{"id": 30, "effective_rating": 86, "position": "Forward"}]}},
+        "away_team": {"id": 203, "slug": "juventus", "name": "Juventus", "position": 3, "competition": "serie_a",
+                      "tactics": {"starting_xi": [{"id": 40, "effective_rating": 84, "position": "Forward"}]}},
+    }
+
+    strength_laliga = sim_engine._match_strength_model(laliga_match)
+    strength_serie_a = sim_engine._match_strength_model(serie_a_match)
+
+    assert strength_laliga["league_rho"] == -0.075
+    assert strength_serie_a["league_rho"] == -0.082
+    assert strength_laliga["lambda_h"] > 0.0
+    assert strength_serie_a["lambda_h"] > 0.0
+
+    # 2. Verify Dixon-Coles bivariate matrix forms a valid distribution
+    matrix = sim_engine.calculate_dixon_coles_matrix(1.5, 1.2, rho=-0.082)
+    assert abs(sum(matrix.values()) - 1.0) < 1e-4
+
+    # 3. Verify deterministic reproducibility per fixture
+    sim_run_1 = sim_engine.simulate_fixture(laliga_match)
+    sim_run_2 = sim_engine.simulate_fixture(laliga_match)
+    assert sim_run_1["home_score"] == sim_run_2["home_score"]
+    assert sim_run_1["away_score"] == sim_run_2["away_score"]
+    assert len(sim_run_1["events"]) == len(sim_run_2["events"])
+    assert sim_run_1["is_deterministic"] is True
+
+    # 4. Verify scoreline variety across different fixture seeds (no 1-0 collapse)
+    scores = set()
+    for fixture_id in range(5001, 5025):
+        m = {
+            "fixture": {"id": fixture_id, "competition": "serie_a", "kickoff_time": "2026-10-25T19:00:00Z"},
+            "home_team": {"id": 201, "slug": "inter", "name": "Inter", "position": 1, "competition": "serie_a",
+                          "tactics": {"starting_xi": [{"id": 1, "effective_rating": 85, "position": "Forward"}]}},
+            "away_team": {"id": 202, "slug": "ac-milan", "name": "AC Milan", "position": 2, "competition": "serie_a",
+                          "tactics": {"starting_xi": [{"id": 2, "effective_rating": 84, "position": "Forward"}]}},
+        }
+        res = sim_engine.simulate_fixture(m)
+        scores.add((res["home_score"], res["away_score"]))
+
+    # Should generate a healthy variety of realistic football scores, not just (1, 0)
+    assert len(scores) >= 4, f"Expected realistic score variety, but got only {scores}"
+
+
+def test_serie_a_club_tactics_and_dna():
+    """
+    Verifies that Italian Serie A clubs possess complete, authentic tactical DNA
+    and tactical clash logic.
+    """
+    for slug in ("inter", "ac-milan", "juventus", "napoli", "atalanta", "as-roma", "lazio", "como"):
+        dna = ClubTacticsRegistry.get_profile(slug)
+        assert dna is not None, f"Tactical DNA missing for {slug}"
+        assert dna.get("manager"), f"Manager missing for {slug}"
+        assert dna.get("formation") in ("3-5-2", "4-2-3-1", "3-4-2-1", "4-3-3")
+        metrics = dna.get("metrics", {})
+        assert 35 <= metrics.get("possession_target", 0) <= 75
+        assert 50 <= metrics.get("pressing_intensity", 0) <= 100
+
+    # Verify tactical clash evaluation for Italian Derby d'Italia (Inter vs Juventus)
+    clash = ClubTacticsRegistry.evaluate_tactical_clash("inter", "juventus", home_rank=1, away_rank=3)
+    assert clash["home"]["manager"] == "Simone Inzaghi"
+    assert clash["away"]["manager"] == "Thiago Motta"
+    assert 0.85 <= clash["home"]["xg_modifier"] <= 1.25
+    assert 0.85 <= clash["away"]["xg_modifier"] <= 1.25
+
+
+def test_telegram_bot_multi_league_navigation_and_themes():
+    """
+    Verifies the Telegram Bot's dual-league switching between La Liga and Serie A:
+    1. Default league is La Liga
+    2. Switching to Serie A via /league, /seriea, or callback lg:serie_a
+    3. Dynamic theme resolution for Italian clubs (Inter, Milan, Juventus, Napoli)
+    4. Standings view renders Serie A standings when active
+    5. In-place switching back to La Liga via lg:laliga
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+    chat_id = 77777
+
+    # 1. Verify default league
+    assert bot.get_chat_league(chat_id) == "laliga"
+
+    # 2. Verify Serie A theme badges
+    int_theme = bot.get_club_theme("inter")
+    mil_theme = bot.get_club_theme("ac-milan")
+    juv_theme = bot.get_club_theme("juventus")
+    nap_theme = bot.get_club_theme("napoli")
+    assert int_theme["code"] == "INT" and "🔵" in int_theme["badge"]
+    assert mil_theme["code"] == "MIL" and "🔴" in mil_theme["badge"]
+    assert juv_theme["code"] == "JUV" and "⚪" in juv_theme["badge"]
+    assert nap_theme["code"] == "NAP" and "🔵" in nap_theme["badge"]
+
+    # 3. Test /league menu command
+    msg, kb = bot.handle_command_or_text("/league", chat_id=chat_id)
+    assert "MULTI-LEAGUE SWITCHER" in msg
+    all_btns = [btn for row in kb["inline_keyboard"] for btn in row]
+    cb_set = {btn["callback_data"] for btn in all_btns}
+    assert "lg:laliga" in cb_set
+    assert "lg:serie_a" in cb_set
+
+    # 4. Switch to Serie A via callback query
+    resp_text, reply_markup, toast = bot.handle_callback_data("lg:serie_a", chat_id=chat_id)
+    assert bot.get_chat_league(chat_id) == "serie_a"
+    assert "Switched to Serie A" in toast
+    assert "SERIE A" in resp_text
+
+    # 5. Verify Serie A standings view
+    st_text, st_kb = bot.render_standings_view(competition="serie_a", chat_id=chat_id)
+    assert "SERIE A" in st_text
+
+    # 6. Switch back to La Liga
+    resp_text_2, reply_markup_2, toast_2 = bot.handle_callback_data("lg:laliga", chat_id=chat_id)
+    assert bot.get_chat_league(chat_id) == "laliga"
+    assert "Switched to La Liga" in toast_2
+    assert "LA LIGA" in resp_text_2

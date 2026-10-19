@@ -440,8 +440,33 @@ class SimulationEngine:
             except Exception:
                 pass
 
+        # Decouple attacking and defensive unit ratings for accurate expected-goals modeling
+        att_ovrs = []
+        def_ovrs = []
+        for p in starters:
+            pos = (p.get("position_name") or p.get("position") or "").lower()
+            p_ovr = p.get("effective_rating", p.get("overall_rating", 75))
+            if any(term in pos for term in ("forward", "striker", "winger", "attack")):
+                att_ovrs.append(p_ovr)
+            elif any(term in pos for term in ("defender", "back", "goalkeeper", "goal")):
+                def_ovrs.append(p_ovr)
+            else:
+                att_ovrs.append(p_ovr)
+                def_ovrs.append(p_ovr)
+
+        club_att = (team.get("att_rating") if team else None) or base_xi_ovr
+        club_def = (team.get("def_rating") if team else None) or base_xi_ovr
+        att_ovr = (sum(att_ovrs) / len(att_ovrs)) * 0.75 + club_att * 0.25 if att_ovrs else base_xi_ovr
+        def_ovr = (sum(def_ovrs) / len(def_ovrs)) * 0.75 + club_def * 0.25 if def_ovrs else base_xi_ovr
+
+        # Adjust for fatigue & absences
+        att_ovr = att_ovr + fatigue_info["fatigue_modifier"] * 0.6 - absence_penalty * 0.5
+        def_ovr = def_ovr + fatigue_info["fatigue_modifier"] * 0.4 - absence_penalty * 0.5
+
         return {
             "avg_ovr": avg_ovr,
+            "att_ovr": att_ovr,
+            "def_ovr": def_ovr,
             "position": (team.get("position") if team else None) or 10,
             "form_pts": form_pts,
             "form_label": form_label,
@@ -468,25 +493,54 @@ class SimulationEngine:
         as_ = self._team_strength_inputs(away, fixture_date)
         h_fatigue, a_fatigue = hs["fatigue"], as_["fatigue"]
 
-        # Calibrated v3 weights. Elo (5 seasons of real results) is the primary
-        # strength signal; rank/squad-quality/form temper it. Momentum from real
-        # per-match player data adds a short-horizon nudge. Home advantage kept.
+        # Competition-specific baseline parameters
+        comp = str(f.get("competition") or home.get("competition") or "laliga").lower()
+        if "serie" in comp or "ita" in comp or "italy" in comp:
+            base_h = 1.42
+            base_a = 1.18
+            home_advantage = 1.70
+            league_rho = -0.082
+        else:
+            base_h = 1.45
+            base_a = 1.17
+            home_advantage = 1.95
+            league_rho = -0.075
+
+        # Calibrated Decoupled Attack-vs-Defense Strengths
+        # Elo differential contributes to both offensive prowess and overall class
         elo_diff = (hs["elo_term"] - as_["elo_term"]) * 1.0
         rank_diff = (as_["position"] - hs["position"]) * 0.30
         rating_diff = (hs["avg_ovr"] - as_["avg_ovr"]) * 0.40
         form_diff = (hs["form_pts"] - as_["form_pts"]) * 0.25
         momentum_diff = (hs["momentum_index"] - as_["momentum_index"]) * 0.025
-        home_advantage = 2.0
 
-        net_h_advantage = elo_diff + rank_diff + rating_diff + form_diff + momentum_diff + home_advantage
-        net_h_advantage = max(-8.0, min(8.0, net_h_advantage))
+        # Decoupled Expected Goals Formulation:
+        # Home goals depends on Home Attack vs Away Defense + Home Advantage
+        home_att_adv = (
+            (hs["att_ovr"] - as_["def_ovr"]) * 0.35
+            + (hs["elo_term"] * 0.40 - as_["elo_term"] * 0.20)
+            + (hs["form_pts"] - 1.35) * 0.25
+            + (as_["position"] - hs["position"]) * 0.15
+            + (hs["momentum_index"] - 50.0) * 0.02
+            + home_advantage
+        )
+        # Away goals depends on Away Attack vs Home Defense
+        away_att_adv = (
+            (as_["att_ovr"] - hs["def_ovr"]) * 0.35
+            + (as_["elo_term"] * 0.40 - hs["elo_term"] * 0.20)
+            + (as_["form_pts"] - 1.35) * 0.25
+            + (hs["position"] - as_["position"]) * 0.15
+            + (as_["momentum_index"] - 50.0) * 0.02
+        )
 
-        # Base La Liga goals expectation: ~1.45 Home, ~1.17 Away (total ~2.62)
-        base_h = 1.45
-        base_a = 1.17
-        exp_factor = net_h_advantage / 14.0
-        lambda_h = max(0.55, min(3.0, base_h * math.exp(exp_factor * 0.45)))
-        lambda_a = max(0.45, min(2.7, base_a * math.exp(-exp_factor * 0.45)))
+        home_att_adv = max(-7.5, min(7.5, home_att_adv))
+        away_att_adv = max(-7.5, min(7.5, away_att_adv))
+
+        lambda_h = base_h * math.exp(home_att_adv / 13.0)
+        lambda_a = base_a * math.exp(away_att_adv / 13.0)
+
+        # Net advantage for backward-compatible narrative and trends
+        net_h_advantage = max(-8.0, min(8.0, home_att_adv - away_att_adv))
 
         # Authentic Club & Manager Tactical Clash Evaluation
         h_pos, a_pos = hs["position"], as_["position"]
@@ -496,10 +550,10 @@ class SimulationEngine:
             h_pos,
             a_pos
         )
-        h_tact_mult = max(0.85, min(1.2, clash["home"]["xg_modifier"]))
-        a_tact_mult = max(0.85, min(1.2, clash["away"]["xg_modifier"]))
-        lambda_h = max(0.5, min(3.1, lambda_h * h_tact_mult))
-        lambda_a = max(0.4, min(2.8, lambda_a * a_tact_mult))
+        h_tact_mult = max(0.85, min(1.25, clash["home"]["xg_modifier"]))
+        a_tact_mult = max(0.85, min(1.25, clash["away"]["xg_modifier"]))
+        lambda_h = max(0.45, min(3.8, lambda_h * h_tact_mult))
+        lambda_a = max(0.35, min(3.4, lambda_a * a_tact_mult))
 
         return {
             "home": home,
@@ -512,6 +566,7 @@ class SimulationEngine:
             "away_strength": as_,
             "fatigue": {"home": h_fatigue, "away": a_fatigue},
             "net_h_advantage": net_h_advantage,
+            "league_rho": league_rho,
             "components": {
                 "elo_diff": round(elo_diff, 2),
                 "rank_diff": round(rank_diff, 2),
@@ -642,7 +697,7 @@ class SimulationEngine:
             att = int(min(98, max(50, (avg_fwd - 65) * 2.2 + (21 - pos) * 1.2 + (4 if is_home else 0))))
 
             # 2. Defensive Solidity
-            clean_sheets_boost = 6 if team.get("last_match", {}).get("res_badge") == "W" else 0
+            clean_sheets_boost = 6 if (team.get("last_match") or {}).get("res_badge") == "W" else 0
             defense = int(min(98, max(50, (avg_def - 65) * 2.1 + (21 - pos) * 1.1 + clean_sheets_boost)))
 
             # 3. Possession Control
@@ -658,7 +713,7 @@ class SimulationEngine:
             counter = int(min(98, max(45, counter_base)))
 
             # 6. Form Momentum
-            last_res = team.get("last_match", {}).get("res_badge")
+            last_res = (team.get("last_match") or {}).get("res_badge")
             form_val = 88 if last_res == "W" else 68 if last_res == "D" else 52
             form_val += (21 - pos) * 0.8
             momentum = int(min(98, max(45, form_val)))
@@ -990,14 +1045,6 @@ class SimulationEngine:
             p["momentum"] = m.to_dict()
             p["momentum_modifier"] = m.sim_modifier
 
-        # Calibrated Dixon-Coles score calculation (Most Probable Mode - Zero Randomness)
-        dc_matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=-0.08)
-        home_goals, away_goals = self.get_most_probable_score(dc_matrix, lambda_h, lambda_a)
-
-        # Cap extreme blowout anomalies
-        home_goals = min(home_goals, 6)
-        away_goals = min(away_goals, 5)
-
         # Reproducible PRNG seeded by fixture ID + club tactical profiles + substitutions
         fid_num = int(f.get("id") or 20260401)
         tactical_seed_val = sum(ord(c) for c in (clash["home"]["tactical_identity"] + clash["away"]["tactical_identity"]))
@@ -1005,17 +1052,35 @@ class SimulationEngine:
         seed_val = (fid_num * 10007 + tactical_seed_val * 31 + subs_val) & 0x7FFFFFFF
         rng = random.Random(seed_val)  # local instance: no shared global state
 
+        # Calibrated Dixon-Coles score calculation with deterministic distribution sampling
+        league_rho = model.get("league_rho", -0.078)
+        dc_matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=league_rho)
+        items = list(dc_matrix.keys())
+        weights = list(dc_matrix.values())
+        home_goals, away_goals = rng.choices(items, weights=weights, k=1)[0]
+
+        # Cap extreme blowout anomalies
+        home_goals = min(home_goals, 6)
+        away_goals = min(away_goals, 5)
+
         # 2. Build 1-to-1 Match Incident Timeline
         events = []
         used_minutes = set()
 
         def pick_minute():
+            # Real-world 15-minute interval distribution:
+            # 1-15' (12%), 16-30' (14%), 31-45' (18%), 46-60' (16%), 61-75' (18%), 76-93' (22%)
             for _ in range(100):
-                m = rng.randint(3, 93)
+                interval = rng.choices(
+                    [(3, 15), (16, 30), (31, 45), (46, 60), (61, 75), (76, 93)],
+                    weights=[12, 14, 18, 16, 18, 22],
+                    k=1
+                )[0]
+                m = rng.randint(interval[0], interval[1])
                 if m not in used_minutes:
                     used_minutes.add(m)
                     return m
-            return rng.randint(1, 90)
+            return rng.randint(3, 90)
 
         # Scorer selection weights
         def select_scorer(starters, side_name):
@@ -1065,32 +1130,36 @@ class SimulationEngine:
         for _ in range(home_goals):
             min_val = pick_minute()
             scorer, assister = select_scorer(h_starters, home["name"])
+            s_name = scorer.get("name") or scorer.get("nickname") or f"{home['name']} Striker"
+            a_name = (assister.get("name") or assister.get("nickname")) if assister else None
             events.append({
                 "type": "goal",
                 "team": "home",
                 "team_name": home["name"],
                 "minute": min_val,
-                "scorer": scorer["name"],
+                "scorer": s_name,
                 "scorer_id": scorer.get("id"),
                 "scorer_slug": scorer.get("slug"),
-                "assist": assister["name"] if assister else None,
-                "description": f"⚽ GOAL! {scorer['name']} scores for {home['name']}!{(' (Assist: ' + assister['name'] + ')') if assister else ''}"
+                "assist": a_name,
+                "description": f"⚽ GOAL! {s_name} scores for {home['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
             })
 
         # Generate Away Goals (Exact count match)
         for _ in range(away_goals):
             min_val = pick_minute()
             scorer, assister = select_scorer(a_starters, away["name"])
+            s_name = scorer.get("name") or scorer.get("nickname") or f"{away['name']} Striker"
+            a_name = (assister.get("name") or assister.get("nickname")) if assister else None
             events.append({
                 "type": "goal",
                 "team": "away",
                 "team_name": away["name"],
                 "minute": min_val,
-                "scorer": scorer["name"],
+                "scorer": s_name,
                 "scorer_id": scorer.get("id"),
                 "scorer_slug": scorer.get("slug"),
-                "assist": assister["name"] if assister else None,
-                "description": f"⚽ GOAL! {scorer['name']} scores for {away['name']}!{(' (Assist: ' + assister['name'] + ')') if assister else ''}"
+                "assist": a_name,
+                "description": f"⚽ GOAL! {s_name} scores for {away['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
             })
 
         # Add 2-3 non-goal match events (saves, cards)
