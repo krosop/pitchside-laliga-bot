@@ -127,7 +127,12 @@ class PitchsideTelegramBot:
         code = "".join([part[0] for part in s.split("-") if part])[:3].upper() or "LAL"
         return {"code": code, "badge": "⚽", "name": slug_or_name}
 
-    def __init__(self, token: Optional[str] = None, db: Optional[Database] = None):
+    def __init__(
+        self,
+        token: Optional[str] = None,
+        db: Optional[Database] = None,
+        send_new_messages: Optional[bool] = None,
+    ):
         self.token = token
         self.db = db or Database()
         self.sim_engine = SimulationEngine(self.db)
@@ -137,6 +142,11 @@ class PitchsideTelegramBot:
         self._fixtures_cache: Optional[Tuple[float, List[Dict[str, Any]]]] = None
         self._running = False
         self._offset = 0
+        if send_new_messages is not None:
+            self.send_new_messages: bool = bool(send_new_messages)
+        else:
+            env_val = os.environ.get("TELEGRAM_SEND_NEW_MESSAGES", "1").strip().lower()
+            self.send_new_messages = env_val not in ("0", "false", "no", "edit")
 
     # =========================================================================
     # TELEGRAM HTTP API HELPERS
@@ -263,6 +273,7 @@ class PitchsideTelegramBot:
             {"command": "clubs", "description": "🛡️ All 20 Club Tactical DNA Dossiers"},
             {"command": "players", "description": "🌟 Leaderboards, Ratings & Player Search"},
             {"command": "compare", "description": "⚔️ Compare 2 Players or Clubs Head-to-Head"},
+            {"command": "msgmode", "description": "💬 Toggle New Messages vs In-Place Edits"},
             {"command": "help", "description": "ℹ️ Bot Guide & Features Overview"},
         ]
         try:
@@ -526,16 +537,37 @@ class PitchsideTelegramBot:
 
     def send_welcome_to_all_subscribers(self) -> int:
         """Broadcasts the welcome animation and guide to all registered subscribers."""
-        subs = self.get_subscribers()
+        subs = self.get_active_subscribers()
         gif_url, caption, markup = self.render_welcome_animation()
         sent = 0
-        for s in subs:
-            cid = s.get("chat_id")
+        for cid in subs:
             if cid:
                 res = self.send_animation(cid, gif_url, caption=caption, reply_markup=markup)
                 if res.get("ok"):
                     sent += 1
         return sent
+
+    def render_msgmode_view(self) -> Tuple[str, Dict[str, Any]]:
+        """Renders the message delivery mode toggle card (New Messages vs In-Place Edits)."""
+        mode_desc = (
+            "🆕 <b>Fresh New Messages</b> (every tap drops a new message into the chat)"
+            if self.send_new_messages
+            else "✏️ <b>In-Place Edits</b> (taps update the existing message in-place)"
+        )
+        next_action = "In-Place Edits" if self.send_new_messages else "New Messages"
+        resp = (
+            f"💬 <b>NAVIGATION MESSAGE MODE</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"Current Mode: {mode_desc}\n\n"
+            f"• <b>New Messages (Default)</b>: Every button click drops a fresh card into the chat so you never lose context, can scroll back up to today's matches, and can compare simulation results side-by-side.\n"
+            f"• <b>In-Place Edits</b>: Button clicks update the existing message in-place to keep chat history compact.\n\n"
+            f"<i>Tap the button below or type <code>/msgmode</code> to toggle anytime.</i>"
+        )
+        kb = [
+            [{"text": f"🔄 Switch to {next_action}", "callback_data": "msgmode:toggle"}],
+            [{"text": "📅 Matches of the Day", "callback_data": "day:today"}, {"text": "🏠 Main Menu", "callback_data": "menu:home"}],
+        ]
+        return resp, {"inline_keyboard": kb}
 
     # =========================================================================
     # VIEW 1: DAILY MATCHES OF THE DAY & MAIN HUB (/today, day:<date>)
@@ -2035,6 +2067,14 @@ class PitchsideTelegramBot:
             return self.render_smart_search(arg) if arg else self.render_leaders_view("overall_rating")
         if cmd == "/compare":
             return self.render_compare_menu(arg)
+        if cmd in ("/msgmode", "/mode"):
+            if arg in ("new", "fresh", "send", "messages"):
+                self.send_new_messages = True
+            elif arg in ("edit", "inplace", "compact", "update"):
+                self.send_new_messages = False
+            else:
+                self.send_new_messages = not self.send_new_messages
+            return self.render_msgmode_view()
 
         # Free-text search
         return self.render_smart_search(raw)
@@ -2047,6 +2087,16 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "msgmode":
+            target = parts[1] if len(parts) >= 2 else "toggle"
+            if target in ("new", "fresh", "send"):
+                self.send_new_messages = True
+            elif target in ("edit", "inplace", "compact"):
+                self.send_new_messages = False
+            else:
+                self.send_new_messages = not self.send_new_messages
+            toast = "💬 Now sending fresh new messages!" if self.send_new_messages else "✏️ Now updating messages in-place!"
+            return (*self.render_msgmode_view(), toast)
         if prefix == "sub":
             cid = chat_id or (self.get_active_subscribers()[-1] if self.get_active_subscribers() else 0)
             new_state = self.toggle_subscription(cid) if cid else True
@@ -2147,10 +2197,23 @@ class PitchsideTelegramBot:
                     first_name=chat.get("first_name", ""),
                 )
             if chat_id and data:
-                resp_text, markup, toast = self.handle_callback_data(data, chat_id=chat_id)
-                if cb_id:
-                    self.answer_callback(cb_id, text=toast)
-                self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup)
+                if data in ("welcome", "about", "menu:welcome", "menu:about"):
+                    if cb_id:
+                        self.answer_callback(cb_id, text="ℹ️ Pitchside Features & Guide")
+                    gif_url, caption, markup = self.render_welcome_animation()
+                    if self.send_new_messages:
+                        self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
+                    else:
+                        resp_text, markup_w = self.render_welcome_text()
+                        self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup_w)
+                else:
+                    resp_text, markup, toast = self.handle_callback_data(data, chat_id=chat_id)
+                    if cb_id:
+                        self.answer_callback(cb_id, text=toast)
+                    if self.send_new_messages:
+                        self.send_message(chat_id, resp_text, reply_markup=markup)
+                    else:
+                        self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup)
 
     def run_polling(self, max_runtime_seconds: Optional[int] = None):
         if not self.token:

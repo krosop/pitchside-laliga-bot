@@ -539,3 +539,106 @@ def test_telegram_bot_automated_theme_cards_and_tabs():
     cb_text, cb_kb, toast = bot.handle_callback_data("sub:toggle", chat_id=test_chat)
     assert toast is not None
     assert any("Daily Alerts" in btn.get("text", "") for row in cb_kb["inline_keyboard"] for btn in row)
+
+
+def test_telegram_bot_send_new_messages_on_callback():
+    """
+    Verifies that:
+    1. PitchsideTelegramBot defaults to send_new_messages = True.
+    2. Clicking inline buttons (callback_query) sends a fresh new message via send_message
+       rather than editing in-place via edit_or_send (fixing the issue where users didn't
+       see a new message in chat).
+    3. Clicking 'menu:welcome' sends the full Neymar GIF animation via send_animation.
+    4. Answering callback queries clears the Telegram button loading spinner.
+    5. /msgmode and 'msgmode:toggle' properly toggle between New Messages and In-Place Edits.
+    6. When in-place edits mode is selected, callback queries route to edit_or_send.
+    """
+    db = _build_squad_test_db()
+    bot = PitchsideTelegramBot(token="123456:TEST_TOKEN", db=db)
+
+    # 1. Default configuration check
+    assert bot.send_new_messages is True
+
+    # Call recording arrays
+    sent_messages = []
+    sent_animations = []
+    edited_messages = []
+    answered_callbacks = []
+
+    def mock_send_message(chat_id, text, reply_markup=None, parse_mode="HTML"):
+        sent_messages.append({"chat_id": chat_id, "text": text, "markup": reply_markup})
+        return {"ok": True, "result": {"message_id": 1001}}
+
+    def mock_send_animation(chat_id, animation, caption=None, reply_markup=None, parse_mode="HTML"):
+        sent_animations.append({"chat_id": chat_id, "animation": animation, "caption": caption, "markup": reply_markup})
+        return {"ok": True, "result": {"message_id": 1002}}
+
+    def mock_edit_or_send(chat_id, message_id, text, reply_markup=None, parse_mode="HTML"):
+        edited_messages.append({"chat_id": chat_id, "message_id": message_id, "text": text, "markup": reply_markup})
+        return {"ok": True, "result": {"message_id": message_id}}
+
+    def mock_answer_callback(callback_query_id, text=None, show_alert=False):
+        answered_callbacks.append({"id": callback_query_id, "text": text})
+        return {"ok": True}
+
+    bot.send_message = mock_send_message
+    bot.send_animation = mock_send_animation
+    bot.edit_or_send = mock_edit_or_send
+    bot.answer_callback = mock_answer_callback
+
+    # 2. Test standard button click (e.g. today's fixtures or match selection)
+    sample_update = {
+        "update_id": 101,
+        "callback_query": {
+            "id": "cb_query_123",
+            "data": "day:today",
+            "message": {"message_id": 555, "chat": {"id": 99999, "first_name": "TestUser"}},
+        },
+    }
+    bot.process_update(sample_update)
+
+    # Must send a fresh new message, NOT edit existing message
+    assert len(sent_messages) == 1, "Expected send_message to be called to show a fresh new message"
+    assert len(edited_messages) == 0, "edit_or_send should NOT be called when send_new_messages is True"
+    assert sent_messages[0]["chat_id"] == 99999
+    assert len(answered_callbacks) == 1
+    assert answered_callbacks[0]["id"] == "cb_query_123"
+
+    # 3. Test welcome guide button click
+    welcome_update = {
+        "update_id": 102,
+        "callback_query": {
+            "id": "cb_query_456",
+            "data": "menu:welcome",
+            "message": {"message_id": 556, "chat": {"id": 99999, "first_name": "TestUser"}},
+        },
+    }
+    bot.process_update(welcome_update)
+    assert len(sent_animations) == 1, "Expected send_animation to be called for welcome callback"
+    assert sent_animations[0]["animation"] == bot.WELCOME_GIF_URL
+    assert "PITCHSIDE" in sent_animations[0]["caption"]
+
+    # 4. Test /msgmode command toggling
+    resp_text, kb = bot.handle_command_or_text("/msgmode")
+    assert bot.send_new_messages is False
+    assert "In-Place Edits" in resp_text
+
+    # 5. In-Place Edit Mode: callback queries should now edit existing message
+    sent_messages.clear()
+    edited_messages.clear()
+    bot.process_update(sample_update)
+    assert len(sent_messages) == 0, "send_message should NOT be called in in-place edit mode"
+    assert len(edited_messages) == 1, "edit_or_send SHOULD be called in in-place edit mode"
+    assert edited_messages[0]["message_id"] == 555
+
+    # 6. Switch back to New Messages Mode via callback
+    mode_switch_cb = {
+        "update_id": 103,
+        "callback_query": {
+            "id": "cb_query_789",
+            "data": "msgmode:new",
+            "message": {"message_id": 557, "chat": {"id": 99999, "first_name": "TestUser"}},
+        },
+    }
+    bot.process_update(mode_switch_cb)
+    assert bot.send_new_messages is True
