@@ -52,6 +52,7 @@ data/*.db-wal
 data/*.db-shm
 data/backups/
 data/cache/
+gut_feeling/raw_data/
 data/*.json
 database.db
 laliga.db
