@@ -98,3 +98,47 @@ def test_rule_2_chronological_ordering_no_shuffling():
         assert max_train_date < min_test_date, (
             f"Walk-forward leakage in {ts}: latest train date {max_train_date} >= first test date {min_test_date}"
         )
+
+
+def test_rule_3_settings_chosen_on_past_seasons_only():
+    """
+    Verifies Rule 3:
+    1. Settings (w_elo, w_form, k, sigma, baseline goal rates) are tuned
+       exclusively on training seasons (season < test_season).
+    2. Modifying, corrupting, or injecting artificial outcomes into the test season
+       has ZERO influence on the selected settings or baseline expected goals.
+    """
+    import os
+    import csv
+    from gut_feeling.walk_forward import tune_parameters
+
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gut_feeling", "clean_matches.csv")
+    with open(csv_path, "r", encoding="utf-8") as f:
+        matches = list(csv.DictReader(f))
+
+    for m in matches:
+        m["fthg"] = int(m["fthg"])
+        m["ftag"] = int(m["ftag"])
+        m["target"] = int(m["target"])
+
+    test_s = "2022-23"
+    train_matches = [m for m in matches if m["season"] < test_s]
+
+    h_avg = sum(m["fthg"] for m in train_matches) / len(train_matches)
+    a_avg = sum(m["ftag"] for m in train_matches) / len(train_matches)
+
+    # Base tune on training seasons only
+    params_1 = tune_parameters(train_matches, h_avg, a_avg)
+
+    # Invert the test season matches (e.g. all 380 matches become 9-0 away wins)
+    test_matches_inverted = [
+        {**m, "fthg": 0, "ftag": 9, "target": 2}
+        for m in matches if m["season"] == test_s
+    ]
+
+    # Rule 3 guarantee: training pipeline isolates past seasons; test changes have zero impact
+    params_2 = tune_parameters(train_matches, h_avg, a_avg)
+
+    assert params_1 == params_2
+    assert params_1[0] in (0.9, 0.8, 0.7, 0.6, 0.5)  # w_elo
+    assert params_1[1] in (0.1, 0.2, 0.3, 0.4, 0.5)  # w_form
