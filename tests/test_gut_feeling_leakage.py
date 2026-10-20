@@ -142,3 +142,36 @@ def test_rule_3_settings_chosen_on_past_seasons_only():
     assert params_1 == params_2
     assert params_1[0] in (0.9, 0.8, 0.7, 0.6, 0.5)  # w_elo
     assert params_1[1] in (0.1, 0.2, 0.3, 0.4, 0.5)  # w_form
+
+
+def test_rule_4_fixed_random_seed_reproducibility():
+    """
+    Verifies Rule 4:
+    1. Setting a fixed random seed produces 100% bitwise-identical probabilities
+       and bootstrap confidence intervals across repeated runs.
+    2. Changing the seed yields a different stochastic stream, proving the seed
+       strictly dictates the PRNG state.
+    """
+    import numpy as np
+    from gut_feeling.model import GutFeelingEngine
+    from gut_feeling.walk_forward import paired_bootstrap_ci
+
+    engine = GutFeelingEngine(sigma_noise=0.10, n_sim=10000)
+
+    # 1. Multiple simulation runs with identical seed
+    seed = 42
+    run1 = engine.simulate_probabilities(1.65, 1.15, match_seed=seed)
+    run2 = engine.simulate_probabilities(1.65, 1.15, match_seed=seed)
+    run3 = engine.simulate_probabilities(1.65, 1.15, match_seed=seed)
+
+    assert run1 == run2 == run3, "Simulation output varied despite identical fixed random seed!"
+
+    # 2. Different seed produces different draws
+    run_diff_seed = engine.simulate_probabilities(1.65, 1.15, match_seed=999)
+    assert run1 != run_diff_seed
+
+    # 3. Bootstrap reproducibility with fixed seed
+    diffs = np.array([-0.02, 0.01, -0.05, 0.03, -0.01, -0.04, 0.02, -0.03] * 100)
+    boot1 = paired_bootstrap_ci(diffs, n_resamples=5000, seed=42)
+    boot2 = paired_bootstrap_ci(diffs, n_resamples=5000, seed=42)
+    assert boot1 == boot2, "Bootstrap CI differed despite fixed random seed!"
