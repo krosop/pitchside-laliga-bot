@@ -409,6 +409,7 @@ def test_telegram_bot_welcome_animation_and_features_guide():
     # 2. Verify render_welcome_animation
     gif_url, caption, markup = bot.render_welcome_animation()
     assert gif_url == expected_gif
+    assert caption.startswith(f'<a href="{expected_gif}">&#8205;</a>')
 
     # 3. Caption length must be <= 1024 characters
     assert len(caption) <= 1024, f"Caption length {len(caption)} exceeds Telegram limit of 1024"
@@ -434,6 +435,7 @@ def test_telegram_bot_welcome_animation_and_features_guide():
     # 6. Verify command handling
     for cmd in ("/start", "/help", "/about", "/welcome", "/guide"):
         text, kb = bot.handle_command_or_text(cmd)
+        assert text.startswith(f'<a href="{expected_gif}">&#8205;</a>')
         assert "WELCOME TO PITCHSIDE LA LIGA BOT" in text
         assert len(text) <= 1024
 
@@ -621,6 +623,7 @@ def test_telegram_bot_updates_inplace_by_default_on_callback():
     bot.process_update(welcome_update)
     assert len(edited_messages) == 2, "Expected edit_or_send to update welcome text in-place"
     assert "PITCHSIDE" in edited_messages[1]["text"]
+    assert f'<a href="{bot.WELCOME_GIF_URL}">&#8205;</a>' in edited_messages[1]["text"]
 
     # 4. Test /msgmode command toggling
     resp_text, kb = bot.handle_command_or_text("/msgmode")

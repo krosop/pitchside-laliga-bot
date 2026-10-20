@@ -262,6 +262,7 @@ class PitchsideTelegramBot:
             try:
                 first_url = text.split('<a href="')[1].split('"')[0]
                 payload["link_preview_options"] = {
+                    "is_disabled": False,
                     "url": first_url,
                     "prefer_large_media": True,
                     "show_above_text": True,
@@ -328,6 +329,7 @@ class PitchsideTelegramBot:
                 try:
                     first_url = text.split('<a href="')[1].split('"')[0]
                     payload["link_preview_options"] = {
+                        "is_disabled": False,
                         "url": first_url,
                         "prefer_large_media": True,
                         "show_above_text": True,
@@ -408,15 +410,16 @@ class PitchsideTelegramBot:
         """
         Renders a clean, monospaced card frame for scores and fixtures in <pre><code>.
         """
-        h_line = f"{h_code:<4} {h_name[:15]:<15} {str(h_score):>4}"
-        a_line = f"{a_code:<4} {a_name[:15]:<15} {str(a_score):>4}"
-        sub_line = (status_sub or "")[:width - 4]
+        inner_w = width - 4
+        h_line = f"{h_code:<4} {h_name[:18]:<18} {str(h_score):>4}"
+        a_line = f"{a_code:<4} {a_name[:18]:<18} {str(a_score):>4}"
+        sub_line = (status_sub or "")[:inner_w]
         box = [
             "┌" + ("─" * (width - 2)) + "┐",
-            f"│ {h_line:<{width - 4}} │",
-            f"│ {a_line:<{width - 4}} │",
+            f"│ {h_line:<{inner_w}} │",
+            f"│ {a_line:<{inner_w}} │",
             "├" + ("─" * (width - 2)) + "┤",
-            f"│ {sub_line:<{width - 4}} │",
+            f"│ {sub_line:^{inner_w}} │",
             "└" + ("─" * (width - 2)) + "┘",
         ]
         return "<pre><code>" + "\n".join(box) + "</code></pre>"
@@ -610,13 +613,15 @@ class PitchsideTelegramBot:
         Renders the comprehensive overview of what the bot does with interactive buttons.
         """
         caption = (
-            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT &amp; SERIE A!</b> ⚽\n\n"
-            "Your elite real-time <b>La Liga 🇪🇸 &amp; Serie A 🇮🇹 tactical terminal &amp; simulation engine</b> directly in Telegram!\n\n"
-            "🔥 <b>What I Can Do For You:</b>\n"
+            f'<a href="{self.WELCOME_GIF_URL}">&#8205;</a>'
+            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT &amp; SERIE A!</b> ⚽\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Your elite <b>tactical terminal &amp; simulation engine</b> for 🇪🇸 <b>La Liga</b> &amp; 🇮🇹 <b>Serie A</b>!\n\n"
+            "🔥 <b>Tactical Capabilities &amp; Features:</b>\n"
             "• 🇪🇸/🇮🇹 <b>Dual League Hub:</b> Toggle between La Liga &amp; Serie A (/league)\n"
             "• 📅 <b>Matches of the Day:</b> Daily schedule, live scores &amp; odds\n"
-            "• ⚡ <b>90' Tactical Match Simulator:</b> Calibrated Dixon-Coles Poisson engine &amp; club DNA\n"
-            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Red cards &amp; injuries handled automatically\n"
+            "• ⚡ <b>90' Tactical Match Simulator:</b> Calibrated Dixon-Coles Poisson &amp; club DNA\n"
+            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Red cards &amp; injuries tracked live\n"
             "• 🌊 <b>Predictive Telemetry:</b> Attack momentum, dominance &amp; cumulative xG\n"
             "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table, European zones &amp; form dots\n"
             "• 🛡️ <b>Tactical DNA:</b> In-depth dossiers for 40+ clubs &amp; starting XIs\n"
@@ -744,10 +749,15 @@ class PitchsideTelegramBot:
                 f"<i>(Today is {today_str})</i>"
             )
 
+        first_shield = None
+        if day_fixtures:
+            first_shield = (standings_map.get(day_fixtures[0].get("home_slug")) or {}).get("shield_url") or (standings_map.get(day_fixtures[0].get("home_slug")) or {}).get("shield")
+        media_hdr = self._render_media_header(first_shield)
+
         lines = [
-            f"⚽ <b>PITCHSIDE · {league_flag} {league_title} MATCH CENTER</b>",
+            f"{media_hdr}⚽ <b>PITCHSIDE · {league_flag} {league_title} MATCH CENTER</b>",
             date_badge,
-            "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
+            "━━━━━━━━━━━━━━━━━━━━━━",
         ]
 
         kb = []
@@ -1159,7 +1169,7 @@ class PitchsideTelegramBot:
             text = (
                 f"{media_hdr}🏟️ <b>MATCH CENTER · STARTING XIs &amp; FORM</b>\n"
                 f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
-                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🛡️ <b>{h_theme['badge']} {self._esc(h_name)} ({h_formation})</b>\n"
                 + "\n".join(h_xi_lines) + "\n\n"
                 f"🛡️ <b>{a_theme['badge']} {self._esc(a_name)} ({a_formation})</b>\n"
@@ -1171,7 +1181,7 @@ class PitchsideTelegramBot:
             text = (
                 f"{media_hdr}🏟️ <b>MATCH CENTER · PREDICTIVE TELEMETRY</b>\n"
                 f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
-                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🌊 <b>PROJECTED POSSESSION SPLIT</b>\n"
                 f"{poss_split}\n"
                 f"• {h_theme['code']} <code>{exp_poss.get('home', 50)}%</code> vs <code>{exp_poss.get('away', 50)}%</code> {a_theme['code']}\n\n"
@@ -1188,7 +1198,7 @@ class PitchsideTelegramBot:
             text = (
                 f"{media_hdr}🏟️ <b>MATCH CENTER · TACTICAL CLASH</b>\n"
                 f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}</b> vs <b>{self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
-                f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🧠 <b>MANAGERIAL DUEL</b>\n"
                 f"• <b>{h_theme['code']}:</b> {self._esc(h_tac.get('manager', 'Manager'))}\n"
                 f"  └ <i>{self._esc(h_tac.get('tactical_identity', 'Structured Football'))}</i>\n"
@@ -1712,10 +1722,13 @@ class PitchsideTelegramBot:
             subset = standings
             subtitle = "OFFICIAL 20-CLUB LEAGUE TABLE &amp; FORM"
 
+        first_shield = standings[0].get("shield_url") or standings[0].get("shield") if standings else None
+        media_hdr = self._render_media_header(first_shield)
+
         lines = [
-            f"🏆 <b>{league_flag} {league_title} STANDINGS</b>",
+            f"{media_hdr}🏆 <b>{league_flag} {league_title} STANDINGS</b>",
             f"<i>{subtitle}</i>",
-            "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄",
+            "━━━━━━━━━━━━━━━━━━━━━━",
             "<code> #  TAG CLUB        MP  GD PT</code>",
         ]
 
@@ -1785,8 +1798,10 @@ class PitchsideTelegramBot:
         standings = self._get_standings(competition=comp)
         league_title = "SERIE A" if comp == "serie_a" else "LA LIGA"
         league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
+        first_shield = standings[0].get("shield_url") or standings[0].get("shield") if standings else None
+        media_hdr = self._render_media_header(first_shield)
         lines = [
-            f"🛡️ <b>{league_flag} {league_title} 20 CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
+            f"{media_hdr}🛡️ <b>{league_flag} {league_title} 20 CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
             "━━━━━━━━━━━━━━━━━━━━━━",
             "Select any club below to inspect its <b>Managerial Philosophy, Tactical DNA Metrics, Starting XI Lineup, Form Guide &amp; Upcoming Schedule</b>:",
         ]
@@ -2066,8 +2081,19 @@ class PitchsideTelegramBot:
         str_text = ", ".join(self._esc(s) for s in strengths[:4]) if strengths else " High Tactical Consistency"
         wk_text = ", ".join(self._esc(w) for w in weaknesses[:3]) if weaknesses else "Well-rounded profile"
 
+        club_id = bio.get("club_id")
+        shield = None
+        if club_id:
+            c_row = self.db.get_club_by_id(club_id) if hasattr(self.db, "get_club_by_id") else None
+            if not c_row and hasattr(self.db, "get_club_profile"):
+                c_prof = self.db.get_club_profile(club_id)
+                c_row = (c_prof or {}).get("club")
+            if c_row:
+                shield = c_row.get("shield_url") or c_row.get("shield")
+        media_hdr = self._render_media_header(shield)
+
         text = (
-            f"🌟 <b>{self._esc(name)} — PLAYER TELEMETRY DOSSIER</b>\n"
+            f"{media_hdr}🌟 <b>{self._esc(name)} — PLAYER TELEMETRY DOSSIER</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🛡️ <b>Club:</b> {self._esc(club_name)} · <b>Pos:</b> {self._esc(pos)} (#{shirt})\n"
             f"🌍 <b>Nation:</b> {self._esc(nation)} · <b>Archetype:</b> <i>{self._esc(arch)}</i>\n"
@@ -2121,18 +2147,23 @@ class PitchsideTelegramBot:
                     c1_shield = c1.get("shield_url") or c1.get("shield")
                     c2_shield = c2.get("shield_url") or c2.get("shield")
                     media_hdr = self._render_media_header(c1_shield)
+                    t1 = self.get_club_theme(c1.get("slug") or c1.get("name"))
+                    t2 = self.get_club_theme(c2.get("slug") or c2.get("name"))
+                    att_bar = self._dual_bar(s1.get("att_rating", 75), s2.get("att_rating", 75), 8)
+                    mid_bar = self._dual_bar(s1.get("mid_rating", 75), s2.get("mid_rating", 75), 8)
+                    def_bar = self._dual_bar(s1.get("def_rating", 75), s2.get("def_rating", 75), 8)
                     crest_c1 = f'<a href="{c1_shield}">🛡️</a> ' if c1_shield else ""
                     crest_c2 = f' <a href="{c2_shield}">🛡️</a>' if c2_shield else ""
                     text = (
                         f"{media_hdr}⚔️ <b>CLUB HEAD-TO-HEAD COMPARISON</b>\n"
-                        f"{crest_c1}<b><a href=\"{c1_shield}\">{self._esc(c1['name'])}</a></b>  vs  <b><a href=\"{c2_shield}\">{self._esc(c2['name'])}</a></b>{crest_c2}\n"
+                        f"{crest_c1}{t1['badge']} <b><a href=\"{c1_shield}\">{self._esc(c1['name'])}</a></b>  vs  <b><a href=\"{c2_shield}\">{self._esc(c2['name'])}</a></b> {t2['badge']}{crest_c2}\n"
                         f"━━━━━━━━━━━━━━━━━━━━━━\n"
                         f"• <b>Rank:</b> <code>#{c1.get('position')}</code> vs <code>#{c2.get('position')}</code>\n"
                         f"• <b>Points:</b> <code>{c1.get('points')}</code> vs <code>{c2.get('points')}</code>\n"
                         f"• <b>Overall Rating:</b> <code>{s1.get('overall_rating')}</code> vs <code>{s2.get('overall_rating')}</code>\n"
-                        f"• <b>Attack:</b> <code>{s1.get('att_rating')}</code> vs <code>{s2.get('att_rating')}</code>\n"
-                        f"• <b>Midfield:</b> <code>{s1.get('mid_rating')}</code> vs <code>{s2.get('mid_rating')}</code>\n"
-                        f"• <b>Defense:</b> <code>{s1.get('def_rating')}</code> vs <code>{s2.get('def_rating')}</code>\n\n"
+                        f"• <b>Attack:</b> <code>{s1.get('att_rating')}</code> vs <code>{s2.get('att_rating')}</code> {att_bar}\n"
+                        f"• <b>Midfield:</b> <code>{s1.get('mid_rating')}</code> vs <code>{s2.get('mid_rating')}</code> {mid_bar}\n"
+                        f"• <b>Defense:</b> <code>{s1.get('def_rating')}</code> vs <code>{s2.get('def_rating')}</code> {def_bar}\n\n"
                         f"🧠 <b>Verdict:</b> <i>{self._esc(verdict)}</i>"
                     )
                     crest_btns = []
