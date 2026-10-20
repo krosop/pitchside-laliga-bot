@@ -19,12 +19,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .database import Database
 from .comparator import PlayerComparator
 from .simulation_engine import SimulationEngine
 from .club_tactics import ClubTacticsRegistry, CLUB_TACTICAL_DNA
+from gut_feeling.model import GutFeelingEngine
 
 
 # Ensure UTF-8 output on Windows consoles
@@ -170,6 +171,16 @@ class PitchsideTelegramBot:
         self._fixtures_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
         self.chat_leagues: Dict[int, str] = {}
         self.chat_sim_modes: Dict[int, str] = {}
+        self.gut_feeling_engine = GutFeelingEngine(
+            w_elo=0.9,
+            w_form=0.1,
+            k_goal=0.35,
+            sigma_noise=0.05,
+            n_sim=10000,
+            strong_threshold=0.55,
+            lean_threshold=0.45,
+            random_seed=42,
+        )
         self._running = False
         self._offset = 0
         if send_new_messages is not None:
@@ -250,7 +261,7 @@ class PitchsideTelegramBot:
         if len(text) > 4050:
             text = text[:4040] + "\n..."
         if disable_web_page_preview is None:
-            has_media = text.startswith('<a href="http')
+            has_media = bool('<a href="http' in text)
             disable_web_page_preview = not has_media
         payload: Dict[str, Any] = {
             "chat_id": chat_id,
@@ -303,6 +314,35 @@ class PitchsideTelegramBot:
             return self.send_message(chat_id, caption or "", reply_markup=reply_markup, parse_mode=parse_mode)
         return res
 
+    def send_photo(
+        self,
+        chat_id: int,
+        photo: str,
+        caption: Optional[str] = None,
+        reply_markup: Optional[Dict[str, Any]] = None,
+        parse_mode: str = "HTML",
+    ) -> Dict[str, Any]:
+        """
+        Sends an image/photo (such as club crest or match visual) to a Telegram chat.
+        Respects Telegram's 1024-character caption limit and automatically
+        falls back to sendMessage if photo dispatch fails.
+        """
+        if caption and len(caption) > 1024:
+            caption = caption[:1020] + "..."
+        payload: Dict[str, Any] = {
+            "chat_id": chat_id,
+            "photo": photo,
+            "parse_mode": parse_mode,
+        }
+        if caption:
+            payload["caption"] = caption
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        res = self._api_call("sendPhoto", payload)
+        if not res.get("ok"):
+            return self.send_message(chat_id, caption or "", reply_markup=reply_markup, parse_mode=parse_mode)
+        return res
+
     def edit_or_send(
         self,
         chat_id: int,
@@ -315,7 +355,7 @@ class PitchsideTelegramBot:
         if len(text) > 4050:
             text = text[:4040] + "\n..."
         if disable_web_page_preview is None:
-            has_media = text.startswith('<a href="http')
+            has_media = bool('<a href="http' in text)
             disable_web_page_preview = not has_media
         if message_id:
             payload: Dict[str, Any] = {
@@ -606,6 +646,9 @@ class PitchsideTelegramBot:
         Caption is formatted in HTML and strictly within Telegram's 1024-char limit.
         """
         caption, markup = self.render_welcome_text()
+        # Strip invisible preview anchor tag for direct sendAnimation
+        if '<a href="' in caption and '&#8205;</a>' in caption:
+            caption = caption.split('&#8205;</a>')[-1].strip()
         return self.WELCOME_GIF_URL, caption, markup
 
     def render_welcome_text(self) -> Tuple[str, Dict[str, Any]]:
@@ -614,18 +657,18 @@ class PitchsideTelegramBot:
         """
         caption = (
             f'<a href="{self.WELCOME_GIF_URL}">&#8205;</a>'
-            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT &amp; SERIE A!</b> ⚽\n"
+            "⚡ <b>WELCOME TO PITCHSIDE TACTICAL BOT &amp; GUT FEELING AI!</b> ⚽\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
             "Your elite <b>tactical terminal &amp; simulation engine</b> for 🇪🇸 <b>La Liga</b> &amp; 🇮🇹 <b>Serie A</b>!\n\n"
-            "🔥 <b>Tactical Capabilities &amp; Features:</b>\n"
-            "• 🇪🇸/🇮🇹 <b>Dual League Hub:</b> Toggle between La Liga &amp; Serie A (/league)\n"
-            "• 📅 <b>Matches of the Day:</b> Daily schedule, live scores &amp; odds\n"
-            "• ⚡ <b>90' Tactical Match Simulator:</b> Calibrated Dixon-Coles Poisson &amp; club DNA\n"
-            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Red cards &amp; injuries tracked live\n"
-            "• 🌊 <b>Predictive Telemetry:</b> Attack momentum, dominance &amp; cumulative xG\n"
-            "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table, European zones &amp; form dots\n"
-            "• 🛡️ <b>Tactical DNA:</b> In-depth dossiers for 40+ clubs &amp; starting XIs\n"
-            "• ⚔️ <b>Head-to-Head:</b> Club vs Club &amp; Player vs Player duels\n\n"
+            "🔥 <b>Tactical Capabilities &amp; Engine Modes:</b>\n"
+            "• 🟢 <b>Simple Mode:</b> 5-second check with scoreboard, crests, scorers &amp; fair odds\n"
+            "• ⚙️ <b>Advanced Mode:</b> Deep telemetry, 6-phase momentum &amp; live subs\n"
+            "• 🎲 <b>Gut Feeling AI:</b> 10,000-draw Monte Carlo predictions &amp; confidence ratings (/gut)\n"
+            "• 🇪🇸/🇮🇹 <b>Dual League Hub:</b> Seamless La Liga &amp; Serie A switcher (/league)\n"
+            "• 📅 <b>Matches &amp; Odds:</b> Live matchday schedule, results &amp; starting XIs\n"
+            "• 🚫 <b>Injuries &amp; Suspensions:</b> Active squad availability tracked live\n"
+            "• 🛡️ <b>Tactical DNA:</b> Comprehensive dossiers for all 40 top-flight clubs\n"
+            "• ⚔️ <b>Head-to-Head:</b> Club vs Club &amp; Player vs Player comparison (/compare)\n\n"
             "<i>Select an option below to start exploring! 👇</i>"
         )
         current_md = self._get_active_matchday()
@@ -639,16 +682,16 @@ class PitchsideTelegramBot:
                 {"text": "⚡ Sim Today", "callback_data": "daysim:today"},
             ],
             [
-                {"text": "⚽ All 38 Matchdays", "callback_data": f"md:{current_md}"},
+                {"text": "🎲 Gut Feeling AI (10k Sim)", "callback_data": "gut:today"},
                 {"text": "🏆 Standings & Form", "callback_data": "st:all"},
             ],
             [
-                {"text": "🛡️ 20 Clubs Tactical DNA", "callback_data": "clubs"},
+                {"text": "🛡️ 40 Clubs Tactical DNA", "callback_data": "clubs"},
                 {"text": "🌟 Top Scorers & Scouting", "callback_data": "ldr:goals"},
             ],
             [
+                {"text": "⚙️ Simulation Mode Switcher", "callback_data": "menu:mode"},
                 {"text": "⚔️ Compare H2H", "callback_data": "cmp"},
-                {"text": "🔄 Sync Live Data", "callback_data": "sync"},
             ],
         ]
         return caption, {"inline_keyboard": kb}
@@ -1270,6 +1313,134 @@ class PitchsideTelegramBot:
         ])
         return text, {"inline_keyboard": kb}
 
+    def get_match_gut_feeling(self, fixture_or_detail: Any) -> Dict[str, Any]:
+        """
+        Runs the 10-step, 5-rule Gut Feeling Football Prediction Algorithm with 10,000 Monte Carlo draws.
+        Strictly applies:
+          - Step 2: Elo anchor (baseline 1500, +70 home field, GD-multiplier, in-season z-score)
+          - Step 3 & 4: Opponent-adjusted 3-match decayed form score (0.5/0.3/0.2, padded with 0.5)
+          - Step 5: Combined team strength score (w_elo=0.9, w_form=0.1) & strength gap ΔS
+          - Step 6: Expected goals via exponential formula (1.51 home avg, 1.24 away avg, k=0.35)
+          - Step 7: 10,000 lognormal noise (σ=0.05) + Poisson draws with deterministic seed
+          - Step 8: Calibrated confidence labels (Strong, Lean, No gut feeling)
+        """
+        if isinstance(fixture_or_detail, dict) and "home_team" in fixture_or_detail:
+            detail = fixture_or_detail
+        else:
+            fid = fixture_or_detail if isinstance(fixture_or_detail, int) else int(fixture_or_detail.get("id"))
+            detail = self._get_match_detail(fid) or {}
+
+        home = detail.get("home_team") or {}
+        away = detail.get("away_team") or {}
+        fx = detail.get("fixture") or {}
+        fid = fx.get("id") or 0
+
+        h_name = home.get("nickname") or home.get("name") or "Home"
+        a_name = away.get("nickname") or away.get("name") or "Away"
+        h_slug = home.get("slug") or ""
+        a_slug = away.get("slug") or ""
+        h_shield = home.get("shield_url") or home.get("shield")
+        a_shield = away.get("shield_url") or away.get("shield")
+
+        forecast = detail.get("forecast") or {}
+        elo_analysis = forecast.get("elo_analysis") or {}
+        h_elo = float((elo_analysis.get("home") or {}).get("elo", 1500.0))
+        a_elo = float((elo_analysis.get("away") or {}).get("elo", 1500.0))
+
+        # In-season Elo z-score (baseline mean 1500, std 120)
+        z_elo_h = (h_elo - 1500.0) / 120.0
+        z_elo_a = (a_elo - 1500.0) / 120.0
+
+        # Form calculation from past finished matches
+        fixtures = self._get_all_fixtures()
+
+        def _calc_team_form(slug: str) -> Tuple[float, float]:
+            if not slug:
+                return 0.5, 0.0
+            past = [
+                f for f in fixtures
+                if f.get("status") == "FINISHED"
+                and slug in (f.get("home_slug") or "", f.get("away_slug") or "")
+                and f.get("id") != fid
+            ]
+            scores = []
+            for f in past[-3:]:
+                is_home = slug == (f.get("home_slug") or "")
+                gf = int(f.get("home_score", 0) if is_home else f.get("away_score", 0))
+                ga = int(f.get("away_score", 0) if is_home else f.get("home_score", 0))
+                sc = GutFeelingEngine._calc_match_score(gf, ga, 0.0)
+                scores.append(sc)
+            while len(scores) < 3:
+                scores.insert(0, 0.5)
+            f_raw = 0.5 * scores[2] + 0.3 * scores[1] + 0.2 * scores[0]
+            z_f = (f_raw - 0.5) / 0.15
+            return f_raw, z_f
+
+        form_raw_h, z_form_h = _calc_team_form(h_slug)
+        form_raw_a, z_form_a = _calc_team_form(a_slug)
+
+        # Team strength and gap
+        s_h, s_a, gap = self.gut_feeling_engine.compute_strength_gap(z_elo_h, z_form_h, z_elo_a, z_form_a)
+
+        # Expected Goals (La Liga / Serie A empirical averages: 1.51 home, 1.24 away)
+        h_xg, a_xg = self.gut_feeling_engine.convert_strength_to_xg(gap, 1.51, 1.24)
+
+        # 10,000 lognormal-Poisson simulations (deterministic match seed)
+        match_seed = (int(fid) * 1664525 + 1013904223) % (2**31 - 1)
+        p_h, p_d, p_a = self.gut_feeling_engine.simulate_probabilities(h_xg, a_xg, match_seed=match_seed)
+
+        # Confidence verdict
+        conf, verdict_str = self.gut_feeling_engine.label_confidence(p_h, p_d, p_a)
+
+        fav_name = h_name if p_h > p_a else a_name
+        if verdict_str == "Strong gut feeling":
+            badge = "🔥 STRONG GUT FEELING"
+            desc = f"High model convergence on {fav_name} ({conf*100:.1f}%)"
+        elif verdict_str == "Lean":
+            badge = "⚡ LEAN"
+            desc = f"Moderate statistical edge towards {fav_name} ({conf*100:.1f}%)"
+        else:
+            badge = "🎲 NO GUT FEELING"
+            desc = "High entropy contest; tight margin without a decisive edge"
+
+        # Fair decimal odds
+        odd_h = round(1.0 / max(0.01, p_h), 2)
+        odd_d = round(1.0 / max(0.01, p_d), 2)
+        odd_a = round(1.0 / max(0.01, p_a), 2)
+
+        return {
+            "fixture_id": fid,
+            "home_team": h_name,
+            "away_team": a_name,
+            "home_slug": h_slug,
+            "away_slug": a_slug,
+            "home_shield": h_shield,
+            "away_shield": a_shield,
+            "home_elo": h_elo,
+            "away_elo": a_elo,
+            "z_elo_h": z_elo_h,
+            "z_elo_a": z_elo_a,
+            "form_raw_h": form_raw_h,
+            "form_raw_a": form_raw_a,
+            "z_form_h": z_form_h,
+            "z_form_a": z_form_a,
+            "strength_h": s_h,
+            "strength_a": s_a,
+            "strength_gap": gap,
+            "home_xg": h_xg,
+            "away_xg": a_xg,
+            "prob_home": p_h,
+            "prob_draw": p_d,
+            "prob_away": p_a,
+            "odd_home": odd_h,
+            "odd_draw": odd_d,
+            "odd_away": odd_a,
+            "confidence": conf,
+            "verdict": verdict_str,
+            "badge": badge,
+            "verdict_desc": desc,
+        }
+
     # =========================================================================
     # VIEW 5: 90-MINUTE SIMULATION REPORT + MODES (sim:<fid>, simmode:<mode>:<fid>)
     # =========================================================================
@@ -1334,12 +1505,8 @@ class PitchsideTelegramBot:
             goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n• <i>0'–90' No goals scored. Both backlines held resolute!</i>"
 
         trends = sim.get("trends") or {}
-        win_prob = trends.get("win_probability") or []
-        init_wp = win_prob[0] if win_prob else {}
-        hp = init_wp.get("home_prob", 45.0)
-        dp = init_wp.get("draw_prob", 25.0)
-        ap = init_wp.get("away_prob", 30.0)
-        prob_bar = self._prob_bar(hp, dp, ap, width=12)
+        gf = self.get_match_gut_feeling(detail)
+        prob_bar = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
 
         h_xg = stats["xg"]["home"]
         a_xg = stats["xg"]["away"]
@@ -1362,19 +1529,21 @@ class PitchsideTelegramBot:
             f"{card}\n"
             f"{winner_line}\n\n"
             f"{goals_block}\n\n"
-            f"🎲 <b>WIN PROBABILITY &amp; xG</b>\n"
+            f"🎲 <b>GUT FEELING 10,000-DRAW SIMULATION</b>\n"
             f"{prob_bar}\n"
-            f"🟩 {h_theme['code']} <code>{hp:.1f}%</code> · ⬜ Draw <code>{dp:.1f}%</code> · 🟥 {a_theme['code']} <code>{ap:.1f}%</code>\n"
-            f"• <b>Expected Goals (xG):</b> <code>{h_xg:.2f}</code> vs <code>{a_xg:.2f}</code>\n\n"
+            f"🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
+            f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
+            f"• <b>Confidence Rating:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
+            f"• <b>Expected Goals:</b> <code>{gf['home_xg']:.2f}</code> vs <code>{gf['away_xg']:.2f}</code>\n\n"
             f"💬 <i>\"{self._esc(verdict)}\"</i>"
         )
 
         share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}!"
 
         crest_row = []
-        if h_shield and h_shield.startswith("http"):
+        if h_shield and str(h_shield).startswith("http"):
             crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
-        if a_shield and a_shield.startswith("http"):
+        if a_shield and str(a_shield).startswith("http"):
             crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
 
         kb = [
@@ -1385,8 +1554,8 @@ class PitchsideTelegramBot:
             kb.append(crest_row)
         kb.extend([
             [
-                {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
-                {"text": "📤 Share Simulation", "url": share_url},
+                {"text": "🎲 Gut Feeling Dossier", "callback_data": f"gut:{fixture_id}"},
+                {"text": "📋 Starting XIs", "callback_data": f"mxi:{fixture_id}"},
             ],
             [
                 {"text": "◀ Match Center", "callback_data": f"m:{fixture_id}"},
@@ -1490,6 +1659,9 @@ class PitchsideTelegramBot:
         if custom_subs:
             sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>"
 
+        gf = self.get_match_gut_feeling(detail)
+        prob_bar_gf = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
+
         verdict_txt = narrative.get("flow_summary") or narrative.get("tactical_verdict") or ""
         media_hdr = self._render_media_header(h_shield)
         crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
@@ -1512,18 +1684,24 @@ class PitchsideTelegramBot:
             + "\n".join(phase_lines)
             + f"\n\n📈 <b>WIN PROBABILITY EVOLUTION</b>\n"
             + "\n".join(wp_lines)
-            + f"\n\n🧠 <b>TACTICAL TREND NARRATIVE</b>\n"
-            f"• <b>Headline:</b> <b>{self._esc(narrative.get('headline', ''))}</b>\n"
-            f"• <b>Key Turning Point:</b> {self._esc(narrative.get('turning_point', ''))}\n"
-            f"• <b>Match Flow:</b> <i>{self._esc(verdict_txt)}</i>"
+            + f"\n\n🧠 <b>GUT FEELING MATHEMATICAL ENGINE (10k Monte Carlo)</b>\n"
+            f"• <b>Elo Anchor:</b> {h_theme['code']} <code>{gf['home_elo']:.1f} (z={gf['z_elo_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['away_elo']:.1f} (z={gf['z_elo_a']:+.2f})</code>\n"
+            f"• <b>3-Match Form:</b> {h_theme['code']} <code>{gf['form_raw_h']:.2f} (z={gf['z_form_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['form_raw_a']:.2f} (z={gf['z_form_a']:+.2f})</code>\n"
+            f"• <b>Combined Strength:</b> S_H=<code>{gf['strength_h']:+.3f}</code>, S_A=<code>{gf['strength_a']:+.3f}</code> → <b>ΔS Gap:</b> <code>{gf['strength_gap']:+.3f}</code>\n"
+            f"• <b>Poisson Rates:</b> λ_H=<code>{gf['home_xg']:.2f}</code>, λ_A=<code>{gf['away_xg']:.2f}</code> (Noise σ=0.05)\n"
+            f"• <b>10,000 Draws:</b> {prob_bar_gf}\n"
+            f"  🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
+            f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
+            f"• <b>Confidence Verdict:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
+            f"• <b>Tactical Flow:</b> <i>{self._esc(verdict_txt)}</i>"
         )
 
         share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}!"
 
         crest_row = []
-        if h_shield and h_shield.startswith("http"):
+        if h_shield and str(h_shield).startswith("http"):
             crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
-        if a_shield and a_shield.startswith("http"):
+        if a_shield and str(a_shield).startswith("http"):
             crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
 
         kb = [
@@ -1533,7 +1711,7 @@ class PitchsideTelegramBot:
                 {"text": f"🔄 Sub {a_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
             ],
             [
-                {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
+                {"text": "🎲 Gut Feeling Dossier", "callback_data": f"gut:{fixture_id}"},
                 {"text": "📊 6-Axis Tactical Radar", "callback_data": f"mrad:{fixture_id}"},
             ],
         ]
@@ -2223,6 +2401,157 @@ class PitchsideTelegramBot:
         return text, {"inline_keyboard": kb}
 
     # =========================================================================
+    # VIEW 13: GUT FEELING 10,000-DRAW PREDICTION ENGINE (/gut, gut:<fid>)
+    # =========================================================================
+    def render_gut_feeling_view(
+        self,
+        target: Optional[str] = None,
+        chat_id: Optional[int] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """
+        Renders the 10-step, 5-rule Gut Feeling Algorithm prediction view.
+        Supports:
+          - Overview of active/today's fixtures with quick verdict badges
+          - Dedicated in-depth Gut Feeling prediction card for any fixture or team query
+        """
+        comp = self.get_chat_league(chat_id)
+        raw_target = (target or "").strip()
+
+        # If no target, or "today", "menu", "all" -> Show today's prediction summary
+        if not raw_target or raw_target.lower() in ("today", "menu", "all"):
+            _, active_date, _ = self._resolve_active_date("today", competition=comp)
+            fixtures = [
+                f for f in self._get_all_fixtures(competition=comp)
+                if (f.get("kickoff_time") or "")[:10] == active_date
+            ]
+            if not fixtures:
+                fixtures = self._get_all_fixtures(competition=comp)[:6]
+
+            lines = [
+                "🎲 <b>GUT FEELING 10,000-DRAW PREDICTIONS</b> ⚽",
+                "<i>10-Step Algorithmic Pipeline · Elo Anchor & Form Engine</i>",
+                "━━━━━━━━━━━━━━━━━━━━━━",
+                f"📅 <b>Fixture Card · {active_date}</b>\n",
+            ]
+            kb = []
+            for f in fixtures[:8]:
+                gf = self.get_match_gut_feeling(f["id"])
+                h_name = f.get("home_nickname") or f.get("home_name") or "Home"
+                a_name = f.get("away_nickname") or f.get("away_name") or "Away"
+                h_theme = self.get_club_theme(f.get("home_slug") or h_name)
+                a_theme = self.get_club_theme(f.get("away_slug") or a_name)
+                ph = gf["prob_home"] * 100.0
+                pd = gf["prob_draw"] * 100.0
+                pa = gf["prob_away"] * 100.0
+                lines.append(
+                    f"• {h_theme['badge']} <b>{self._esc(h_name)} vs {self._esc(a_name)}</b> {a_theme['badge']}\n"
+                    f"  {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
+                    f"  <code>{h_theme['code']} {ph:>4.1f}%</code> · <code>Draw {pd:>4.1f}%</code> · <code>{a_theme['code']} {pa:>4.1f}%</code>\n"
+                    f"  Fair Odds: [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
+                )
+                kb.append([
+                    {"text": f"🎲 {h_theme['code']} vs {a_theme['code']} ({gf['verdict']})", "callback_data": f"gut:{f['id']}"}
+                ])
+
+            kb.extend([
+                [
+                    {"text": "⚡ Sim Today (Simple)", "callback_data": f"daysim:{active_date}"},
+                    {"text": "📅 Matches of the Day", "callback_data": "day:today"},
+                ],
+                [
+                    {"text": "🏆 Standings & Form", "callback_data": "st:all"},
+                    {"text": "🏠 Main Menu", "callback_data": "menu:home"},
+                ],
+            ])
+            return "\n".join(lines), {"inline_keyboard": kb}
+
+        # Resolve single fixture by ID or name
+        all_fx = self._get_all_fixtures()
+        target_fixture = None
+        if raw_target.isdigit():
+            fid = int(raw_target)
+            target_fixture = next((f for f in all_fx if f.get("id") == fid), None)
+        else:
+            q = raw_target.lower()
+            for f in all_fx:
+                h_match = q in (f.get("home_name") or "").lower() or q in (f.get("home_slug") or "").lower()
+                a_match = q in (f.get("away_name") or "").lower() or q in (f.get("away_slug") or "").lower()
+                if h_match or a_match:
+                    target_fixture = f
+                    break
+
+        if not target_fixture:
+            target_fixture = all_fx[0]
+
+        fid = target_fixture["id"]
+        detail = self._get_match_detail(fid) or {}
+        gf = self.get_match_gut_feeling(detail)
+
+        h_name = gf["home_team"]
+        a_name = gf["away_team"]
+        h_theme = self.get_club_theme(gf.get("home_slug") or h_name)
+        a_theme = self.get_club_theme(gf.get("away_slug") or a_name)
+        h_shield = gf.get("home_shield")
+        a_shield = gf.get("away_shield")
+        media_hdr = self._render_media_header(h_shield)
+
+        crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
+        crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
+        stadium = (detail.get("home_team") or {}).get("stadium") or "Estadio Oficial"
+        fx = detail.get("fixture", {})
+        md = fx.get("matchday", 1)
+
+        prob_bar = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
+
+        text = (
+            f"{media_hdr}🎲 <b>GUT FEELING PREDICTION DOSSIER · ROUND {md}</b> ⚽\n"
+            f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)} vs {self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
+            f"<i>Venue: {stadium} · 10-Step Calibrated Algorithm</i>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 <b>DECISION VERDICT:</b> {gf['badge']}\n"
+            f"• <b>Algorithmic Confidence:</b> <code>{gf['confidence']*100:.1f}%</code>\n"
+            f"• <b>Summary:</b> <i>{self._esc(gf['verdict_desc'])}</i>\n\n"
+            f"🎲 <b>10,000-DRAW SIMULATION PROBABILITIES</b>\n"
+            f"{prob_bar}\n"
+            f"🟩 <b>{h_theme['code']} Win:</b> <code>{gf['prob_home']*100:.1f}%</code> (Fair Odds: <code>{gf['odd_home']:.2f}</code>)\n"
+            f"⬜ <b>Draw:</b> <code>{gf['prob_draw']*100:.1f}%</code> (Fair Odds: <code>{gf['odd_draw']:.2f}</code>)\n"
+            f"🟥 <b>{a_theme['code']} Win:</b> <code>{gf['prob_away']*100:.1f}%</code> (Fair Odds: <code>{gf['odd_away']:.2f}</code>)\n\n"
+            f"📊 <b>MATHEMATICAL TELEMETRY &amp; FEATURES</b>\n"
+            f"• <b>Elo Anchor (z-score):</b> {h_theme['code']} <code>{gf['home_elo']:.1f} (z={gf['z_elo_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['away_elo']:.1f} (z={gf['z_elo_a']:+.2f})</code>\n"
+            f"• <b>3-Match Form (Decayed):</b> {h_theme['code']} <code>{gf['form_raw_h']:.2f} (z={gf['z_form_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['form_raw_a']:.2f} (z={gf['z_form_a']:+.2f})</code>\n"
+            f"• <b>Team Strength:</b> S_H=<code>{gf['strength_h']:+.3f}</code> vs S_A=<code>{gf['strength_a']:+.3f}</code>\n"
+            f"• <b>Net Strength Gap (ΔS):</b> <code>{gf['strength_gap']:+.3f}</code>\n"
+            f"• <b>Expected Goals (xG):</b> <code>{gf['home_xg']:.2f}</code> vs <code>{gf['away_xg']:.2f}</code>\n"
+            f"• <b>Monte Carlo Engine:</b> 10,000 lognormal-Poisson draws (σ=0.05, seed=deterministic)"
+        )
+
+        crest_row = []
+        if h_shield and str(h_shield).startswith("http"):
+            crest_row.append({"text": f"🛡️ {h_theme['code']} Crest", "url": h_shield})
+        if a_shield and str(a_shield).startswith("http"):
+            crest_row.append({"text": f"🛡️ {a_theme['code']} Crest", "url": a_shield})
+
+        kb = [
+            [
+                {"text": "⚡ Simple 90' Sim", "callback_data": f"simmode:simple:{fid}"},
+                {"text": "⚙️ Advanced 90' Sim", "callback_data": f"simmode:advanced:{fid}"},
+            ],
+        ]
+        if crest_row:
+            kb.append(crest_row)
+        kb.extend([
+            [
+                {"text": "📋 Lineups & Form", "callback_data": f"mxi:{fid}"},
+                {"text": "◀ Match Center", "callback_data": f"m:{fid}"},
+            ],
+            [
+                {"text": "🎲 Today's Gut Predictions", "callback_data": "gut:today"},
+                {"text": "🏠 Main Menu", "callback_data": "menu:home"},
+            ],
+        ])
+        return text, {"inline_keyboard": kb}
+
+    # =========================================================================
     # VIEW 12: SMART NATURAL LANGUAGE SEARCH
     # =========================================================================
     def render_smart_search(self, query: str) -> Tuple[str, Dict[str, Any]]:
@@ -2482,6 +2811,8 @@ class PitchsideTelegramBot:
             return self.render_leaders_view("goals")
         if cmd == "/player":
             return self.render_smart_search(arg) if arg else self.render_leaders_view("overall_rating")
+        if cmd in ("/gut", "/gutfeeling", "/predict", "/prediction"):
+            return self.render_gut_feeling_view(arg, chat_id=chat_id)
         if cmd == "/compare":
             return self.render_compare_menu(arg)
         if cmd == "/mode":
@@ -2550,6 +2881,9 @@ class PitchsideTelegramBot:
             new_state = self.toggle_subscription(cid) if cid else True
             toast = "🔔 Daily Match Alerts Enabled!" if new_state else "🔕 Daily Match Alerts Paused."
             return (*self.render_home_view("today", chat_id=cid), toast)
+        if prefix == "gut":
+            target = parts[1] if len(parts) >= 2 else "today"
+            return (*self.render_gut_feeling_view(target, chat_id=chat_id), "🎲 Gut Feeling AI Prediction")
         if prefix in ("welcome", "about") or data in ("menu:welcome", "menu:about"):
             return (*self.render_welcome_text(), "ℹ️ Pitchside Features & Guide")
         if prefix == "menu":
@@ -2653,11 +2987,9 @@ class PitchsideTelegramBot:
                     if cb_id:
                         self.answer_callback(cb_id, text="ℹ️ Pitchside Features & Guide")
                     gif_url, caption, markup = self.render_welcome_animation()
-                    if self.send_new_messages:
-                        self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
-                    else:
-                        resp_text, markup_w = self.render_welcome_text()
-                        self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup_w)
+                    if message_id and not self.send_new_messages:
+                        self.delete_message(chat_id, message_id)
+                    self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
                 else:
                     resp_text, markup, toast = self.handle_callback_data(data, chat_id=chat_id)
                     if cb_id:
