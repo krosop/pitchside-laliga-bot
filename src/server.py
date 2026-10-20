@@ -355,7 +355,9 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if not detail:
                     self._send_error(f"Match with ID {fid} not found", status=404)
                     return
-                sim_result = self.simulation_engine.simulate_fixture(detail)
+                engine_param = query.get("engine", ["gut"])[0].lower()
+                active_engine = "dixon" if engine_param in ("old", "dixon", "classic", "bivariate") else "gut"
+                sim_result = self.simulation_engine.simulate_fixture(detail, engine=active_engine)
                 self._send_json(sim_result)
             except ValueError:
                 self._send_error("Invalid fixture ID", status=400)
@@ -495,12 +497,14 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 payload = json.loads(body.decode("utf-8")) if body else {}
 
                 subs = payload.get("substitutions", [])
+                engine_param = payload.get("engine") or query.get("engine", ["gut"])[0]
+                active_engine = "dixon" if str(engine_param).lower() in ("old", "dixon", "classic", "bivariate") else "gut"
 
                 detail = self.db.get_match_detail(fid)
                 if not detail:
                     self._send_error(f"Match with ID {fid} not found", status=404)
                     return
-                sim_result = self.simulation_engine.simulate_fixture(detail, custom_substitutions=subs)
+                sim_result = self.simulation_engine.simulate_fixture(detail, custom_substitutions=subs, engine=active_engine)
                 self._send_json(sim_result)
             except Exception as e:
                 self._send_error(f"Simulation error: {str(e)}", status=400)

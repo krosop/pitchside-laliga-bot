@@ -11,6 +11,7 @@ const S = {
   fixtures: [], currentMd: 1, shownMd: 1,
   clubs: [], standings: [], players: [],
   match: null, forecast: null, sim: null,
+  engine: localStorage.getItem("statsphere_engine") || "gut",
   cmpA: null, cmpB: null, clubA: null, clubB: null,
   compareMode: false, clubCompareMode: false,
 };
@@ -206,7 +207,7 @@ async function openMatch(fid) {
   switchView("match");
   $("#matchDetail").innerHTML = `<div class="skeleton-cards"></div>`;
   try {
-    const d = await getJSON("/api/match/" + fid);
+    const d = await getJSON("/api/match/" + fid + "?engine=" + (S.engine || "gut"));
     S.match = d; S.forecast = d.forecast || null; S.sim = null;
     renderMatchDetail(d);
   } catch (e) { $("#matchDetail").innerHTML = `<div class="empty">Could not load match.</div>`; }
@@ -217,8 +218,11 @@ function probCells(fc) {
 function renderMatchDetail(d) {
   const f = d.fixture, h = d.home_team, a = d.away_team;
   const fc = d.forecast || {};
+  const isGut = (S.engine || "gut") === "gut";
+  const gf = d.gut_feeling || {};
+  const activeProbs = (isGut && gf.home_win_pct != null) ? gf : fc;
   const clash = d.tactical_clash || fc.tactical_clash || {};
-  const xg = fc.projected_xg || {};
+  const xg = isGut && gf.projected_xg ? gf.projected_xg : (fc.projected_xg || {});
   const sl = (fc.top_scorelines || []).map((s) => `<span class="chip">${esc(s.score)} <b>${s.probability}%</b></span>`).join("");
   const radar = d.tactical_radar
     ? radarSVG(d.tactical_radar.axes, d.tactical_radar.home, d.tactical_radar.away)
@@ -244,8 +248,15 @@ function renderMatchDetail(d) {
         <div class="md-team">${img(a.shield, a.nickname, "")}<span>${esc(a.nickname || a.name)}</span></div>
       </div>
     </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:.8rem 0;padding:.5rem .9rem;background:var(--card, #1c2128);border:1px solid var(--border, rgba(255,255,255,0.08));border-radius:10px">
+      <span style="font-size:.85rem;font-weight:600">${isGut ? "🔮 Active Engine: <b>Gut Feeling (10k Monte Carlo)</b>" : "📐 Active Engine: <b>Classic Dixon-Coles</b>"}</span>
+      <div style="display:flex;gap:.4rem">
+        <button class="chip" style="cursor:pointer;background:${isGut ? '#00985f' : 'transparent'};color:${isGut ? '#fff' : 'inherit'}" onclick="setAppEngine('gut')">🔮 Gut Feeling</button>
+        <button class="chip" style="cursor:pointer;background:${!isGut ? '#00985f' : 'transparent'};color:${!isGut ? '#fff' : 'inherit'}" onclick="setAppEngine('dixon')">📐 Dixon-Coles</button>
+      </div>
+    </div>
     <div class="grid2">
-      <div class="card"><h2>Win probability <span class="pm">· 1000-run Monte Carlo</span></h2>${probCells(fc)}
+      <div class="card"><h2>Win probability <span class="pm">· ${isGut ? "10,000-draw Gut Feeling" : "Dixon-Coles closed-form"}</span></h2>${probCells(activeProbs)}
         <div class="chips"><span class="chip">xG <b>${xg.home ?? "–"} – ${xg.away ?? "–"}</b></span>
         <span class="chip">O2.5 <b>${fc.over_2_5_pct ?? "–"}%</b></span><span class="chip">BTTS <b>${fc.btts_yes_pct ?? "–"}%</b></span></div>
         <h3 style="margin-top:.8rem">Likely scorelines</h3><div class="chips">${sl || "–"}</div>
@@ -261,7 +272,7 @@ function renderMatchDetail(d) {
         <div class="pitch">${la.dots}</div><div class="xi-list">${la.list}</div></div>
     </div>
     <div class="card" style="margin-top:.9rem"><h2>Match simulation</h2>
-      <p class="sub">Deterministic Dixon-Coles engine · same fixture, same result.</p>
+      <p class="sub">${isGut ? "Gut Feeling 10,000-draw Monte Carlo engine · Stochastic Lognormal-Poisson" : "Deterministic Dixon-Coles engine · Bivariate Poisson"}</p>
       <div style="display:flex;gap:.6rem;margin:.7rem 0"><button class="btn" id="simBtn">Simulate match</button><span class="mono" id="simScore" style="align-self:center"></span></div>
       <div id="simOut"></div>
     </div>`;
@@ -271,7 +282,7 @@ async function runSim() {
   const btn = $("#simBtn");
   btn.disabled = true; btn.textContent = "Simulating…";
   try {
-    const sim = await getJSON("/api/simulate-match/" + S.match.fixture.id);
+    const sim = await getJSON("/api/simulate-match/" + S.match.fixture.id + "?engine=" + (S.engine || "gut"));
     S.sim = sim;
     $("#simScore").textContent = sim.home_score + " - " + sim.away_score;
     const ev = (sim.events || []).map((e) =>
@@ -288,6 +299,13 @@ async function runSim() {
   } catch (e) { toast("Simulation failed"); }
   btn.disabled = false; btn.textContent = "Simulate match";
 }
+window.setAppEngine = function(eng) {
+  S.engine = eng;
+  localStorage.setItem("statsphere_engine", eng);
+  if (S.match && S.match.fixture) {
+    openMatch(S.match.fixture.id);
+  }
+};
 
 /* ---------- players ---------- */
 async function loadPlayers() {

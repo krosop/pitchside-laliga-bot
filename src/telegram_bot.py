@@ -980,9 +980,11 @@ class PitchsideTelegramBot:
         if not fixtures:
             return self.render_home_view(date_str, chat_id=chat_id)
 
+        target_engine = self.get_chat_prediction_engine(chat_id)
+        engine_label = "Gut Feeling 10k-Draw Engine" if target_engine == "gut" else "Calibrated Dixon-Coles Engine"
         lines = [
             f"⚡ <b>DAILY MATCHES SIMULATION · {self._esc(date_str)}</b>",
-            "<i>Calibrated Dixon-Coles + Club Tactical DNA + Player Form</i>",
+            f"<i>{engine_label} + Club Tactical DNA + Player Form</i>",
             "━━━━━━━━━━━━━━━━━━━━━━",
         ]
 
@@ -992,7 +994,7 @@ class PitchsideTelegramBot:
             detail = self._get_match_detail(f["id"])
             if not detail:
                 continue
-            sim = self.sim_engine.simulate_fixture(detail)
+            sim = self.sim_engine.simulate_fixture(detail, engine=target_engine)
             hs, as_ = sim["home_score"], sim["away_score"]
             total_goals += hs + as_
             h_name = f.get("home_nickname") or f.get("home_name")
@@ -1118,9 +1120,11 @@ class PitchsideTelegramBot:
         md = max(1, min(38, int(matchday)))
         fixtures = [f for f in self._get_all_fixtures() if f.get("matchday") == md]
 
+        target_engine = self.get_chat_prediction_engine(chat_id)
+        engine_label = "Gut Feeling 10k-Draw Engine" if target_engine == "gut" else "Calibrated Dixon-Coles Engine"
         lines = [
             f"⚡ <b>MATCHDAY {md} — FULL ENGINE SIMULATION</b>",
-            "<i>Calibrated Dixon-Coles + Club Tactical DNA + Player Form</i>",
+            f"<i>{engine_label} + Club Tactical DNA + Player Form</i>",
             "━━━━━━━━━━━━━━━━━━━━━━",
         ]
 
@@ -1132,7 +1136,7 @@ class PitchsideTelegramBot:
             detail = self._get_match_detail(f["id"])
             if not detail:
                 continue
-            sim = self.sim_engine.simulate_fixture(detail)
+            sim = self.sim_engine.simulate_fixture(detail, engine=target_engine)
             hs = sim["home_score"]
             as_ = sim["away_score"]
             total_goals += hs + as_
@@ -1543,7 +1547,7 @@ class PitchsideTelegramBot:
             return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
 
         target_engine = engine or self.get_chat_prediction_engine(chat_id)
-        sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs)
+        sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs, engine=target_engine)
         fx = detail["fixture"]
         home = detail["home_team"]
         away = detail["away_team"]
@@ -1690,7 +1694,7 @@ class PitchsideTelegramBot:
             return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
 
         target_engine = engine or self.get_chat_prediction_engine(chat_id)
-        sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs)
+        sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs, engine=target_engine)
         fx = detail["fixture"]
         home = detail["home_team"]
         away = detail["away_team"]

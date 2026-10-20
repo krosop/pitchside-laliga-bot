@@ -22,6 +22,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from .club_tactics import ClubTacticsRegistry
 from .ratings import RatingsEngine
 from .momentum import team_momentum, compute_momentum
+from gut_feeling.model import GutFeelingEngine
 
 
 class SimulationEngine:
@@ -961,12 +962,14 @@ class SimulationEngine:
             "tactical_verdict": clash.get("tactical_battle_description", "Tactical matchup played out within projected statistical boundaries.")
         }
 
-    def simulate_fixture(self, match_detail_data: Dict[str, Any], tactical_stance: str = "balanced", custom_substitutions: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    def simulate_fixture(self, match_detail_data: Dict[str, Any], tactical_stance: str = "balanced", custom_substitutions: Optional[List[Dict[str, Any]]] = None, engine: Optional[str] = "dixon") -> Dict[str, Any]:
         """
         Simulates match using team ratings, starting XI ratings, dynamic player form,
         European fatigue modifiers, interactive manager mode tactical stance, and custom substitutions.
         Automatically filters out suspended (red-carded) and injured players.
-        Uses bivariate Dixon-Coles sampling and generates an exact 1-to-1 event timeline.
+        Supports both:
+        - engine="gut": Gut Feeling 10,000-Draw Monte Carlo stochastic model with lognormal noise.
+        - engine="dixon": Calibrated bivariate Dixon-Coles matrix sampling (default).
         """
         f = match_detail_data["fixture"]
         home = match_detail_data["home_team"]
@@ -1052,16 +1055,118 @@ class SimulationEngine:
         seed_val = (fid_num * 10007 + tactical_seed_val * 31 + subs_val) & 0x7FFFFFFF
         rng = random.Random(seed_val)  # local instance: no shared global state
 
-        # Calibrated Dixon-Coles score calculation with deterministic distribution sampling
-        league_rho = model.get("league_rho", -0.078)
-        dc_matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=league_rho)
-        items = list(dc_matrix.keys())
-        weights = list(dc_matrix.values())
-        home_goals, away_goals = rng.choices(items, weights=weights, k=1)[0]
+        # Calibrated Engine Selection: Gut Feeling 10k-Draw vs Dixon-Coles Bivariate Poisson
+        is_gut = (engine or "dixon").lower() in ("gut", "new", "gut_feeling")
+        if is_gut:
+            # 1. Elo ratings
+            h_elo = 1500.0
+            a_elo = 1500.0
+            if hs.get("elo_info") and hs["elo_info"].get("elo"):
+                h_elo = float(hs["elo_info"]["elo"])
+            elif match_detail_data.get("forecast", {}).get("elo_analysis"):
+                elo_an = match_detail_data["forecast"]["elo_analysis"]
+                h_dict = elo_an.get("home") if isinstance(elo_an.get("home"), dict) else {}
+                if h_dict.get("elo") is not None:
+                    h_elo = float(h_dict["elo"])
 
-        # Cap extreme blowout anomalies
-        home_goals = min(home_goals, 6)
-        away_goals = min(away_goals, 5)
+            if as_.get("elo_info") and as_["elo_info"].get("elo"):
+                a_elo = float(as_["elo_info"]["elo"])
+            elif match_detail_data.get("forecast", {}).get("elo_analysis"):
+                elo_an = match_detail_data["forecast"]["elo_analysis"]
+                a_dict = elo_an.get("away") if isinstance(elo_an.get("away"), dict) else {}
+                if a_dict.get("elo") is not None:
+                    a_elo = float(a_dict["elo"])
+
+            z_elo_h = (h_elo - 1500.0) / 120.0
+            z_elo_a = (a_elo - 1500.0) / 120.0
+
+            # 2. 3-Game Weighted Form from DB or team dict
+            h_slug = home.get("slug") or ""
+            a_slug = away.get("slug") or ""
+
+            def _get_z_form(slug: str):
+                if not slug:
+                    return 0.0
+                if self.db is not None:
+                    try:
+                        all_fx = self.db.get_fixtures()
+                        past = [
+                            x for x in all_fx
+                            if x.get("status") == "FINISHED"
+                            and slug in (x.get("home_slug") or "", x.get("away_slug") or "")
+                            and x.get("id") != fid_num
+                        ]
+                        scs = []
+                        for x in past[-3:]:
+                            is_h = slug == (x.get("home_slug") or "")
+                            gf = int(x.get("home_score", 0) if is_h else x.get("away_score", 0))
+                            ga = int(x.get("away_score", 0) if is_h else x.get("home_score", 0))
+                            sc = GutFeelingEngine._calc_match_score(gf, ga, 0.0)
+                            scs.append(sc)
+                        while len(scs) < 3:
+                            scs.insert(0, 0.5)
+                        f_raw = 0.5 * scs[2] + 0.3 * scs[1] + 0.2 * scs[0]
+                        return (f_raw - 0.5) / 0.15
+                    except Exception:
+                        pass
+                return 0.0
+
+            z_form_h = _get_z_form(h_slug)
+            z_form_a = _get_z_form(a_slug)
+
+            # 3. Strength gap & exponential xG mapping
+            gf_engine = GutFeelingEngine(
+                w_elo=0.9,
+                w_form=0.1,
+                k_goal=0.35,
+                sigma_noise=0.05,
+                n_sim=10000,
+                random_seed=seed_val,
+            )
+            s_h, s_a, gap = gf_engine.compute_strength_gap(z_elo_h, z_form_h, z_elo_a, z_form_a)
+            lambda_h_gf, lambda_a_gf = gf_engine.convert_strength_to_xg(gap, 1.51, 1.24)
+
+            # 4. Stochastic Poisson sampling with calibrated Lognormal noise (sigma = 0.05)
+            noise_h = rng.lognormvariate(0.0, 0.05)
+            noise_a = rng.lognormvariate(0.0, 0.05)
+            effective_lh = lambda_h_gf * noise_h
+            effective_la = lambda_a_gf * noise_a
+
+            def _sample_poisson(lam: float, r: random.Random) -> int:
+                if lam <= 0:
+                    return 0
+                L = math.exp(-lam)
+                k = 0
+                p = 1.0
+                while p > L:
+                    k += 1
+                    p *= r.random()
+                return k - 1
+
+            home_goals = min(_sample_poisson(effective_lh, rng), 6)
+            away_goals = min(_sample_poisson(effective_la, rng), 5)
+            lambda_h = lambda_h_gf
+            lambda_a = lambda_a_gf
+
+            p_h, p_d, p_a = gf_engine.simulate_probabilities(lambda_h_gf, lambda_a_gf, match_seed=seed_val)
+            h_win_base = round(p_h * 100.0, 1)
+            d_base = round(p_d * 100.0, 1)
+            a_win_base = round(p_a * 100.0, 1)
+        else:
+            # Calibrated Dixon-Coles score calculation with deterministic distribution sampling
+            league_rho = model.get("league_rho", -0.078)
+            dc_matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=league_rho)
+            items = list(dc_matrix.keys())
+            weights = list(dc_matrix.values())
+            home_goals, away_goals = rng.choices(items, weights=weights, k=1)[0]
+
+            # Cap extreme blowout anomalies
+            home_goals = min(home_goals, 6)
+            away_goals = min(away_goals, 5)
+
+            h_win_base = round(sum(p for (x, y), p in dc_matrix.items() if x > y) * 100, 1)
+            d_base = round(sum(p for (x, y), p in dc_matrix.items() if x == y) * 100, 1)
+            a_win_base = round(100.0 - h_win_base - d_base, 1)
 
         # 2. Build 1-to-1 Match Incident Timeline
         events = []
@@ -1283,10 +1388,7 @@ class SimulationEngine:
         phase_dominance = self.generate_phase_dominance(momentum_trend, events, home["name"], away["name"])
         xg_flow = self.generate_xg_flow_trend(home_xg, away_xg, events)
         
-        # Calculate theoretical Win Probability Trend based on Dixon-Coles parameters
-        h_win_base = round(sum(p for (x, y), p in dc_matrix.items() if x > y) * 100, 1)
-        d_base = round(sum(p for (x, y), p in dc_matrix.items() if x == y) * 100, 1)
-        a_win_base = round(100.0 - h_win_base - d_base, 1)
+        # Calculate theoretical Win Probability Trend based on chosen engine parameters
         win_prob_trend = self.generate_win_probability_trend(h_win_base, d_base, a_win_base, events)
         
         trend_narrative = self.generate_match_trend_narrative(
@@ -1298,6 +1400,7 @@ class SimulationEngine:
         return {
             "fixture_id": f.get("id"),
             "mode": "authentic_club_tactics",
+            "engine": "gut" if is_gut else "dixon",
             "tactical_clash": clash,
             "tactical_stance": "club_identity",
             "is_deterministic": True,

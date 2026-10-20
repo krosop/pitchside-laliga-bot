@@ -265,4 +265,39 @@ def test_register_commands_includes_engine_and_gut():
     assert "mode" in registered_cmds
 
 
+def test_gut_feeling_simulation_engine_distinct_results():
+    bot = _get_bot()
+    fixtures = bot._get_all_fixtures()
+    assert len(fixtures) > 0
+    fid = fixtures[0]["id"]
+    detail = bot._get_match_detail(fid)
+    assert detail is not None
+
+    # Test SimulationEngine directly
+    sim_dixon = bot.sim_engine.simulate_fixture(detail, engine="dixon")
+    sim_gut = bot.sim_engine.simulate_fixture(detail, engine="gut")
+
+    assert sim_dixon["engine"] == "dixon"
+    assert sim_gut["engine"] == "gut"
+
+    # Both must have valid integer scores and exact 1-to-1 event count
+    assert isinstance(sim_dixon["home_score"], int)
+    assert isinstance(sim_gut["home_score"], int)
+    dix_goals = [e for e in sim_dixon["events"] if e.get("type") == "goal"]
+    assert len([e for e in dix_goals if e["team"] == "home"]) == sim_dixon["home_score"]
+    assert len([e for e in dix_goals if e["team"] == "away"]) == sim_dixon["away_score"]
+
+    gut_goals = [e for e in sim_gut["events"] if e.get("type") == "goal"]
+    assert len([e for e in gut_goals if e["team"] == "home"]) == sim_gut["home_score"]
+    assert len([e for e in gut_goals if e["team"] == "away"]) == sim_gut["away_score"]
+
+    # Test rendering via Telegram Bot methods
+    txt_dix, _ = bot.render_match_simulation_simple(fid, engine="dixon")
+    assert "CLASSIC DIXON-COLES ENGINE (OLD)" in txt_dix
+
+    txt_gut, _ = bot.render_match_simulation_simple(fid, engine="gut")
+    assert "GUT FEELING 10,000-DRAW SIMULATION" in txt_gut
+
+
+
 
