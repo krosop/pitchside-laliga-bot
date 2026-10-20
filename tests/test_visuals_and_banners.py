@@ -159,3 +159,52 @@ def test_bot_ucl_command_and_callbacks(bot):
     st_msg, st_kb, toast = bot.handle_callback_data("ucl:standings", chat_id=202)
     assert "UEFA CHAMPIONS LEAGUE STANDINGS" in st_msg
     assert "36-CLUB" in st_msg or "STANDINGS" in st_msg
+
+
+def test_psg_theme_and_naming_not_up(bot):
+    """Verifies that PSG is never labeled as 'UP' and has official code PSG and badge."""
+    theme_slug = bot.get_club_theme("ucl-psg")
+    assert theme_slug["code"] == "PSG", f"Expected PSG but got {theme_slug['code']}"
+    assert "Paris" in theme_slug["name"]
+    assert theme_slug["badge"] == "🔵🔴"
+
+    theme_clean = bot.get_club_theme("psg")
+    assert theme_clean["code"] == "PSG"
+
+    # Verify other UCL clubs don't have broken prefixes
+    theme_liv = bot.get_club_theme("ucl-liverpool")
+    assert theme_liv["code"] == "LIV"
+
+    theme_mci = bot.get_club_theme("ucl-manchester-city")
+    assert theme_mci["code"] == "MCI"
+
+    theme_ars = bot.get_club_theme("ucl-arsenal")
+    assert theme_ars["code"] == "ARS"
+
+
+def test_simulation_victory_banner_rendering(bot):
+    """Verifies that simulated match winner gets a victory banner and stadium button."""
+    db = Database()
+    fixtures = db.get_fixtures()
+    assert len(fixtures) > 0
+    fx = fixtures[0]
+
+    # Simple simulation
+    msg, kb = bot.render_match_simulation_simple(fx["id"])
+    assert "SIMULATION WINNER" in msg or "Draw" in msg
+    if "SIMULATION WINNER" in msg:
+        assert "Venue:" in msg
+        assert "Capacity:" in msg
+        assert "Atmosphere Roar:" in msg
+        # Check victory banner button in inline keyboard
+        flat_callbacks = [btn["callback_data"] for row in kb.get("inline_keyboard", []) for btn in row if "callback_data" in btn]
+        assert any(cb.startswith("cbanner:") for cb in flat_callbacks)
+
+    # Advanced simulation
+    adv_msg, adv_kb = bot.render_match_simulation_advanced(fx["id"])
+    assert "SIMULATION WINNER" in adv_msg or "Draw" in adv_msg
+    if "SIMULATION WINNER" in adv_msg:
+        assert "Venue:" in adv_msg
+        flat_adv_callbacks = [btn["callback_data"] for row in adv_kb.get("inline_keyboard", []) for btn in row if "callback_data" in btn]
+        assert any(cb.startswith("cbanner:") for cb in flat_adv_callbacks)
+

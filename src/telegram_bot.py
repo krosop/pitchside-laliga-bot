@@ -153,15 +153,109 @@ class PitchsideTelegramBot:
         "monza": {"code": "MON", "badge": "🔴⚪", "name": "Monza"},
         "sassuolo": {"code": "SAS", "badge": "🟢⚫", "name": "Sassuolo"},
         "frosinone": {"code": "FRO", "badge": "🟡🔵", "name": "Frosinone"},
+        # UEFA Champions League European Giants
+        "psg": {"code": "PSG", "badge": "🔵🔴", "name": "Paris Saint-Germain"},
+        "ucl-psg": {"code": "PSG", "badge": "🔵🔴", "name": "Paris Saint-Germain"},
+        "paris-saint-germain": {"code": "PSG", "badge": "🔵🔴", "name": "Paris Saint-Germain"},
+        "ucl-barcelona": {"code": "BAR", "badge": "🔵🔴", "name": "FC Barcelona"},
+        "aston-villa": {"code": "AVL", "badge": "🩵🟣", "name": "Aston Villa"},
+        "ucl-aston-villa": {"code": "AVL", "badge": "🩵🟣", "name": "Aston Villa"},
+        "vfb-stuttgart": {"code": "VFB", "badge": "⚪🔴", "name": "VfB Stuttgart"},
+        "stuttgart": {"code": "VFB", "badge": "⚪🔴", "name": "VfB Stuttgart"},
+        "ucl-vfb-stuttgart": {"code": "VFB", "badge": "⚪🔴", "name": "VfB Stuttgart"},
+        "liverpool": {"code": "LIV", "badge": "🔴", "name": "Liverpool"},
+        "ucl-liverpool": {"code": "LIV", "badge": "🔴", "name": "Liverpool"},
+        "sporting": {"code": "SCP", "badge": "🟢⚪", "name": "Sporting CP"},
+        "sporting-cp": {"code": "SCP", "badge": "🟢⚪", "name": "Sporting CP"},
+        "ucl-sporting-cp": {"code": "SCP", "badge": "🟢⚪", "name": "Sporting CP"},
+        "arsenal": {"code": "ARS", "badge": "🔴⚪", "name": "Arsenal"},
+        "ucl-arsenal": {"code": "ARS", "badge": "🔴⚪", "name": "Arsenal"},
+        "bayern": {"code": "BAY", "badge": "🔴⚪", "name": "Bayern Munich"},
+        "bayern-munich": {"code": "BAY", "badge": "🔴⚪", "name": "Bayern Munich"},
+        "ucl-bayern-munich": {"code": "BAY", "badge": "🔴⚪", "name": "Bayern Munich"},
+        "shakhtar": {"code": "SHK", "badge": "🟠⚫", "name": "Shakhtar Donetsk"},
+        "shakhtar-donetsk": {"code": "SHK", "badge": "🟠⚫", "name": "Shakhtar Donetsk"},
+        "ucl-shakhtar-donetsk": {"code": "SHK", "badge": "🟠⚫", "name": "Shakhtar Donetsk"},
+        "manchester-united": {"code": "MUN", "badge": "🔴⚫", "name": "Manchester United"},
+        "man-united": {"code": "MUN", "badge": "🔴⚫", "name": "Manchester United"},
+        "ucl-manchester-united": {"code": "MUN", "badge": "🔴⚫", "name": "Manchester United"},
+        "club-brugge": {"code": "BRU", "badge": "🔵⚫", "name": "Club Brugge"},
+        "brugge": {"code": "BRU", "badge": "🔵⚫", "name": "Club Brugge"},
+        "ucl-club-brugge": {"code": "BRU", "badge": "🔵⚫", "name": "Club Brugge"},
+        "manchester-city": {"code": "MCI", "badge": "🩵⚪", "name": "Manchester City"},
+        "man-city": {"code": "MCI", "badge": "🩵⚪", "name": "Manchester City"},
+        "ucl-manchester-city": {"code": "MCI", "badge": "🩵⚪", "name": "Manchester City"},
+        "borussia-dortmund": {"code": "BVB", "badge": "🟡⚫", "name": "Borussia Dortmund"},
+        "dortmund": {"code": "BVB", "badge": "🟡⚫", "name": "Borussia Dortmund"},
+        "ucl-borussia-dortmund": {"code": "BVB", "badge": "🟡⚫", "name": "Borussia Dortmund"},
+        "lens": {"code": "RCL", "badge": "🔴🟡", "name": "RC Lens"},
+        "rc-lens": {"code": "RCL", "badge": "🔴🟡", "name": "RC Lens"},
+        "ucl-lens": {"code": "RCL", "badge": "🔴🟡", "name": "RC Lens"},
+        "aek-athens": {"code": "AEK", "badge": "🟡⚫", "name": "AEK Athens"},
+        "ucl-aek-athens": {"code": "AEK", "badge": "🟡⚫", "name": "AEK Athens"},
+        "rb-leipzig": {"code": "RBL", "badge": "⚪🔴", "name": "RB Leipzig"},
+        "leipzig": {"code": "RBL", "badge": "⚪🔴", "name": "RB Leipzig"},
+        "ucl-rb-leipzig": {"code": "RBL", "badge": "⚪🔴", "name": "RB Leipzig"},
+        "sabah": {"code": "SAB", "badge": "🔵⚪", "name": "Sabah FC"},
+        "sabah-fk": {"code": "SAB", "badge": "🔵⚪", "name": "Sabah FC"},
+        "ucl-sabah-fk": {"code": "SAB", "badge": "🔵⚪", "name": "Sabah FC"},
+        "feyenoord": {"code": "FEY", "badge": "🔴⚪", "name": "Feyenoord"},
+        "ucl-feyenoord": {"code": "FEY", "badge": "🔴⚪", "name": "Feyenoord"},
+        "bodo-glimt": {"code": "BOD", "badge": "🟡⚫", "name": "FK Bodø/Glimt"},
+        "ucl-bodo-glimt": {"code": "BOD", "badge": "🟡⚫", "name": "FK Bodø/Glimt"},
+        "psv": {"code": "PSV", "badge": "🔴⚪", "name": "PSV Eindhoven"},
+        "psv-eindhoven": {"code": "PSV", "badge": "🔴⚪", "name": "PSV Eindhoven"},
+        "ucl-psv-eindhoven": {"code": "PSV", "badge": "🔴⚪", "name": "PSV Eindhoven"},
+        "viking": {"code": "VIK", "badge": "🔵⚪", "name": "Viking FK"},
+        "viking-fk": {"code": "VIK", "badge": "🔵⚪", "name": "Viking FK"},
+        "ucl-viking-fk": {"code": "VIK", "badge": "🔵⚪", "name": "Viking FK"},
+        "fenerbahce": {"code": "FEN", "badge": "🟡🔵", "name": "Fenerbahçe"},
+        "ucl-fenerbahce": {"code": "FEN", "badge": "🟡🔵", "name": "Fenerbahçe"},
+        "fc-porto": {"code": "POR", "badge": "🔵⚪", "name": "FC Porto"},
+        "porto": {"code": "POR", "badge": "🔵⚪", "name": "FC Porto"},
+        "ucl-fc-porto": {"code": "POR", "badge": "🔵⚪", "name": "FC Porto"},
+        "slavia-prague": {"code": "SLA", "badge": "🔴⚪", "name": "Slavia Prague"},
+        "ucl-slavia-prague": {"code": "SLA", "badge": "🔴⚪", "name": "Slavia Prague"},
+        "lask": {"code": "LASK", "badge": "⚪⚫", "name": "LASK Linz"},
+        "lask-linz": {"code": "LASK", "badge": "⚪⚫", "name": "LASK Linz"},
+        "ucl-lask-linz": {"code": "LASK", "badge": "⚪⚫", "name": "LASK Linz"},
+        "lille": {"code": "LIL", "badge": "🔴⚪", "name": "LOSC Lille"},
+        "losc-lille": {"code": "LIL", "badge": "🔴⚪", "name": "LOSC Lille"},
+        "ucl-lille": {"code": "LIL", "badge": "🔴⚪", "name": "LOSC Lille"},
+        "galatasaray": {"code": "GAL", "badge": "🟡🔴", "name": "Galatasaray"},
+        "ucl-galatasaray": {"code": "GAL", "badge": "🟡🔴", "name": "Galatasaray"},
+        "slovan-bratislava": {"code": "SLO", "badge": "🩵⚪", "name": "Slovan Bratislava"},
+        "ucl-slovan-bratislava": {"code": "SLO", "badge": "🩵⚪", "name": "Slovan Bratislava"},
     }
 
     @classmethod
     def get_club_theme(cls, slug_or_name: str) -> Dict[str, str]:
         s = (slug_or_name or "").lower().replace(" ", "-")
+        # 1. Official ClubBannersRegistry lookup
+        prof = ClubBannersRegistry.get_by_slug(s)
+        if prof:
+            return {"code": prof.code, "badge": prof.badge_emoji, "name": prof.name}
+
+        # 2. Clean UCL prefix
+        s_clean = s[4:] if s.startswith("ucl-") else s
+
+        # 3. Direct lookup in CLUB_THEMES
+        if s in cls.CLUB_THEMES:
+            return cls.CLUB_THEMES[s]
+        if s_clean in cls.CLUB_THEMES:
+            return cls.CLUB_THEMES[s_clean]
+
+        # 4. Substring matching in CLUB_THEMES
         for k, v in cls.CLUB_THEMES.items():
-            if k in s:
+            if k == s or k == s_clean or k in s or k in s_clean:
                 return v
-        code = "".join([part[0] for part in s.split("-") if part])[:3].upper() or "LAL"
+
+        # 5. Token-based fallback (strip ucl, take up to 3 uppercase letters)
+        clean_parts = [p for p in s_clean.split("-") if p and p != "ucl"]
+        if clean_parts:
+            code = "".join([part[0] for part in clean_parts])[:3].upper()
+        else:
+            code = s_clean[:3].upper() if s_clean else "LAL"
         return {"code": code, "badge": "⚽", "name": slug_or_name}
 
     def __init__(
@@ -930,24 +1024,27 @@ class PitchsideTelegramBot:
                 o1, ox, o2 = self._compute_quick_odds(f)
                 ko_time = (f.get("kickoff_time") or "")[11:16] or "19:00"
 
+                h_disp = f"{h_theme['code']} ({h_name})" if h_theme['code'] not in h_name else h_name
+                a_disp = f"{a_theme['code']} ({a_name})" if a_theme['code'] not in a_name else a_name
+
                 if st == "FINISHED":
                     hs, as_ = f.get("home_score", 0), f.get("away_score", 0)
                     goals = f.get("goals") or []
                     scorers = ", ".join(f"{g.get('scorer')} {g.get('minute')}'" for g in goals[:3])
                     scorer_line = f"\n   └ ⚽ <i>{self._esc(scorers)}</i>" if scorers else ""
                     lines.append(
-                        f"\n🏁 <b>{idx}. {h_theme['badge']} {h_theme['code']}  <code>{hs} - {as_}</code>  {a_theme['code']} {a_theme['badge']}</b> (FT){scorer_line}"
+                        f"\n🏁 <b>{idx}. {h_theme['badge']} {self._esc(h_disp)}  <code>{hs} - {as_}</code>  {self._esc(a_disp)} {a_theme['badge']}</b> (FT){scorer_line}"
                     )
                     btn_main = f"📊 {h_theme['code']} {hs}-{as_} {a_theme['code']}"
                 elif st == "LIVE":
                     hs, as_ = f.get("home_score", 0), f.get("away_score", 0)
                     lines.append(
-                        f"\n🔴 <b>{idx}. {h_theme['badge']} {h_theme['code']}  <code>{hs} - {as_}</code>  {a_theme['code']} {a_theme['badge']}</b> (LIVE)"
+                        f"\n🔴 <b>{idx}. {h_theme['badge']} {self._esc(h_disp)}  <code>{hs} - {as_}</code>  {self._esc(a_disp)} {a_theme['badge']}</b> (LIVE)"
                     )
                     btn_main = f"🔴 {h_theme['code']} {hs}-{as_} {a_theme['code']}"
                 else:
                     lines.append(
-                        f"\n🕒 <b>{idx}. [{ko_time} UTC] {h_theme['badge']} {h_theme['code']} vs {a_theme['code']} {a_theme['badge']}</b>\n"
+                        f"\n🕒 <b>{idx}. [{ko_time} UTC] {h_theme['badge']} {self._esc(h_disp)} vs {self._esc(a_disp)} {a_theme['badge']}</b>\n"
                         f"   └ 🎲 Odds: <code>1: {o1}</code> · <code>X: {ox}</code> · <code>2: {o2}</code>"
                     )
                     btn_main = f"🏟️ {h_theme['code']} vs {a_theme['code']}"
@@ -1607,15 +1704,24 @@ class PitchsideTelegramBot:
         a_theme = self.get_club_theme(away.get("slug") or a_name)
         stadium = home.get("stadium") or "Estadio Oficial"
 
-        media_hdr = self._render_media_header(h_shield)
-
-        # Winner result line
+        # Winner result & victory banner
+        winner_slug = None
+        winner_prof = None
         if hs > as_:
-            winner_line = f"🏆 <b>Match Winner:</b> <b>{self._esc(h_name)}</b> (+{hs - as_} GD)"
+            winner_slug = home.get("slug") or h_name
+            winner_line, win_banner_url = ClubBannersRegistry.get_victory_banner(winner_slug, f"{hs}-{as_}")
+            winner_prof = ClubBannersRegistry.get_by_slug(winner_slug)
+            banner_to_use = win_banner_url or h_shield
         elif as_ > hs:
-            winner_line = f"🏆 <b>Match Winner:</b> <b>{self._esc(a_name)}</b> (+{as_ - hs} GD)"
+            winner_slug = away.get("slug") or a_name
+            winner_line, win_banner_url = ClubBannersRegistry.get_victory_banner(winner_slug, f"{hs}-{as_}")
+            winner_prof = ClubBannersRegistry.get_by_slug(winner_slug)
+            banner_to_use = win_banner_url or a_shield
         else:
             winner_line = "🤝 <b>Match Result:</b> <b>Draw (Honours Even)</b>"
+            banner_to_use = h_shield
+
+        media_hdr = self._render_media_header(banner_to_use, fallback_slug=winner_slug or home.get("slug"))
 
         # Goalscorers with minutes
         goal_events = [e for e in sim.get("events", []) if e.get("type") == "goal"]
@@ -1723,6 +1829,10 @@ class PitchsideTelegramBot:
             [{"text": "⚙️ Switch to Advanced Tactical Mode", "callback_data": f"simmode:advanced:{fixture_id}"}],
             [engine_toggle_btn],
         ]
+        if winner_slug:
+            win_btn_name = winner_prof.name if winner_prof else (h_name if hs > as_ else a_name)
+            win_badge = winner_prof.badge_emoji if winner_prof else "🏆"
+            kb.append([{"text": f"🏟️ {win_badge} {win_btn_name} Stadium & Spirit", "callback_data": f"cbanner:{winner_slug}"}])
         if ref_btn:
             kb.append([ref_btn])
         kb.append([{"text": "🔄 Re-Simulate Match", "callback_data": f"simmode:simple:{fixture_id}"}])
@@ -1846,7 +1956,25 @@ class PitchsideTelegramBot:
             sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>"
 
         verdict_txt = narrative.get("flow_summary") or narrative.get("tactical_verdict") or ""
-        media_hdr = self._render_media_header(h_shield)
+
+        # Winner result & victory banner
+        winner_slug = None
+        winner_prof = None
+        if hs > as_:
+            winner_slug = home.get("slug") or h_name
+            winner_line, win_banner_url = ClubBannersRegistry.get_victory_banner(winner_slug, f"{hs}-{as_}")
+            winner_prof = ClubBannersRegistry.get_by_slug(winner_slug)
+            banner_to_use = win_banner_url or h_shield
+        elif as_ > hs:
+            winner_slug = away.get("slug") or a_name
+            winner_line, win_banner_url = ClubBannersRegistry.get_victory_banner(winner_slug, f"{hs}-{as_}")
+            winner_prof = ClubBannersRegistry.get_by_slug(winner_slug)
+            banner_to_use = win_banner_url or a_shield
+        else:
+            winner_line = "🤝 <b>Match Result:</b> <b>Draw (Tactical Stalemate)</b>"
+            banner_to_use = h_shield
+
+        media_hdr = self._render_media_header(banner_to_use, fallback_slug=winner_slug or home.get("slug"))
         crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
         crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
 
@@ -1926,6 +2054,7 @@ class PitchsideTelegramBot:
             f"{media_hdr}⚡ <b>90' FULL-TIME SIMULATION · ADVANCED MODE</b> ⚙️{sub_banner}\n"
             f"{crest_h_link}{h_theme['badge']} <b>{h_theme['code']}  {hs} - {as_}  {a_theme['code']}</b> {a_theme['badge']}{crest_a_link}\n"
             f"{card}\n"
+            f"{winner_line}\n\n"
             f"⏱️ <b>MATCH INCIDENT TIMELINE</b>\n"
             + "\n".join(events_lines)
             + f"\n\n📊 <b>TELEMETRY &amp; EXPECTED GOALS (xG)</b>\n"
@@ -1955,6 +2084,10 @@ class PitchsideTelegramBot:
             [{"text": "🟢 Switch to Simple Mode", "callback_data": f"simmode:simple:{fixture_id}"}],
             [engine_toggle_btn],
         ]
+        if winner_slug:
+            win_btn_name = winner_prof.name if winner_prof else (h_name if hs > as_ else a_name)
+            win_badge = winner_prof.badge_emoji if winner_prof else "🏆"
+            kb.append([{"text": f"🏟️ {win_badge} {win_btn_name} Stadium & Spirit", "callback_data": f"cbanner:{winner_slug}"}])
         if ref_btn:
             kb.append([ref_btn])
         kb.extend([
@@ -3480,7 +3613,7 @@ class PitchsideTelegramBot:
             return (*self.render_mode_switcher(chat_id=chat_id), toast)
         if data in ("menu:mode", "mode"):
             return (*self.render_mode_switcher(chat_id=chat_id), "⚙️ Simulation Mode")
-        if prefix == "cbanner" and len(parts) >= 2:
+        if prefix in ("cbanner", "banner") and len(parts) >= 2:
             return (*self.render_club_banner_card(parts[1], chat_id=chat_id), "🏟️ Stadium & Spirit")
         if prefix == "banners":
             target_comp = parts[1] if len(parts) >= 2 else None
