@@ -242,4 +242,27 @@ def test_server_engine_switching():
     assert "projected_xg" in gf
     assert "confidence_verdict" in gf
 
+def test_register_commands_includes_engine_and_gut():
+    bot = _get_bot()
+    captured_calls = []
+    def fake_api_call(method, payload=None, timeout=35):
+        captured_calls.append((method, payload))
+        return {"ok": True, "result": True}
+    bot._api_call = fake_api_call
+    bot.register_commands()
+
+    methods = [c[0] for c in captured_calls]
+    assert "setMyCommands" in methods
+    assert "setMyDescription" in methods
+    assert "setMyShortDescription" in methods
+    assert "setChatMenuButton" in methods
+
+    cmd_payload = next(c[1] for c in captured_calls if c[0] == "setMyCommands")
+    registered_cmds = [cmd["command"] for cmd in cmd_payload["commands"]]
+    assert "engine" in registered_cmds
+    assert "gut" in registered_cmds
+    assert "start" in registered_cmds
+    assert "mode" in registered_cmds
+
+
 

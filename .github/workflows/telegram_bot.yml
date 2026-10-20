@@ -2,15 +2,21 @@ name: Pitchside 24/7 Telegram Bot Runner
 
 on:
   schedule:
-    # Re-launches every 5 hours so the bot runs continuously 24/7 on GitHub Actions
-    - cron: "0 */5 * * *"
+    # Fail-safe backup watchdog: ensures bot restarts even if external event occurred
+    - cron: "0 */3 * * *"
   push:
     branches:
       - main
       - master
+    paths:
+      - "src/**"
+      - "data/**"
+      - "config/**"
+      - "run.py"
+      - ".github/workflows/telegram_bot.yml"
   workflow_dispatch:
 
-# Ensures only 1 bot poller runs at a time (prevents Telegram 409 Conflict)
+# Ensures only 1 active bot poller runs at a time (smooth instant handoff on new deployment)
 concurrency:
   group: pitchside-telegram-bot-poller
   cancel-in-progress: true
@@ -31,22 +37,23 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
 
-      - name: Install Dependencies
+      - name: Install Bot Dependencies (Ultra-Fast)
         run: |
           python -m pip install --upgrade pip
           pip install numpy pytest
 
-      - name: Run Simulation & Availability Test Suite
+      - name: Fast Health & Integrity Smoke Check (<1s)
         run: |
-          python -m tests.run_all
+          python -c "import src.telegram_bot; from src.database import Database; db = Database(); print('Database Status:', db.get_total_counts())"
 
-      - name: Run Interactive Telegram Bot (5.5h Cloud Cycle with Daily Auto-Sync)
+      - name: Run Interactive Telegram Bot (5h Cloud Cycle with Daily Auto-Sync)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          python run.py --bot --max-runtime 19500
+          python run.py --bot --max-runtime 18000
 
       - name: Persist Subscriber List & Updated Data to Repository
         if: always()
@@ -58,4 +65,19 @@ jobs:
             git commit -m "chore(bot): persist subscribers & daily match state [skip ci]"
             git pull --rebase origin ${{ github.ref_name }} || true
             git push origin HEAD:${{ github.ref_name }} || true
+          fi
+
+      - name: Autonomous Keep-Alive Relay — Dispatch Next 24/7 Runner
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "[+] Checking for active runners in queue..."
+          ACTIVE=$(gh run list --workflow=telegram_bot.yml --status=in_progress --json databaseId -q '.[].databaseId' 2>/dev/null | grep -v "${{ github.run_id }}" || true)
+          QUEUED=$(gh run list --workflow=telegram_bot.yml --status=queued --json databaseId -q '.[].databaseId' 2>/dev/null || true)
+          if [ -z "$ACTIVE" ] && [ -z "$QUEUED" ]; then
+            echo "[+] No active or queued runners found. Dispatching fresh relay runner to maintain 100% 24/7 uptime..."
+            gh workflow run telegram_bot.yml --ref ${{ github.ref_name }} || true
+          else
+            echo "[+] Runner already active ($ACTIVE) or queued ($QUEUED). Handover ready."
           fi

@@ -421,6 +421,8 @@ class PitchsideTelegramBot:
             {"command": "start", "description": "🟢 Welcome & What This Bot Does (GIF Guide)"},
             {"command": "today", "description": "📅 Matches of the Day, Odds & Quick Sim"},
             {"command": "mode", "description": "⚙️ Switch Mode (🟢 Simple vs ⚙️ Advanced)"},
+            {"command": "engine", "description": "🧠 Prediction Engine (New Gut 10k vs Old Dixon)"},
+            {"command": "gut", "description": "🎲 Gut Feeling 10,000-Draw AI Predictions & Odds"},
             {"command": "league", "description": "🏆 Switch League (🇪🇸 La Liga vs 🇮🇹 Serie A)"},
             {"command": "matches", "description": "⚽ All 38 Matchdays Schedule & Results"},
             {"command": "simulate", "description": "⚡ 90-Minute Match Simulator & Trends"},
@@ -431,8 +433,19 @@ class PitchsideTelegramBot:
             {"command": "msgmode", "description": "💬 Toggle New Messages vs In-Place Edits"},
             {"command": "help", "description": "ℹ️ Bot Guide & Features Overview"},
         ]
+        desc = (
+            "⚽ Welcome to Pitchside — 24/7 interactive tactical football terminal for 🇪🇸 La Liga & 🇮🇹 Serie A!\n\n"
+            "🔥 90-minute Tactical Match Simulation with Club DNA\n"
+            "🎲 Gut Feeling 10,000-Draw Monte Carlo Predictions & Fair Odds\n"
+            "📐 Classic Dixon-Coles Bivariate Poisson Mathematical Engine\n"
+            "🏆 Live Standings, Form Guides, Suspensions & Injury Absences\n\n"
+            "Tap START below to begin exploring immediately!"
+        )
+        short_desc = "⚽ 24/7 La Liga & Serie A Tactical Terminal: 90m match simulator, standings, club DNA & Gut Feeling AI."
         try:
             self._api_call("setChatMenuButton", {"menu_button": {"type": "commands"}}, timeout=15)
+            self._api_call("setMyDescription", {"description": desc}, timeout=15)
+            self._api_call("setMyShortDescription", {"short_description": short_desc}, timeout=15)
         except Exception:
             pass
         return self._api_call("setMyCommands", {"commands": commands}, timeout=15)
@@ -3235,6 +3248,12 @@ class PitchsideTelegramBot:
                     timeout=35,
                 )
                 if not res.get("ok"):
+                    desc = str(res.get("description", ""))
+                    code = res.get("error_code")
+                    if "conflict" in desc.lower() or code == 409:
+                        print("[!] Telegram 409 Conflict: waiting for other runner handover, retrying in 3s...")
+                    elif desc:
+                        print(f"[!] getUpdates API warning: {desc}")
                     time.sleep(3)
                     continue
                 for upd in res.get("result", []):
@@ -3248,7 +3267,7 @@ class PitchsideTelegramBot:
                 self._running = False
                 break
             except Exception as e:
-                print(f"[!] Polling error: {e}")
+                print(f"[!] Polling network exception: {e}, auto-reconnecting in 3s...")
                 time.sleep(3)
 
     def start_background_thread(self) -> Optional[threading.Thread]:
