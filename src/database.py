@@ -1286,14 +1286,15 @@ class Database:
         """Returns official league table sorted by position with optional competition filtering."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            query = """
+            max_pos = 36 if competition == "champions_league" else 20
+            query = f"""
                 SELECT
                     id, slug, name, nickname, shortname, shield_url,
                     position, played, won, drawn, lost,
                     goals_for, goals_against, goal_difference, points, qualification, formation,
                     att_rating, mid_rating, def_rating, overall_rating, competition
                 FROM clubs
-                WHERE position IS NOT NULL AND position >= 1 AND position <= 20
+                WHERE position IS NOT NULL AND position >= 1 AND position <= {max_pos}
             """
             params = []
             if competition:

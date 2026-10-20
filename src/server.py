@@ -242,9 +242,10 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/fixtures":
             md = query.get("matchday", [None])[0]
             slug = query.get("club", [None])[0]
+            comp = query.get("competition", [None])[0]
             if md:
                 md = int(md)
-            fixtures = self.db.get_fixtures(matchday=md, club_slug=slug)
+            fixtures = self.db.get_fixtures(matchday=md, club_slug=slug, competition=comp)
             current_md = self.db.get_current_matchday()
 
             # Check if any match is currently live in La Liga
@@ -468,8 +469,42 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # 8. API: Official Standings (/api/standings)
         if path == "/api/standings":
-            standings = self.db.get_standings()
-            self._send_json({"count": len(standings), "standings": standings})
+            comp = query.get("competition", [None])[0]
+            standings = self.db.get_standings(competition=comp)
+            self._send_json({"count": len(standings), "competition": comp or "laliga", "standings": standings})
+            return
+
+        # API: UEFA Champions League Hub (/api/ucl)
+        if path == "/api/ucl":
+            standings = self.db.get_standings(competition="champions_league")
+            fixtures = self.db.get_fixtures(competition="champions_league")
+            self._send_json({
+                "competition": "UEFA Champions League",
+                "format": "36-team single league phase",
+                "standings_count": len(standings),
+                "standings": standings,
+                "fixtures_count": len(fixtures),
+                "fixtures": fixtures,
+            })
+            return
+
+        # API: Club Stadium & Spirit Banners (/api/banners)
+        if path == "/api/banners":
+            from .club_banners import ClubBannersRegistry
+            comp = query.get("competition", [None])[0]
+            banners = [b.to_dict() for b in ClubBannersRegistry.get_all(comp)]
+            self._send_json({"count": len(banners), "banners": banners})
+            return
+
+        # API: Single Club Banner (/api/banner/<slug>)
+        if path.startswith("/api/banner/"):
+            from .club_banners import ClubBannersRegistry
+            b_slug = path[len("/api/banner/"):]
+            banner = ClubBannersRegistry.get_by_slug(b_slug)
+            if banner:
+                self._send_json(banner.to_dict())
+            else:
+                self._send_error(f"Banner for '{b_slug}' not found", status=404)
             return
 
         # 9. API: Compare Clubs (/api/compare-clubs?c1=slug1&c2=slug2)

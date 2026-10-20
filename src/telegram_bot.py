@@ -27,6 +27,13 @@ from .simulation_engine import SimulationEngine
 from .club_tactics import ClubTacticsRegistry, CLUB_TACTICAL_DNA
 from .referee_engine import RefereeRegistry, RefereeProfile, RefereeTacticalEvaluator
 from gut_feeling.model import GutFeelingEngine
+from .club_banners import ClubBannersRegistry, ClubBannerProfile
+from .champions_league import (
+    seed_champions_league_clubs,
+    sync_champions_league_standings,
+    sync_champions_league_fixtures,
+    CHAMPIONS_LEAGUE_CLUBS,
+)
 
 
 # Ensure UTF-8 output on Windows consoles
@@ -198,9 +205,14 @@ class PitchsideTelegramBot:
         return self.chat_leagues.get(chat_id, "laliga")
 
     def set_chat_league(self, chat_id: int, league: str) -> str:
-        """Sets active competition for a chat ('laliga' or 'serie_a')."""
+        """Sets active competition for a chat ('laliga', 'serie_a', or 'champions_league')."""
         s = (league or "").strip().lower()
-        norm = "serie_a" if "serie" in s or "ita" in s or "italy" in s else "laliga"
+        if "champ" in s or "ucl" in s or "uefa" in s:
+            norm = "champions_league"
+        elif "serie" in s or "ita" in s or "italy" in s:
+            norm = "serie_a"
+        else:
+            norm = "laliga"
         self.chat_leagues[chat_id] = norm
         return norm
 
@@ -424,7 +436,9 @@ class PitchsideTelegramBot:
             {"command": "mode", "description": "⚙️ Switch Mode (🟢 Simple vs ⚙️ Advanced)"},
             {"command": "engine", "description": "🧠 Prediction Engine (New Gut 10k vs Old Dixon)"},
             {"command": "gut", "description": "🎲 Gut Feeling 10,000-Draw AI Predictions & Odds"},
-            {"command": "league", "description": "🏆 Switch League (🇪🇸 La Liga vs 🇮🇹 Serie A)"},
+            {"command": "league", "description": "🏆 Switch League (🇪🇸 La Liga · 🇮🇹 Serie A · ⭐ UCL)"},
+            {"command": "ucl", "description": "⭐ UEFA Champions League 36-Team Match Center & Table"},
+            {"command": "banner", "description": "🏟️ Club Stadium Banners, Anthems & Atmosphere"},
             {"command": "matches", "description": "⚽ All 38 Matchdays Schedule & Results"},
             {"command": "simulate", "description": "⚡ 90-Minute Match Simulator & Trends"},
             {"command": "standings", "description": "🏆 Live Standings & Form Guide"},
@@ -453,13 +467,18 @@ class PitchsideTelegramBot:
         return self._api_call("setMyCommands", {"commands": commands}, timeout=15)
 
     @staticmethod
-    def _render_media_header(shield_url: Optional[str]) -> str:
+    def _render_media_header(shield_url: Optional[str], fallback_slug: Optional[str] = None) -> str:
         """
-        Embeds an invisible zero-width anchor pointing to the team's official shield URL.
+        Embeds an invisible zero-width anchor pointing to the team's official banner or shield URL.
         Telegram renders this as an authentic, high-resolution media banner above the card!
         """
-        if shield_url and str(shield_url).startswith("http"):
-            return f'<a href="{shield_url}">&#8205;</a>'
+        target = shield_url
+        if fallback_slug:
+            prof = ClubBannersRegistry.get_by_slug(fallback_slug)
+            if prof and prof.banner_url:
+                target = prof.banner_url
+        if target and str(target).startswith("http"):
+            return f'<a href="{target}">&#8205;</a>'
         return ""
 
     # =========================================================================
@@ -474,22 +493,27 @@ class PitchsideTelegramBot:
         a_name: str,
         a_score: Any,
         status_sub: str,
-        width: int = 32,
+        width: int = 34,
     ) -> str:
         """
         Renders a clean, monospaced card frame for scores and fixtures in <pre><code>.
+        Uses high-contrast double-line Unicode framing.
         """
         inner_w = width - 4
-        h_line = f"{h_code:<4} {h_name[:18]:<18} {str(h_score):>4}"
-        a_line = f"{a_code:<4} {a_name[:18]:<18} {str(a_score):>4}"
+        hs_str = str(h_score).strip() if h_score is not None else "-"
+        as_str = str(a_score).strip() if a_score is not None else "-"
+        hs_disp = f"[{hs_str}]" if hs_str not in ("-", "", "None") else " - "
+        as_disp = f"[{as_str}]" if as_str not in ("-", "", "None") else " - "
+        h_line = f"{h_code:<4} {h_name[:17]:<17} {hs_disp:>5}"
+        a_line = f"{a_code:<4} {a_name[:17]:<17} {as_disp:>5}"
         sub_line = (status_sub or "")[:inner_w]
         box = [
-            "┌" + ("─" * (width - 2)) + "┐",
-            f"│ {h_line:<{inner_w}} │",
-            f"│ {a_line:<{inner_w}} │",
-            "├" + ("─" * (width - 2)) + "┤",
-            f"│ {sub_line:^{inner_w}} │",
-            "└" + ("─" * (width - 2)) + "┘",
+            "╔" + ("═" * (width - 2)) + "╗",
+            f"║ {h_line:<{inner_w}} ║",
+            f"║ {a_line:<{inner_w}} ║",
+            "╠" + ("═" * (width - 2)) + "╣",
+            f"║ {sub_line:^{inner_w}} ║",
+            "╚" + ("═" * (width - 2)) + "╝",
         ]
         return "<pre><code>" + "\n".join(box) + "</code></pre>"
 
@@ -853,8 +877,18 @@ class PitchsideTelegramBot:
         except Exception:
             pretty_date = active_date
 
-        league_title = "SERIE A ENILIVE" if comp == "serie_a" else "LA LIGA EA SPORTS"
-        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
+        if comp == "champions_league":
+            league_title = "UEFA CHAMPIONS LEAGUE"
+            league_flag = "⭐"
+            league_name = "Champions League"
+        elif comp == "serie_a":
+            league_title = "SERIE A ENILIVE"
+            league_flag = "🇮🇹"
+            league_name = "Serie A"
+        else:
+            league_title = "LA LIGA EA SPORTS"
+            league_flag = "🇪🇸"
+            league_name = "La Liga"
 
         if active_date == today_str:
             date_badge = f"🟢 <b>TODAY'S MATCHES · {self._esc(pretty_date.upper())}</b>"
@@ -866,7 +900,12 @@ class PitchsideTelegramBot:
 
         first_shield = None
         if day_fixtures:
-            first_shield = (standings_map.get(day_fixtures[0].get("home_slug")) or {}).get("shield_url") or (standings_map.get(day_fixtures[0].get("home_slug")) or {}).get("shield")
+            h_slug = day_fixtures[0].get("home_slug") or ""
+            banner_prof = ClubBannersRegistry.get_by_slug(h_slug)
+            if banner_prof and banner_prof.banner_url:
+                first_shield = banner_prof.banner_url
+            else:
+                first_shield = (standings_map.get(h_slug) or {}).get("shield_url") or (standings_map.get(h_slug) or {}).get("shield")
         media_hdr = self._render_media_header(first_shield)
 
         lines = [
@@ -944,21 +983,24 @@ class PitchsideTelegramBot:
         lg_row = [
             {"text": "🇪🇸 La Liga" + (" ✅" if comp == "laliga" else ""), "callback_data": "lg:laliga"},
             {"text": "🇮🇹 Serie A" + (" ✅" if comp == "serie_a" else ""), "callback_data": "lg:serie_a"},
+            {"text": "⭐ UCL" + (" ✅" if comp == "champions_league" else ""), "callback_data": "lg:champions_league"},
         ]
 
         # "Move to Other Things" Navigation Hub
         current_md = self._get_active_matchday(competition=comp)
         is_sub = self.is_subscribed(chat_id) if chat_id else True
         sub_btn = {"text": "🔔 Daily Alerts: ON" if is_sub else "🔕 Daily Alerts: OFF", "callback_data": "sub:toggle"}
+        num_clubs_label = "36 European Giants" if comp == "champions_league" else "20 Clubs & DNA"
+        schedule_label = "📅 8 UCL Matchdays" if comp == "champions_league" else "📅 All 38 Matchdays"
         kb.extend([
             lg_row,
             [
                 {"text": "🏆 Standings & Form", "callback_data": f"st:all:{comp}"},
-                {"text": f"📅 All 38 Matchdays", "callback_data": f"md:{current_md}"},
+                {"text": schedule_label, "callback_data": f"md:{current_md}"},
             ],
             [
-                {"text": "🛡️ 20 Clubs & DNA", "callback_data": f"clubs:list:{comp}"},
-                {"text": "🌟 Top Scorers & Players", "callback_data": "ldr:goals"},
+                {"text": f"🛡️ {num_clubs_label}", "callback_data": f"clubs:list:{comp}"},
+                {"text": "🏟️ Stadiums & Spirit", "callback_data": f"banners:{comp}"},
             ],
             [
                 {"text": "⚔️ Compare H2H", "callback_data": "cmp:menu"},
@@ -2207,18 +2249,39 @@ class PitchsideTelegramBot:
     def render_standings_view(self, mode: str = "all", competition: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         comp = competition or self.get_chat_league(chat_id)
         standings = self._get_standings(competition=comp)
-        league_title = "SERIE A ENILIVE" if comp == "serie_a" else "LA LIGA EA SPORTS"
-        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
-
-        if mode == "top":
-            subset = standings[:10]
-            subtitle = "TOP 10 · CHAMPIONS LEAGUE &amp; EUROPEAN RACE"
-        elif mode == "bot":
-            subset = standings[10:]
-            subtitle = "BOTTOM 10 · MID-TABLE &amp; RELEGATION BATTLE"
+        if comp == "champions_league":
+            league_title = "UEFA CHAMPIONS LEAGUE"
+            league_flag = "⭐"
+        elif comp == "serie_a":
+            league_title = "SERIE A ENILIVE"
+            league_flag = "🇮🇹"
         else:
-            subset = standings
-            subtitle = "OFFICIAL 20-CLUB LEAGUE TABLE &amp; FORM"
+            league_title = "LA LIGA EA SPORTS"
+            league_flag = "🇪🇸"
+
+        if comp == "champions_league":
+            if mode == "top":
+                subset = standings[:8]
+                subtitle = "PLACES 1–8 · DIRECT ROUND OF 16 SEEDS 🔵"
+            elif mode == "playoffs":
+                subset = standings[8:24]
+                subtitle = "PLACES 9–24 · KNOCKOUT PHASE PLAY-OFFS 🟡"
+            elif mode == "bot":
+                subset = standings[24:]
+                subtitle = "PLACES 25–36 · ELIMINATION ZONE 🔴"
+            else:
+                subset = standings
+                subtitle = "OFFICIAL 36-CLUB LEAGUE PHASE TABLE ⭐"
+        else:
+            if mode == "top":
+                subset = standings[:10]
+                subtitle = "TOP 10 · CHAMPIONS LEAGUE & EUROPEAN RACE"
+            elif mode == "bot":
+                subset = standings[10:]
+                subtitle = "BOTTOM 10 · MID-TABLE & RELEGATION BATTLE"
+            else:
+                subset = standings
+                subtitle = "OFFICIAL 20-CLUB LEAGUE TABLE & FORM"
 
         first_shield = standings[0].get("shield_url") or standings[0].get("shield") if standings else None
         media_hdr = self._render_media_header(first_shield)
@@ -2235,19 +2298,27 @@ class PitchsideTelegramBot:
 
         for c in subset:
             pos = c.get("position") or 0
-            if pos <= 4:
-                zone = "🟦"
-            elif pos <= 6:
-                zone = "🟧"
-            elif pos == 7:
-                zone = "🟩"
-            elif pos >= 18:
-                zone = "🟥"
+            if comp == "champions_league":
+                if pos <= 8:
+                    zone = "🔵"
+                elif pos <= 24:
+                    zone = "🟡"
+                else:
+                    zone = "🔴"
             else:
-                zone = "⬜"
+                if pos <= 4:
+                    zone = "🟦"
+                elif pos <= 6:
+                    zone = "🟧"
+                elif pos == 7:
+                    zone = "🟩"
+                elif pos >= 18:
+                    zone = "🟥"
+                else:
+                    zone = "⬜"
 
             theme = self.get_club_theme(c.get("slug", "") or c.get("name", ""))
-            tag = theme["code"]
+            tag = (c.get("shortname") or theme["code"])[:3].upper()
             name = (c.get("nickname") or c.get("name") or "Club")[:11]
             mp = c.get("played", 0)
             gd = c.get("goal_difference", 0)
@@ -2255,7 +2326,7 @@ class PitchsideTelegramBot:
             pts = c.get("points", 0)
             form = self._get_club_form_emojis(c.get("slug", ""), 5)
 
-            if mode in ("top", "bot"):
+            if mode in ("top", "playoffs", "bot"):
                 lines.append(
                     f"{zone} <code>{pos:>2} {tag:<3} {name:<11} {mp:>2} {gd_s:>3} {pts:>2}</code> {form}"
                 )
@@ -2264,28 +2335,58 @@ class PitchsideTelegramBot:
                     f"{zone} <code>{pos:>2} {tag:<3} {name:<11} {mp:>2} {gd_s:>3} {pts:>2}</code>"
                 )
 
-            if len(club_buttons) < 4:
-                row_btns.append({"text": f"#{pos} {theme['badge']} {name[:10]}", "callback_data": f"c:{c['id']}"})
-                if len(row_btns) == 2:
+            cid = c.get("id")
+            if cid:
+                row_btns.append({"text": f"#{pos} {tag}", "callback_data": f"c:{cid}"})
+                if len(row_btns) == 4:
                     club_buttons.append(row_btns)
                     row_btns = []
 
-        if row_btns and len(club_buttons) < 4:
+        if row_btns:
             club_buttons.append(row_btns)
 
-        lines.append(
-            "\n🟦 UCL (1-4) · 🟧 UEL (5-6) · 🟩 UECL (7) · 🟥 Relegation (18-20)"
-        )
+        lines.extend([
+            "",
+            "<b>LEGEND:</b>" if comp != "champions_league" else "<b>UEFA COMPETITION ZONES:</b>",
+        ])
+        if comp == "champions_league":
+            lines.extend([
+                "🔵 <b>Places 1–8:</b> Direct Round of 16 Qualification",
+                "🟡 <b>Places 9–24:</b> Knockout Phase Play-offs",
+                "🔴 <b>Places 25–36:</b> Eliminated from Europe",
+            ])
+        else:
+            lines.extend([
+                "🟦 <b>1–4:</b> Champions League Group Stage",
+                "🟧 <b>5–6:</b> Europa League · 🟩 <b>7:</b> Conference League",
+                "🟥 <b>18–20:</b> Relegation Zone · ⬜ <b>8–17:</b> Mid Table",
+            ])
 
-        kb = [
-            [
-                {"text": "📋 Full 20 Table" if mode != "all" else "• 📋 Full 20 Table •", "callback_data": f"st:all:{comp}"},
-                {"text": "🏆 Top 10 + Form" if mode != "top" else "• 🏆 Top 10 + Form •", "callback_data": f"st:top:{comp}"},
-                {"text": "⚠️ Bottom 10 + Form" if mode != "bot" else "• ⚠️ Bottom 10 •", "callback_data": f"st:bot:{comp}"},
-            ],
-            [{"text": f"🛡️ Browse All 20 Club Tactical Dossiers", "callback_data": f"clubs:list:{comp}"}],
-            [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
-        ]
+        lines.append("\n<i>Tap any club below for Tactical DNA, Squad & Schedule:</i>")
+
+        if comp == "champions_league":
+            kb = [
+                [
+                    {"text": "🔵 1–8 Direct R16" if mode != "top" else "• 🔵 1–8 Direct R16 •", "callback_data": "st:top:champions_league"},
+                    {"text": "🟡 9–24 Play-offs" if mode != "playoffs" else "• 🟡 9–24 Play-offs •", "callback_data": "st:playoffs:champions_league"},
+                    {"text": "🔴 25–36 Out" if mode != "bot" else "• 🔴 25–36 Out •", "callback_data": "st:bot:champions_league"},
+                ],
+                [
+                    {"text": "⭐ Full 36 League Table" if mode != "all" else "• ⭐ Full 36 League Table •", "callback_data": "st:all:champions_league"},
+                ],
+                [{"text": "🛡️ Browse 36 European Giants", "callback_data": "clubs:list:champions_league"}],
+                [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
+            ]
+        else:
+            kb = [
+                [
+                    {"text": "📋 Full 20 Table" if mode != "all" else "• 📋 Full 20 Table •", "callback_data": f"st:all:{comp}"},
+                    {"text": "🏆 Top 10 + Form" if mode != "top" else "• 🏆 Top 10 + Form •", "callback_data": f"st:top:{comp}"},
+                    {"text": "⚠️ Bottom 10 + Form" if mode != "bot" else "• ⚠️ Bottom 10 •", "callback_data": f"st:bot:{comp}"},
+                ],
+                [{"text": "🛡️ Browse All 20 Club Tactical Dossiers", "callback_data": f"clubs:list:{comp}"}],
+                [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
+            ]
         return "\n".join(lines), {"inline_keyboard": kb}
 
     # =========================================================================
@@ -2294,14 +2395,24 @@ class PitchsideTelegramBot:
     def render_clubs_directory(self, competition: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         comp = competition or self.get_chat_league(chat_id)
         standings = self._get_standings(competition=comp)
-        league_title = "SERIE A" if comp == "serie_a" else "LA LIGA"
-        league_flag = "🇮🇹" if comp == "serie_a" else "🇪🇸"
+        if comp == "champions_league":
+            league_title = "UEFA CHAMPIONS LEAGUE"
+            league_flag = "⭐"
+            club_count = "36"
+        elif comp == "serie_a":
+            league_title = "SERIE A"
+            league_flag = "🇮🇹"
+            club_count = "20"
+        else:
+            league_title = "LA LIGA"
+            league_flag = "🇪🇸"
+            club_count = "20"
         first_shield = standings[0].get("shield_url") or standings[0].get("shield") if standings else None
         media_hdr = self._render_media_header(first_shield)
         lines = [
-            f"{media_hdr}🛡️ <b>{league_flag} {league_title} 20 CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
+            f"{media_hdr}🛡️ <b>{league_flag} {league_title} {club_count} CLUBS &amp; TACTICAL DNA DIRECTORY</b>",
             "━━━━━━━━━━━━━━━━━━━━━━",
-            "Select any club below to inspect its <b>Managerial Philosophy, Tactical DNA Metrics, Starting XI Lineup, Form Guide &amp; Upcoming Schedule</b>:",
+            "Select any club below to inspect its <b>Managerial Philosophy, Tactical DNA Metrics, Stadium &amp; Spirit, Starting XI, Form Guide &amp; Schedule</b>:",
         ]
 
         kb = []
@@ -2310,13 +2421,139 @@ class PitchsideTelegramBot:
             pos = c.get("position", 0)
             name = (c.get("nickname") or c.get("name") or "Club")[:12]
             theme = self.get_club_theme(c.get("slug") or c.get("name"))
-            row.append({"text": f"#{pos} {theme['badge']} {name}", "callback_data": f"c:{c['id']}"})
+            badge = c.get("shield_emoji") or theme.get("badge") or "🛡️"
+            row.append({"text": f"#{pos} {badge} {name}", "callback_data": f"c:{c['id']}"})
             if len(row) == 2:
                 kb.append(row)
                 row = []
         if row:
             kb.append(row)
 
+        kb.append([
+            {"text": "🏟️ Stadium Banners & Spirit", "callback_data": f"banners:{comp}"},
+            {"text": "🏠 Main Menu", "callback_data": "menu:home"}
+        ])
+        return "\n".join(lines), {"inline_keyboard": kb}
+
+        # =========================================================================
+    # VIEW 9B: CLUB STADIUM & TEAM SPIRIT BANNERS (/banner, cbanner:<slug>)
+    # =========================================================================
+    def render_club_banner_card(self, identifier: Any, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        """
+        Renders an ultra-rich Club Stadium & Team Spirit card featuring:
+        - High-resolution stadium banner embed
+        - Architectural specifications & capacity
+        - Club motto, anthem, and atmosphere rating
+        - Tactical philosophy and identity summary
+        """
+        from .club_banners import ClubBannersRegistry, ClubBannerProfile
+
+        profile = self.db.get_club_profile(identifier)
+        slug = ""
+        c = {}
+        if profile:
+            c = profile.get("club") or {}
+            slug = c.get("slug") or ""
+        else:
+            slug = str(identifier).lower().replace(" ", "-")
+
+        banner = ClubBannersRegistry.get_by_slug(slug)
+        if not banner:
+            name = c.get("name") or str(identifier).title()
+            stadium = c.get("stadium_name") or c.get("stadium") or "Official Stadium"
+            shield = c.get("shield_url") or c.get("shield") or ""
+            banner = ClubBannerProfile(
+                slug=slug,
+                name=name,
+                nickname=c.get("nickname") or name,
+                competition=c.get("competition") or "football",
+                badge_emoji="🛡️",
+                code=(c.get("shortname") or slug[:3]).upper(),
+                primary_color=c.get("color") or "#FFFFFF",
+                secondary_color=c.get("color_secondary") or "#000000",
+                shield_url=shield,
+                banner_url=shield,
+                stadium_name=stadium,
+                city="Europe",
+                country="International",
+                country_flag="🌍",
+                capacity=55000,
+                inaugurated=1950,
+                architectural_nickname=f"Home of {name}",
+                team_motto="Victory Through Unity",
+                anthem=f"Song of {name}",
+                identity_summary=f"Storied European football club playing out of {stadium}.",
+                atmosphere_rating=90,
+            )
+
+        media_hdr = f'<a href="{banner.banner_url}">&#8205;</a>' if banner.banner_url else ""
+        atmo_bar = self._progress_bar(banner.atmosphere_rating, 100, 10)
+
+        lines = [
+            f"{media_hdr}🏟️ <b>{banner.country_flag} {self._esc(banner.stadium_name.upper())}</b>",
+            f"<i>{self._esc(banner.architectural_nickname)}</i>",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            f"🛡️ <b>Club:</b> {banner.badge_emoji} <b>{self._esc(banner.name)}</b> (<code>{banner.code}</code>)",
+            f"📍 <b>Location:</b> {self._esc(banner.city)}, {self._esc(banner.country)} {banner.country_flag}",
+            f"👥 <b>Capacity:</b> <code>{banner.capacity:,}</code> seats · <b>Opened:</b> <code>{banner.inaugurated}</code>",
+            f"🔥 <b>Atmosphere Rating:</b> <code>{banner.atmosphere_rating}/100</code> {atmo_bar}",
+            "",
+            "🗣️ <b>CLUB SPIRIT &amp; HERITAGE</b>",
+            f"• <b>Motto:</b> <i>\"{self._esc(banner.team_motto)}\"</i>",
+            f"• <b>Anthem:</b> 🎵 {self._esc(banner.anthem)}",
+            f"• <b>Colors:</b> <code>{banner.primary_color}</code> &amp; <code>{banner.secondary_color}</code>",
+            "",
+            f"📖 <b>Identity:</b> {self._esc(banner.identity_summary)}",
+        ]
+
+        cid = c.get("id")
+        kb = []
+        row = []
+        if cid:
+            row.append({"text": "📋 Tactical Dossier", "callback_data": f"c:{cid}"})
+            row.append({"text": "📅 Fixtures", "callback_data": f"cfx:{cid}"})
+        else:
+            row.append({"text": "⭐ UCL Standings", "callback_data": "ucl:standings"})
+            row.append({"text": "📅 UCL Matches", "callback_data": "ucl:matches"})
+        kb.append(row)
+        kb.append([{"text": "🏟️ Browse All Stadiums", "callback_data": "banners:list"}])
+        kb.append([{"text": "🏠 Main Menu", "callback_data": "menu:home"}])
+
+        return "\n".join(lines), {"inline_keyboard": kb}
+
+    def render_banners_directory(self, competition: Optional[str] = None, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        """Renders directory of club stadiums, anthems, and spirit profiles."""
+        from .club_banners import ClubBannersRegistry
+        comp = competition or self.get_chat_league(chat_id)
+        banners = ClubBannersRegistry.get_all(comp)
+        if not banners:
+            banners = ClubBannersRegistry.get_all()
+
+        first_url = banners[0].banner_url if banners else None
+        media_hdr = f'<a href="{first_url}">&#8205;</a>' if first_url else ""
+
+        lines = [
+            f"{media_hdr}🏟️ <b>OFFICIAL CLUB STADIUMS &amp; SPIRIT DIRECTORY</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            "Select any club below to view its <b>High-Res Stadium Banner, Architectural Nickname, Capacity, Team Motto, Anthem &amp; Atmosphere Rating</b>:\n",
+        ]
+
+        kb = []
+        row = []
+        for b in banners:
+            btn_txt = f"{b.country_flag} {b.badge_emoji} {b.name[:12]}"
+            row.append({"text": btn_txt, "callback_data": f"cbanner:{b.slug}"})
+            if len(row) == 2:
+                kb.append(row)
+                row = []
+        if row:
+            kb.append(row)
+
+        kb.append([
+            {"text": "🇪🇸 La Liga Banners", "callback_data": "banners:laliga"},
+            {"text": "🇮🇹 Serie A Banners", "callback_data": "banners:serie_a"},
+            {"text": "⭐ UCL Giants", "callback_data": "banners:champions_league"},
+        ])
         kb.append([{"text": "🏠 Main Menu", "callback_data": "menu:home"}])
         return "\n".join(lines), {"inline_keyboard": kb}
 
@@ -3041,6 +3278,14 @@ class PitchsideTelegramBot:
         except Exception as e:
             report["serie_a_error"] = str(e)
 
+        try:
+            from .champions_league import sync_champions_league_standings, sync_champions_league_fixtures
+            ucl_st = sync_champions_league_standings(self.db)
+            ucl_fx = sync_champions_league_fixtures(self.db)
+            report["champions_league"] = {"standings": ucl_st, "fixtures": ucl_fx}
+        except Exception as e:
+            report["champions_league_error"] = str(e)
+
         self._detail_cache.clear()
         self._standings_cache.clear()
         self._fixtures_cache.clear()
@@ -3078,6 +3323,20 @@ class PitchsideTelegramBot:
             return self.render_home_view(arg if arg else "today", chat_id=chat_id)
         if cmd in ("/referees", "/refs", "/ref", "/whistle"):
             return self.render_referees_directory(category="strict", chat_id=chat_id)
+        if cmd in ("/ucl", "/champions", "/championsleague", "/champions_league"):
+            if chat_id:
+                self.set_chat_league(chat_id, "champions_league")
+            return self.render_home_view("today", chat_id=chat_id)
+        if cmd in ("/ucl_standings", "/ucl_table"):
+            return self.render_standings_view("all", competition="champions_league", chat_id=chat_id)
+        if cmd in ("/ucl_matches", "/ucl_fixtures"):
+            return self.render_home_view("today", chat_id=chat_id)
+        if cmd in ("/banner", "/stadium"):
+            if arg:
+                return self.render_club_banner_card(arg, chat_id=chat_id)
+            return self.render_banners_directory(chat_id=chat_id)
+        if cmd in ("/banners", "/stadiums"):
+            return self.render_banners_directory(chat_id=chat_id)
         if cmd in ("/league", "/competition", "/switcher"):
             if arg:
                 norm = self.set_chat_league(chat_id or 0, arg)
@@ -3086,15 +3345,17 @@ class PitchsideTelegramBot:
             msg = (
                 "🏆 <b>PITCHSIDE MULTI-LEAGUE SWITCHER</b>\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
-                "Select your preferred domestic championship to explore:\n\n"
+                "Select your preferred championship or tournament to explore:\n\n"
                 f"• <b>🇪🇸 La Liga EA SPORTS</b> {'(Active ✅)' if comp == 'laliga' else ''}\n"
-                f"• <b>🇮🇹 Serie A Enilive</b> {'(Active ✅)' if comp == 'serie_a' else ''}\n\n"
+                f"• <b>🇮🇹 Serie A Enilive</b> {'(Active ✅)' if comp == 'serie_a' else ''}\n"
+                f"• <b>⭐ UEFA Champions League</b> {'(Active ✅)' if comp == 'champions_league' else ''}\n\n"
                 "<i>Tap a button below to switch:</i>"
             )
             kb = [
                 [
                     {"text": "🇪🇸 La Liga" + (" ✅" if comp == "laliga" else ""), "callback_data": "lg:laliga"},
                     {"text": "🇮🇹 Serie A" + (" ✅" if comp == "serie_a" else ""), "callback_data": "lg:serie_a"},
+                    {"text": "⭐ UCL" + (" ✅" if comp == "champions_league" else ""), "callback_data": "lg:champions_league"},
                 ],
                 [{"text": "🏠 Main Menu", "callback_data": "menu:home"}],
             ]
@@ -3219,10 +3480,28 @@ class PitchsideTelegramBot:
             return (*self.render_mode_switcher(chat_id=chat_id), toast)
         if data in ("menu:mode", "mode"):
             return (*self.render_mode_switcher(chat_id=chat_id), "⚙️ Simulation Mode")
+        if prefix == "cbanner" and len(parts) >= 2:
+            return (*self.render_club_banner_card(parts[1], chat_id=chat_id), "🏟️ Stadium & Spirit")
+        if prefix == "banners":
+            target_comp = parts[1] if len(parts) >= 2 else None
+            return (*self.render_banners_directory(competition=target_comp, chat_id=chat_id), "🏟️ Stadiums Directory")
+        if prefix == "ucl":
+            sub = parts[1] if len(parts) >= 2 else "standings"
+            if sub in ("top", "playoffs", "bot", "all"):
+                return (*self.render_standings_view(sub, competition="champions_league", chat_id=chat_id), f"⭐ UCL Standings ({sub})")
+            if sub == "matches":
+                self.set_chat_league(chat_id or 0, "champions_league")
+                return (*self.render_home_view("today", chat_id=chat_id), "⭐ UCL Matches")
+            return (*self.render_standings_view("all", competition="champions_league", chat_id=chat_id), "⭐ UCL Standings")
         if prefix == "lg" and len(parts) >= 2:
             target_league = parts[1].lower().strip()
             norm = self.set_chat_league(chat_id or 0, target_league)
-            toast = "🇮🇹 Switched to Serie A Enilive!" if norm == "serie_a" else "🇪🇸 Switched to La Liga EA SPORTS!"
+            if norm == "champions_league":
+                toast = "⭐ Switched to UEFA Champions League!"
+            elif norm == "serie_a":
+                toast = "🇮🇹 Switched to Serie A Enilive!"
+            else:
+                toast = "🇪🇸 Switched to La Liga EA SPORTS!"
             return (*self.render_home_view("today", chat_id=chat_id), toast)
         if prefix == "msgmode":
             target = parts[1] if len(parts) >= 2 else "toggle"

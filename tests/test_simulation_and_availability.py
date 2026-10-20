@@ -490,7 +490,7 @@ def test_telegram_bot_automated_theme_cards_and_tabs():
     card = bot._render_scoreboard_card("RMA", "Real Madrid", 2, "FCB", "Barcelona", 1, "FT · Santiago Bernabéu")
     assert "<pre><code>" in card and "</code></pre>" in card
     assert "RMA" in card and "FCB" in card and "2" in card and "1" in card
-    assert "┌" in card and "└" in card
+    assert ("┌" in card or "╔" in card) and ("└" in card or "╚" in card)
 
     # 3. Match Center 4 Tabs
     # Tab 1: Overview
