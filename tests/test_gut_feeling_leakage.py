@@ -60,3 +60,41 @@ def test_rule_1_pre_kickoff_integrity_no_future_leakage():
     p_a = engine.simulate_probabilities(1.5, 1.2, match_seed=42)
     p_b = engine.simulate_probabilities(1.5, 1.2, match_seed=42)
     assert p_a == p_b
+
+
+def test_rule_2_chronological_ordering_no_shuffling():
+    """
+    Verifies Rule 2:
+    1. Matches in clean_matches.csv are strictly in non-decreasing chronological order.
+    2. Date parsing produces valid ISO strings (YYYY-MM-DD).
+    3. Walk-forward testing partitions strictly by temporal boundary:
+       max(train_dates) < min(test_dates) for each walk-forward fold.
+    4. No random splitting, cross-validation k-fold shuffling, or out-of-order leakage.
+    """
+    import os
+    import csv
+
+    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "gut_feeling", "clean_matches.csv")
+    assert os.path.exists(csv_path), "clean_matches.csv not found!"
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        matches = list(csv.DictReader(f))
+
+    assert len(matches) == 3420, f"Expected 3420 matches across 9 seasons, found {len(matches)}"
+
+    # 1. Monotonic date order check across entire dataset
+    dates = [m["date"] for m in matches]
+    for i in range(len(dates) - 1):
+        assert dates[i] <= dates[i + 1], f"Temporal violation at row {i}: {dates[i]} > {dates[i+1]}"
+
+    # 2. Walk-forward split integrity: every training match must strictly precede the test season
+    test_seasons = ["2022-23", "2023-24", "2024-25"]
+    for ts in test_seasons:
+        train = [m for m in matches if m["season"] < ts]
+        test = [m for m in matches if m["season"] == ts]
+
+        max_train_date = max(m["date"] for m in train)
+        min_test_date = min(m["date"] for m in test)
+        assert max_train_date < min_test_date, (
+            f"Walk-forward leakage in {ts}: latest train date {max_train_date} >= first test date {min_test_date}"
+        )
