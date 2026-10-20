@@ -175,3 +175,37 @@ def test_rule_4_fixed_random_seed_reproducibility():
     boot1 = paired_bootstrap_ci(diffs, n_resamples=5000, seed=42)
     boot2 = paired_bootstrap_ci(diffs, n_resamples=5000, seed=42)
     assert boot1 == boot2, "Bootstrap CI differed despite fixed random seed!"
+
+
+def test_rule_5_accuracy_bounds_and_no_leakage_above_60():
+    """
+    Verifies Rule 5:
+    1. Overall form-only accuracy is within expected 45-50% range.
+    2. Overall Gut Feeling (with Elo anchor) accuracy is within expected 50-55% range.
+    3. No individual full season exceeds 60% accuracy (which would trigger a leakage audit).
+    """
+    from gut_feeling.walk_forward import run_walk_forward_evaluation, compute_aggregate_metrics
+
+    results, season_metrics = run_walk_forward_evaluation()
+    summary = compute_aggregate_metrics(results)
+    metrics = summary["metrics"]
+
+    # 1. Form-only accuracy must be in [45%, 50%]
+    form_acc = metrics["form"]["accuracy"] * 100.0
+    assert 45.0 <= form_acc <= 50.0, f"Form accuracy {form_acc:.2f}% outside expected 45-50% range"
+
+    # 2. Gut Feeling (with Elo anchor) accuracy must be in [50%, 55%]
+    gf_acc = metrics["algo"]["accuracy"] * 100.0
+    assert 50.0 <= gf_acc <= 55.0, f"Gut Feeling accuracy {gf_acc:.2f}% outside expected 50-55% range"
+
+    # 3. Elo-only accuracy must also be in [50%, 55%]
+    elo_acc = metrics["elo"]["accuracy"] * 100.0
+    assert 50.0 <= elo_acc <= 55.0, f"Elo accuracy {elo_acc:.2f}% outside expected 50-55% range"
+
+    # 4. Strict leakage audit rule: NO full season accuracy exceeds 60%
+    for season, data in season_metrics.items():
+        s_acc = data["algo_acc"] * 100.0
+        assert s_acc < 60.0, f"Leakage detected! Season {season} accuracy is {s_acc:.2f}% (>= 60.0%)"
+        s_form_acc = data["form_acc"] * 100.0
+        assert s_form_acc < 60.0, f"Leakage in form model! Season {season} form accuracy is {s_form_acc:.2f}% (>= 60.0%)"
+
