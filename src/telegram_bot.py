@@ -646,9 +646,6 @@ class PitchsideTelegramBot:
         Caption is formatted in HTML and strictly within Telegram's 1024-char limit.
         """
         caption, markup = self.render_welcome_text()
-        # Strip invisible preview anchor tag for direct sendAnimation
-        if '<a href="' in caption and '&#8205;</a>' in caption:
-            caption = caption.split('&#8205;</a>')[-1].strip()
         return self.WELCOME_GIF_URL, caption, markup
 
     def render_welcome_text(self) -> Tuple[str, Dict[str, Any]]:
@@ -657,18 +654,20 @@ class PitchsideTelegramBot:
         """
         caption = (
             f'<a href="{self.WELCOME_GIF_URL}">&#8205;</a>'
-            "⚡ <b>WELCOME TO PITCHSIDE TACTICAL BOT &amp; GUT FEELING AI!</b> ⚽\n"
+            "⚡ <b>WELCOME TO PITCHSIDE LA LIGA BOT &amp; SERIE A!</b> ⚽\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "Your elite <b>tactical terminal &amp; simulation engine</b> for 🇪🇸 <b>La Liga</b> &amp; 🇮🇹 <b>Serie A</b>!\n\n"
+            "<b>Tactical terminal &amp; simulation engine</b> for 🇪🇸 <b>La Liga</b> &amp; 🇮🇹 <b>Serie A</b>!\n\n"
             "🔥 <b>Tactical Capabilities &amp; Engine Modes:</b>\n"
-            "• 🟢 <b>Simple Mode:</b> 5-second check with scoreboard, crests, scorers &amp; fair odds\n"
-            "• ⚙️ <b>Advanced Mode:</b> Deep telemetry, 6-phase momentum &amp; live subs\n"
-            "• 🎲 <b>Gut Feeling AI:</b> 10,000-draw Monte Carlo predictions &amp; confidence ratings (/gut)\n"
-            "• 🇪🇸/🇮🇹 <b>Dual League Hub:</b> Seamless La Liga &amp; Serie A switcher (/league)\n"
-            "• 📅 <b>Matches &amp; Odds:</b> Live matchday schedule, results &amp; starting XIs\n"
-            "• 🚫 <b>Injuries &amp; Suspensions:</b> Active squad availability tracked live\n"
-            "• 🛡️ <b>Tactical DNA:</b> Comprehensive dossiers for all 40 top-flight clubs\n"
-            "• ⚔️ <b>Head-to-Head:</b> Club vs Club &amp; Player vs Player comparison (/compare)\n\n"
+            "• 🟢/⚙️ <b>Dual Sim Modes:</b> Simple (quick) &amp; Advanced (telemetry)\n"
+            "• 🎲 <b>Gut Feeling AI:</b> 10k Monte Carlo predictions (/gut)\n"
+            "• 🇪🇸/🇮🇹 <b>Dual League:</b> Switch La Liga &amp; Serie A (/league)\n"
+            "• 📅 <b>Matches of the Day:</b> Daily schedule, scores &amp; odds\n"
+            "• ⚡ <b>90' Tactical Match Simulator:</b> Poisson &amp; club DNA\n"
+            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Squad absences live\n"
+            "• 🌊 <b>Predictive Telemetry:</b> Attack momentum &amp; xG\n"
+            "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table &amp; form dots\n"
+            "• 🛡️ <b>Tactical DNA:</b> Dossiers for 40+ clubs &amp; rosters\n"
+            "• ⚔️ <b>Head-to-Head:</b> Club &amp; Player comparison\n\n"
             "<i>Select an option below to start exploring! 👇</i>"
         )
         current_md = self._get_active_matchday()
@@ -1344,8 +1343,10 @@ class PitchsideTelegramBot:
 
         forecast = detail.get("forecast") or {}
         elo_analysis = forecast.get("elo_analysis") or {}
-        h_elo = float((elo_analysis.get("home") or {}).get("elo", 1500.0))
-        a_elo = float((elo_analysis.get("away") or {}).get("elo", 1500.0))
+        h_dict = elo_analysis.get("home") if isinstance(elo_analysis.get("home"), dict) else {}
+        a_dict = elo_analysis.get("away") if isinstance(elo_analysis.get("away"), dict) else {}
+        h_elo = float(h_dict.get("elo")) if h_dict.get("elo") is not None else 1500.0
+        a_elo = float(a_dict.get("elo")) if a_dict.get("elo") is not None else 1500.0
 
         # In-season Elo z-score (baseline mean 1500, std 120)
         z_elo_h = (h_elo - 1500.0) / 120.0
@@ -1529,7 +1530,7 @@ class PitchsideTelegramBot:
             f"{card}\n"
             f"{winner_line}\n\n"
             f"{goals_block}\n\n"
-            f"🎲 <b>GUT FEELING 10,000-DRAW SIMULATION</b>\n"
+            f"🎲 <b>WIN PROBABILITY &amp; xG · GUT FEELING 10,000-DRAW SIMULATION</b>\n"
             f"{prob_bar}\n"
             f"🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
             f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
@@ -1554,11 +1555,14 @@ class PitchsideTelegramBot:
             kb.append(crest_row)
         kb.extend([
             [
-                {"text": "🎲 Gut Feeling Dossier", "callback_data": f"gut:{fixture_id}"},
-                {"text": "📋 Starting XIs", "callback_data": f"mxi:{fixture_id}"},
+                {"text": "📋 Starting XIs & Form", "callback_data": f"mxi:{fixture_id}"},
+                {"text": "📤 Share Simulation", "url": share_url},
             ],
             [
+                {"text": "🎲 Gut Feeling Dossier", "callback_data": f"gut:{fixture_id}"},
                 {"text": "◀ Match Center", "callback_data": f"m:{fixture_id}"},
+            ],
+            [
                 {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
         ])
@@ -1684,7 +1688,9 @@ class PitchsideTelegramBot:
             + "\n".join(phase_lines)
             + f"\n\n📈 <b>WIN PROBABILITY EVOLUTION</b>\n"
             + "\n".join(wp_lines)
-            + f"\n\n🧠 <b>GUT FEELING MATHEMATICAL ENGINE (10k Monte Carlo)</b>\n"
+            + f"\n\n🧠 <b>TACTICAL TREND NARRATIVE &amp; GUT FEELING ENGINE</b>\n"
+            f"• <b>Headline:</b> <b>{self._esc(narrative.get('headline', ''))}</b>\n"
+            f"• <b>Key Turning Point:</b> {self._esc(narrative.get('turning_point', ''))}\n"
             f"• <b>Elo Anchor:</b> {h_theme['code']} <code>{gf['home_elo']:.1f} (z={gf['z_elo_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['away_elo']:.1f} (z={gf['z_elo_a']:+.2f})</code>\n"
             f"• <b>3-Match Form:</b> {h_theme['code']} <code>{gf['form_raw_h']:.2f} (z={gf['z_form_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['form_raw_a']:.2f} (z={gf['z_form_a']:+.2f})</code>\n"
             f"• <b>Combined Strength:</b> S_H=<code>{gf['strength_h']:+.3f}</code>, S_A=<code>{gf['strength_a']:+.3f}</code> → <b>ΔS Gap:</b> <code>{gf['strength_gap']:+.3f}</code>\n"
@@ -2986,10 +2992,12 @@ class PitchsideTelegramBot:
                 if data in ("welcome", "about", "menu:welcome", "menu:about"):
                     if cb_id:
                         self.answer_callback(cb_id, text="ℹ️ Pitchside Features & Guide")
-                    gif_url, caption, markup = self.render_welcome_animation()
-                    if message_id and not self.send_new_messages:
-                        self.delete_message(chat_id, message_id)
-                    self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
+                    if self.send_new_messages:
+                        gif_url, caption, markup = self.render_welcome_animation()
+                        self.send_animation(chat_id, gif_url, caption=caption, reply_markup=markup)
+                    else:
+                        resp_text, markup_w = self.render_welcome_text()
+                        self.edit_or_send(chat_id, message_id, resp_text, reply_markup=markup_w)
                 else:
                     resp_text, markup, toast = self.handle_callback_data(data, chat_id=chat_id)
                     if cb_id:
