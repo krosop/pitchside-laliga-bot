@@ -171,6 +171,7 @@ class PitchsideTelegramBot:
         self._fixtures_cache: Dict[str, Tuple[float, List[Dict[str, Any]]]] = {}
         self.chat_leagues: Dict[int, str] = {}
         self.chat_sim_modes: Dict[int, str] = {}
+        self.chat_prediction_engines: Dict[int, str] = {}
         self.gut_feeling_engine = GutFeelingEngine(
             w_elo=0.9,
             w_form=0.1,
@@ -213,6 +214,19 @@ class PitchsideTelegramBot:
         s = (mode or "").strip().lower()
         norm = "advanced" if ("adv" in s or "deep" in s or "detail" in s) else "simple"
         self.chat_sim_modes[chat_id] = norm
+        return norm
+
+    def get_chat_prediction_engine(self, chat_id: Optional[int]) -> str:
+        """Returns active prediction engine for a chat ('gut' or 'dixon'). Defaults to 'gut'."""
+        if not chat_id:
+            return "gut"
+        return self.chat_prediction_engines.get(chat_id, "gut")
+
+    def set_chat_prediction_engine(self, chat_id: int, engine: str) -> str:
+        """Sets active prediction engine ('gut' or 'dixon')."""
+        s = (engine or "").strip().lower()
+        norm = "dixon" if any(k in s for k in ("dixon", "old", "classic", "bivariate")) else "gut"
+        self.chat_prediction_engines[chat_id] = norm
         return norm
 
     # =========================================================================
@@ -658,15 +672,16 @@ class PitchsideTelegramBot:
             "━━━━━━━━━━━━━━━━━━━━━━\n"
             "<b>Tactical terminal &amp; simulation engine</b> for 🇪🇸 <b>La Liga</b> &amp; 🇮🇹 <b>Serie A</b>!\n\n"
             "🔥 <b>Tactical Capabilities &amp; Engine Modes:</b>\n"
-            "• 🟢/⚙️ <b>Dual Sim Modes:</b> Simple (quick) &amp; Advanced (telemetry)\n"
-            "• 🎲 <b>Gut Feeling AI:</b> 10k Monte Carlo predictions (/gut)\n"
-            "• 🇪🇸/🇮🇹 <b>Dual League:</b> Switch La Liga &amp; Serie A (/league)\n"
-            "• 📅 <b>Matches of the Day:</b> Daily schedule, scores &amp; odds\n"
-            "• ⚡ <b>90' Tactical Match Simulator:</b> Poisson &amp; club DNA\n"
-            "• 🚫 <b>Suspension &amp; Injury Tracking:</b> Squad absences live\n"
+            "• 🟢/⚙️ <b>Dual Sim:</b> Simple &amp; Advanced (/mode)\n"
+            "• 🧠 <b>Engine:</b> Gut 10k AI vs Old Dixon (/engine)\n"
+            "• 🎲 <b>Gut Feeling AI:</b> 10k Monte Carlo (/gut)\n"
+            "• 🇪🇸/🇮🇹 <b>Dual League:</b> La Liga &amp; Serie A (/league)\n"
+            "• 📅 <b>Matches of the Day:</b> Daily schedule &amp; odds\n"
+            "• ⚡ <b>90' Tactical Match Simulator:</b> Poisson &amp; DNA\n"
+            "• 🚫 <b>Suspension &amp; Injury:</b> Squad absences live\n"
             "• 🌊 <b>Predictive Telemetry:</b> Attack momentum &amp; xG\n"
-            "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table &amp; form dots\n"
-            "• 🛡️ <b>Tactical DNA:</b> Dossiers for 40+ clubs &amp; rosters\n"
+            "• 🏆 <b>Standings &amp; Form Guide:</b> 20-club table\n"
+            "• 🛡️ <b>Tactical DNA:</b> Dossiers for 40+ clubs\n"
             "• ⚔️ <b>Head-to-Head:</b> Club &amp; Player comparison\n\n"
             "<i>Select an option below to start exploring! 👇</i>"
         )
@@ -689,7 +704,10 @@ class PitchsideTelegramBot:
                 {"text": "🌟 Top Scorers & Scouting", "callback_data": "ldr:goals"},
             ],
             [
-                {"text": "⚙️ Simulation Mode Switcher", "callback_data": "menu:mode"},
+                {"text": "⚙️ Display Mode", "callback_data": "menu:mode"},
+                {"text": "🧠 Prediction Engine", "callback_data": "menu:engine"},
+            ],
+            [
                 {"text": "⚔️ Compare H2H", "callback_data": "cmp"},
             ],
         ]
@@ -734,12 +752,48 @@ class PitchsideTelegramBot:
         ]
         return resp, {"inline_keyboard": kb}
 
+    def render_engine_switcher(self, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        """
+        Renders the Prediction Engine Selector:
+        - New Engine: Gut Feeling 10,000-Draw Monte Carlo (dynamic Elo anchor, 3-match decayed form, noise sigma=0.05, fair odds, confidence verdict)
+        - Old Engine: Classic Dixon-Coles Tactical Model (rho=-0.08 bivariate Poisson matrix, manager duels, tactical DNA clash, squad fatigue)
+        """
+        current_engine = self.get_chat_prediction_engine(chat_id)
+        is_gut = current_engine == "gut"
+        text = (
+            "🧠 <b>PREDICTION ENGINE SELECTOR</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Choose which mathematical prediction engine powers match probabilities, expected goals (xG), and fair odds:\n\n"
+            f"• <b>🎲 NEW ENGINE: GUT FEELING 10,000-DRAW SIMULATION</b> {'(Active ✅)' if is_gut else ''}\n"
+            "  Dynamic Elo anchor (+70 home field advantage, GD-multiplier, in-season z-score), opponent-adjusted 3-match decayed form (0.5/0.3/0.2, padded with 0.5), log-normal noise (σ=0.05), 10,000 Monte Carlo draws, fair decimal odds, and confidence verdicts (🔥 Strong / ⚡ Lean / 🎲 No gut feeling).\n\n"
+            f"• <b>📐 OLD ENGINE: CLASSIC DIXON-COLES TACTICAL MODEL</b> {'(Active ✅)' if not is_gut else ''}\n"
+            "  Calibrated Dixon-Coles bivariate Poisson matrix with low-score correlation factor (ρ=-0.08), manager tactical stances, formation DNA clash factors, and squad fatigue degradation.\n\n"
+            "<i>Tap an engine below to switch instantly:</i>"
+        )
+        kb = [
+            [
+                {"text": "🎲 New Engine (Gut 10k)" + (" ✅" if is_gut else ""), "callback_data": "engine:gut"},
+                {"text": "📐 Old Engine (Dixon-Coles)" + (" ✅" if not is_gut else ""), "callback_data": "engine:dixon"},
+            ],
+            [
+                {"text": "⚙️ Simulation Display Mode", "callback_data": "menu:mode"},
+                {"text": "📅 Matches of the Day", "callback_data": "day:today"},
+            ],
+            [
+                {"text": "🏠 Main Menu", "callback_data": "menu:home"},
+            ],
+        ]
+        return text, {"inline_keyboard": kb}
+
     def render_mode_switcher(self, chat_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
         """
         Renders the Simulation & Display Mode selector (Simple Mode vs Advanced Mode).
         """
         current_mode = self.get_chat_sim_mode(chat_id)
+        current_engine = self.get_chat_prediction_engine(chat_id)
         is_simple = current_mode == "simple"
+        is_gut = current_engine == "gut"
+        engine_label = "🎲 New Engine (Gut 10k)" if is_gut else "📐 Old Engine (Dixon-Coles)"
         text = (
             "⚙️ <b>MATCH SIMULATION &amp; DISPLAY MODE</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -748,12 +802,16 @@ class PitchsideTelegramBot:
             "  Fast, clean scorelines, key goalscorers with exact minutes, match winner banner, and instant 3-way win probabilities. Perfect for a quick 5-second check.\n\n"
             f"• <b>⚙️ ADVANCED MODE</b> {'(Active ✅)' if not is_simple else ''}\n"
             "  Deep tactical analytics, Dixon-Coles expected goals (xG), 6-phase match dominance breakdown, attack momentum timeline, and tactical radar.\n\n"
-            "<i>Tap a mode below to switch instantly:</i>"
+            f"🧠 <b>Active Prediction Engine:</b> <b>{engine_label}</b>\n\n"
+            "<i>Tap a mode or switch prediction engine below:</i>"
         )
         kb = [
             [
                 {"text": "🟢 Simple Mode" + (" ✅" if is_simple else ""), "callback_data": "mode:simple"},
                 {"text": "⚙️ Advanced Mode" + (" ✅" if not is_simple else ""), "callback_data": "mode:advanced"},
+            ],
+            [
+                {"text": f"🧠 Engine: {'New (Gut 10k) 🎲' if is_gut else 'Old (Dixon) 📐'}", "callback_data": "menu:engine"},
             ],
             [
                 {"text": "📅 Matches of the Day", "callback_data": "day:today"},
@@ -893,9 +951,10 @@ class PitchsideTelegramBot:
             ],
             [
                 {"text": f"⚙️ Mode ({'🟢 Simple' if self.get_chat_sim_mode(chat_id) == 'simple' else '⚙️ Adv'})", "callback_data": "menu:mode"},
-                sub_btn,
+                {"text": f"🧠 Engine: {'New 🎲' if self.get_chat_prediction_engine(chat_id) == 'gut' else 'Old 📐'}", "callback_data": "menu:engine"},
             ],
             [
+                sub_btn,
                 {"text": "ℹ️ What Bot Does (GIF Guide)", "callback_data": "menu:welcome"},
             ],
         ])
@@ -1451,22 +1510,26 @@ class PitchsideTelegramBot:
         mode: Optional[str] = None,
         custom_subs: Optional[List[Dict[str, Any]]] = None,
         chat_id: Optional[int] = None,
+        engine: Optional[str] = None,
     ) -> Tuple[str, Dict[str, Any]]:
         target_mode = mode or self.get_chat_sim_mode(chat_id)
+        target_engine = engine or self.get_chat_prediction_engine(chat_id)
         if target_mode == "simple":
-            return self.render_match_simulation_simple(fixture_id, custom_subs=custom_subs, chat_id=chat_id)
-        return self.render_match_simulation_advanced(fixture_id, custom_subs=custom_subs, chat_id=chat_id)
+            return self.render_match_simulation_simple(fixture_id, custom_subs=custom_subs, chat_id=chat_id, engine=target_engine)
+        return self.render_match_simulation_advanced(fixture_id, custom_subs=custom_subs, chat_id=chat_id, engine=target_engine)
 
     def render_match_simulation_simple(
         self,
         fixture_id: int,
         custom_subs: Optional[List[Dict[str, Any]]] = None,
         chat_id: Optional[int] = None,
+        engine: Optional[str] = None,
     ) -> Tuple[str, Dict[str, Any]]:
         detail = self._get_match_detail(fixture_id)
         if not detail:
             return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
 
+        target_engine = engine or self.get_chat_prediction_engine(chat_id)
         sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs)
         fx = detail["fixture"]
         home = detail["home_team"]
@@ -1506,11 +1569,6 @@ class PitchsideTelegramBot:
             goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n• <i>0'–90' No goals scored. Both backlines held resolute!</i>"
 
         trends = sim.get("trends") or {}
-        gf = self.get_match_gut_feeling(detail)
-        prob_bar = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
-
-        h_xg = stats["xg"]["home"]
-        a_xg = stats["xg"]["away"]
         card = self._render_scoreboard_card(
             h_theme["code"], h_name, hs,
             a_theme["code"], a_name, as_,
@@ -1524,18 +1582,56 @@ class PitchsideTelegramBot:
         crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
         crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
 
+        if target_engine == "dixon":
+            forecast = detail.get("forecast") or self.sim_engine.monte_carlo_forecast(detail)
+            h_prob = float(forecast.get("home_win_pct", 45.0))
+            d_prob = float(forecast.get("draw_pct", 25.0))
+            a_prob = float(forecast.get("away_win_pct", 30.0))
+            prob_bar = self._prob_bar(h_prob, d_prob, a_prob, width=12)
+            proj_xg = forecast.get("projected_xg") or {}
+            xg_h = float(proj_xg.get("home", 1.35))
+            xg_a = float(proj_xg.get("away", 1.10))
+            o25 = float(forecast.get("over_2_5_pct", 50.0))
+            btts = float(forecast.get("btts_yes_pct", 52.0))
+            top_scores = forecast.get("top_scorelines") or []
+            top_scores_str = " · ".join(f"<code>{s['score']}</code> ({s['probability']}%)" for s in top_scores[:3])
+            o1 = round(100.0 / max(5.0, h_prob * 1.05), 2)
+            ox = round(100.0 / max(5.0, d_prob * 1.05), 2)
+            o2 = round(100.0 / max(5.0, a_prob * 1.05), 2)
+            clash_obj = detail.get("tactical_clash") or {}
+            clash_txt = clash_obj.get("key_battle") or clash_obj.get("verdict") or "Tactical clash between formations."
+
+            pred_block = (
+                f"📐 <b>WIN PROBABILITY &amp; xG · CLASSIC DIXON-COLES ENGINE (OLD)</b>\n"
+                f"{prob_bar}\n"
+                f"🟩 {h_theme['code']} <code>{h_prob:.1f}%</code> · ⬜ Draw <code>{d_prob:.1f}%</code> · 🟥 {a_theme['code']} <code>{a_prob:.1f}%</code>\n"
+                f"• <b>Fair Decimal Odds:</b> [<code>{o1:.2f}</code> | <code>{ox:.2f}</code> | <code>{o2:.2f}</code>]\n"
+                f"• <b>Expected Goals:</b> <code>{xg_h:.2f}</code> vs <code>{xg_a:.2f}</code>\n"
+                f"• <b>Over 2.5 Goals:</b> <code>{o25:.1f}%</code> · <b>BTTS:</b> <code>{btts:.1f}%</code>\n"
+                f"• <b>Top Scorelines:</b> {top_scores_str}\n"
+                f"• <b>Tactical Factor:</b> <i>{self._esc(clash_txt)}</i>"
+            )
+            engine_toggle_btn = {"text": "🎲 Switch to New Engine (Gut Feeling 10k)", "callback_data": f"simengine:gut:{fixture_id}"}
+        else:
+            gf = self.get_match_gut_feeling(detail)
+            prob_bar = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
+            pred_block = (
+                f"🎲 <b>WIN PROBABILITY &amp; xG · GUT FEELING 10,000-DRAW SIMULATION</b>\n"
+                f"{prob_bar}\n"
+                f"🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
+                f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
+                f"• <b>Confidence Rating:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
+                f"• <b>Expected Goals:</b> <code>{gf['home_xg']:.2f}</code> vs <code>{gf['away_xg']:.2f}</code>"
+            )
+            engine_toggle_btn = {"text": "📐 Switch to Old Engine (Dixon-Coles)", "callback_data": f"simengine:dixon:{fixture_id}"}
+
         text = (
             f"{media_hdr}⚡ <b>90' MATCH SIMULATION · SIMPLE MODE</b> 🟢{sub_banner}\n"
             f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}  {hs} - {as_}  {self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
             f"{card}\n"
             f"{winner_line}\n\n"
             f"{goals_block}\n\n"
-            f"🎲 <b>WIN PROBABILITY &amp; xG · GUT FEELING 10,000-DRAW SIMULATION</b>\n"
-            f"{prob_bar}\n"
-            f"🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
-            f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
-            f"• <b>Confidence Rating:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
-            f"• <b>Expected Goals:</b> <code>{gf['home_xg']:.2f}</code> vs <code>{gf['away_xg']:.2f}</code>\n\n"
+            f"{pred_block}\n\n"
             f"💬 <i>\"{self._esc(verdict)}\"</i>"
         )
 
@@ -1549,6 +1645,7 @@ class PitchsideTelegramBot:
 
         kb = [
             [{"text": "⚙️ Switch to Advanced Tactical Mode", "callback_data": f"simmode:advanced:{fixture_id}"}],
+            [engine_toggle_btn],
             [{"text": "🔄 Re-Simulate Match", "callback_data": f"simmode:simple:{fixture_id}"}],
         ]
         if crest_row:
@@ -1573,11 +1670,13 @@ class PitchsideTelegramBot:
         fixture_id: int,
         custom_subs: Optional[List[Dict[str, Any]]] = None,
         chat_id: Optional[int] = None,
+        engine: Optional[str] = None,
     ) -> Tuple[str, Dict[str, Any]]:
         detail = self._get_match_detail(fixture_id)
         if not detail:
             return "❌ Match not found.", {"inline_keyboard": [[{"text": "🏠 Main Menu", "callback_data": "menu:home"}]]}
 
+        target_engine = engine or self.get_chat_prediction_engine(chat_id)
         sim = self.sim_engine.simulate_fixture(detail, custom_substitutions=custom_subs)
         fx = detail["fixture"]
         home = detail["home_team"]
@@ -1663,13 +1762,63 @@ class PitchsideTelegramBot:
         if custom_subs:
             sub_banner = "\n🔄 <i>Interactive Manager Substitution Applied!</i>"
 
-        gf = self.get_match_gut_feeling(detail)
-        prob_bar_gf = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
-
         verdict_txt = narrative.get("flow_summary") or narrative.get("tactical_verdict") or ""
         media_hdr = self._render_media_header(h_shield)
         crest_h_link = f'<a href="{h_shield}">🛡️</a> ' if h_shield else ""
         crest_a_link = f' <a href="{a_shield}">🛡️</a>' if a_shield else ""
+
+        if target_engine == "dixon":
+            forecast = detail.get("forecast") or self.sim_engine.monte_carlo_forecast(detail)
+            h_prob = float(forecast.get("home_win_pct", 45.0))
+            d_prob = float(forecast.get("draw_pct", 25.0))
+            a_prob = float(forecast.get("away_win_pct", 30.0))
+            prob_bar_dixon = self._prob_bar(h_prob, d_prob, a_prob, width=12)
+            proj_xg = forecast.get("projected_xg") or {}
+            xg_h = float(proj_xg.get("home", 1.35))
+            xg_a = float(proj_xg.get("away", 1.10))
+            o25 = float(forecast.get("over_2_5_pct", 50.0))
+            btts = float(forecast.get("btts_yes_pct", 52.0))
+            top_scores = forecast.get("top_scorelines") or []
+            top_scores_str = " · ".join(f"<code>{s['score']}</code> ({s['probability']}%)" for s in top_scores[:3])
+            o1 = round(100.0 / max(5.0, h_prob * 1.05), 2)
+            ox = round(100.0 / max(5.0, d_prob * 1.05), 2)
+            o2 = round(100.0 / max(5.0, a_prob * 1.05), 2)
+            clash_obj = detail.get("tactical_clash") or {}
+            clash_battle = clash_obj.get("key_battle") or clash_obj.get("verdict") or "Tactical clash between formations."
+
+            engine_block = (
+                f"🧠 <b>TACTICAL TREND NARRATIVE &amp; DIXON-COLES ENGINE (OLD)</b>\n"
+                f"• <b>Headline:</b> <b>{self._esc(narrative.get('headline', ''))}</b>\n"
+                f"• <b>Key Turning Point:</b> {self._esc(narrative.get('turning_point', ''))}\n"
+                f"• <b>Bivariate Poisson:</b> Dixon-Coles Low-Score Factor ρ=-0.08\n"
+                f"• <b>Projected Poisson Rates:</b> λ_H=<code>{xg_h:.2f}</code> vs λ_A=<code>{xg_a:.2f}</code>\n"
+                f"• <b>Outcome Probabilities:</b> {prob_bar_dixon}\n"
+                f"  🟩 {h_theme['code']} <code>{h_prob:.1f}%</code> · ⬜ Draw <code>{d_prob:.1f}%</code> · 🟥 {a_theme['code']} <code>{a_prob:.1f}%</code>\n"
+                f"• <b>Fair Decimal Odds:</b> [<code>{o1:.2f}</code> | <code>{ox:.2f}</code> | <code>{o2:.2f}</code>]\n"
+                f"• <b>Over 2.5 Goals:</b> <code>{o25:.1f}%</code> · <b>BTTS Yes:</b> <code>{btts:.1f}%</code>\n"
+                f"• <b>Top 3 Scorelines:</b> {top_scores_str}\n"
+                f"• <b>Manager Duel:</b> <i>{self._esc(clash_battle)}</i>\n"
+                f"• <b>Tactical Flow:</b> <i>{self._esc(verdict_txt)}</i>"
+            )
+            engine_toggle_btn = {"text": "🎲 Switch to New Engine (Gut Feeling 10k)", "callback_data": f"simengine:gut:{fixture_id}"}
+        else:
+            gf = self.get_match_gut_feeling(detail)
+            prob_bar_gf = self._prob_bar(gf["prob_home"] * 100.0, gf["prob_draw"] * 100.0, gf["prob_away"] * 100.0, width=12)
+            engine_block = (
+                f"🧠 <b>TACTICAL TREND NARRATIVE &amp; GUT FEELING ENGINE</b>\n"
+                f"• <b>Headline:</b> <b>{self._esc(narrative.get('headline', ''))}</b>\n"
+                f"• <b>Key Turning Point:</b> {self._esc(narrative.get('turning_point', ''))}\n"
+                f"• <b>Elo Anchor:</b> {h_theme['code']} <code>{gf['home_elo']:.1f} (z={gf['z_elo_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['away_elo']:.1f} (z={gf['z_elo_a']:+.2f})</code>\n"
+                f"• <b>3-Match Form:</b> {h_theme['code']} <code>{gf['form_raw_h']:.2f} (z={gf['z_form_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['form_raw_a']:.2f} (z={gf['z_form_a']:+.2f})</code>\n"
+                f"• <b>Combined Strength:</b> S_H=<code>{gf['strength_h']:+.3f}</code>, S_A=<code>{gf['strength_a']:+.3f}</code> → <b>ΔS Gap:</b> <code>{gf['strength_gap']:+.3f}</code>\n"
+                f"• <b>Poisson Rates:</b> λ_H=<code>{gf['home_xg']:.2f}</code>, λ_A=<code>{gf['away_xg']:.2f}</code> (Noise σ=0.05)\n"
+                f"• <b>10,000 Draws:</b> {prob_bar_gf}\n"
+                f"  🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
+                f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
+                f"• <b>Confidence Verdict:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
+                f"• <b>Tactical Flow:</b> <i>{self._esc(verdict_txt)}</i>"
+            )
+            engine_toggle_btn = {"text": "📐 Switch to Old Engine (Dixon-Coles)", "callback_data": f"simengine:dixon:{fixture_id}"}
 
         text = (
             f"{media_hdr}⚡ <b>90' FULL-TIME SIMULATION · ADVANCED MODE</b> ⚙️{sub_banner}\n"
@@ -1688,18 +1837,7 @@ class PitchsideTelegramBot:
             + "\n".join(phase_lines)
             + f"\n\n📈 <b>WIN PROBABILITY EVOLUTION</b>\n"
             + "\n".join(wp_lines)
-            + f"\n\n🧠 <b>TACTICAL TREND NARRATIVE &amp; GUT FEELING ENGINE</b>\n"
-            f"• <b>Headline:</b> <b>{self._esc(narrative.get('headline', ''))}</b>\n"
-            f"• <b>Key Turning Point:</b> {self._esc(narrative.get('turning_point', ''))}\n"
-            f"• <b>Elo Anchor:</b> {h_theme['code']} <code>{gf['home_elo']:.1f} (z={gf['z_elo_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['away_elo']:.1f} (z={gf['z_elo_a']:+.2f})</code>\n"
-            f"• <b>3-Match Form:</b> {h_theme['code']} <code>{gf['form_raw_h']:.2f} (z={gf['z_form_h']:+.2f})</code> vs {a_theme['code']} <code>{gf['form_raw_a']:.2f} (z={gf['z_form_a']:+.2f})</code>\n"
-            f"• <b>Combined Strength:</b> S_H=<code>{gf['strength_h']:+.3f}</code>, S_A=<code>{gf['strength_a']:+.3f}</code> → <b>ΔS Gap:</b> <code>{gf['strength_gap']:+.3f}</code>\n"
-            f"• <b>Poisson Rates:</b> λ_H=<code>{gf['home_xg']:.2f}</code>, λ_A=<code>{gf['away_xg']:.2f}</code> (Noise σ=0.05)\n"
-            f"• <b>10,000 Draws:</b> {prob_bar_gf}\n"
-            f"  🟩 {h_theme['code']} <code>{gf['prob_home']*100:.1f}%</code> · ⬜ Draw <code>{gf['prob_draw']*100:.1f}%</code> · 🟥 {a_theme['code']} <code>{gf['prob_away']*100:.1f}%</code>\n"
-            f"• <b>Fair Decimal Odds:</b> [<code>{gf['odd_home']:.2f}</code> | <code>{gf['odd_draw']:.2f}</code> | <code>{gf['odd_away']:.2f}</code>]\n"
-            f"• <b>Confidence Verdict:</b> {gf['badge']} (<code>{gf['confidence']*100:.1f}%</code>)\n"
-            f"• <b>Tactical Flow:</b> <i>{self._esc(verdict_txt)}</i>"
+            + f"\n\n{engine_block}"
         )
 
         share_url = f"https://t.me/share/url?url=https://t.me/xbetbetterbot&text=⚡+Pitchside+Simulated+{h_theme['code']}+{hs}-{as_}+{a_theme['code']}!"
@@ -1712,6 +1850,7 @@ class PitchsideTelegramBot:
 
         kb = [
             [{"text": "🟢 Switch to Simple Mode", "callback_data": f"simmode:simple:{fixture_id}"}],
+            [engine_toggle_btn],
             [
                 {"text": f"🔄 Sub {h_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:h"},
                 {"text": f"🔄 Sub {a_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
@@ -2821,6 +2960,20 @@ class PitchsideTelegramBot:
             return self.render_gut_feeling_view(arg, chat_id=chat_id)
         if cmd == "/compare":
             return self.render_compare_menu(arg)
+        if cmd in ("/engine", "/model", "/predictionengine"):
+            if arg in ("old", "dixon", "classic", "bivariate"):
+                self.set_chat_prediction_engine(chat_id or 0, "dixon")
+                return self.render_engine_switcher(chat_id=chat_id)
+            if arg in ("new", "gut", "10k", "monte_carlo"):
+                self.set_chat_prediction_engine(chat_id or 0, "gut")
+                return self.render_engine_switcher(chat_id=chat_id)
+            return self.render_engine_switcher(chat_id=chat_id)
+        if cmd in ("/oldengine", "/dixon"):
+            self.set_chat_prediction_engine(chat_id or 0, "dixon")
+            return self.render_engine_switcher(chat_id=chat_id)
+        if cmd in ("/newengine", "/gutengine"):
+            self.set_chat_prediction_engine(chat_id or 0, "gut")
+            return self.render_engine_switcher(chat_id=chat_id)
         if cmd == "/mode":
             if arg in ("simple", "s", "quick", "clean"):
                 self.set_chat_sim_mode(chat_id or 0, "simple")
@@ -2855,11 +3008,25 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "simengine" and len(parts) >= 3:
+            target_engine = parts[1]
+            fid = int(parts[2])
+            mode = self.get_chat_sim_mode(chat_id)
+            toast = "🎲 Switched to New Engine (Gut 10k)" if target_engine == "gut" else "📐 Switched to Old Engine (Dixon-Coles)"
+            return (*self.render_match_simulation(fid, mode=mode, chat_id=chat_id, engine=target_engine), toast)
+        if prefix == "engine" and len(parts) >= 2:
+            target_engine = parts[1]
+            norm = self.set_chat_prediction_engine(chat_id or 0, target_engine)
+            toast = "🎲 Switched to New Engine (Gut 10k)!" if norm == "gut" else "📐 Switched to Old Engine (Dixon-Coles)!"
+            return (*self.render_engine_switcher(chat_id=chat_id), toast)
+        if data in ("menu:engine", "engine"):
+            return (*self.render_engine_switcher(chat_id=chat_id), "🧠 Prediction Engine")
         if prefix == "simmode" and len(parts) >= 3:
             submode = parts[1]
             fid = int(parts[2])
+            engine = self.get_chat_prediction_engine(chat_id)
             toast = "🟢 Simple Mode" if submode == "simple" else "⚙️ Advanced Tactical Mode"
-            return (*self.render_match_simulation(fid, mode=submode, chat_id=chat_id), toast)
+            return (*self.render_match_simulation(fid, mode=submode, chat_id=chat_id, engine=engine), toast)
         if prefix == "mode" and len(parts) >= 2:
             target_mode = parts[1]
             norm = self.set_chat_sim_mode(chat_id or 0, target_mode)
@@ -2912,7 +3079,8 @@ class PitchsideTelegramBot:
             return (*self.render_match_center(int(parts[1]), tab=tab), None)
         if prefix == "sim" and len(parts) >= 2:
             mode = self.get_chat_sim_mode(chat_id)
-            return (*self.render_match_simulation(int(parts[1]), mode=mode, chat_id=chat_id), "⚡ 90' Match Simulation Complete!")
+            engine = self.get_chat_prediction_engine(chat_id)
+            return (*self.render_match_simulation(int(parts[1]), mode=mode, chat_id=chat_id, engine=engine), "⚡ 90' Match Simulation Complete!")
         if prefix == "mxi" and len(parts) >= 2:
             return (*self.render_match_lineups(int(parts[1])), "Starting XIs & Live Form")
         if prefix == "mrad" and len(parts) >= 2:

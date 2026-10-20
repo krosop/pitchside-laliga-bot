@@ -23,6 +23,7 @@ from .api_football import APIFootballClient
 from .simulation_engine import SimulationEngine
 from .club_tactics import ClubTacticsRegistry
 from .live_sync import LiveSyncEngine
+from gut_feeling.model import GutFeelingEngine
 
 # TTL cache for expensive match-detail payloads (lineup building runs two
 # full squad searches per request). Finished matches are immutable; scheduled
@@ -59,6 +60,16 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.api_football = APIFootballClient()
         self.simulation_engine = SimulationEngine(self.db)
         self.live_sync = LiveSyncEngine(self.db)
+        self.gut_engine = GutFeelingEngine(
+            w_elo=0.9,
+            w_form=0.1,
+            k_goal=0.35,
+            sigma_noise=0.05,
+            n_sim=10000,
+            strong_threshold=0.55,
+            lean_threshold=0.45,
+            random_seed=42,
+        )
         super().__init__(*args, directory=str(self.web_dir), **kwargs)
 
     def end_headers(self):
@@ -78,6 +89,77 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def _send_error(self, message: str, status: int = 404):
         self._send_json({"error": message, "status": status}, status=status)
+
+    def _compute_gut_feeling(self, detail: dict) -> dict:
+        home = detail.get("home_team") or {}
+        away = detail.get("away_team") or {}
+        fx = detail.get("fixture") or {}
+        fid = fx.get("id") or 0
+        h_name = home.get("nickname") or home.get("name") or "Home"
+        a_name = away.get("nickname") or away.get("name") or "Away"
+        h_slug = home.get("slug") or ""
+        a_slug = away.get("slug") or ""
+
+        forecast = detail.get("forecast") or {}
+        elo_analysis = forecast.get("elo_analysis") or {}
+        h_dict = elo_analysis.get("home") if isinstance(elo_analysis.get("home"), dict) else {}
+        a_dict = elo_analysis.get("away") if isinstance(elo_analysis.get("away"), dict) else {}
+        h_elo = float(h_dict.get("elo")) if h_dict.get("elo") is not None else 1500.0
+        a_elo = float(a_dict.get("elo")) if a_dict.get("elo") is not None else 1500.0
+
+        z_elo_h = (h_elo - 1500.0) / 120.0
+        z_elo_a = (a_elo - 1500.0) / 120.0
+
+        fixtures = self.db.get_fixtures()
+
+        def _calc_team_form(slug: str):
+            if not slug:
+                return 0.5, 0.0
+            past = [
+                f for f in fixtures
+                if f.get("status") == "FINISHED"
+                and slug in (f.get("home_slug") or "", f.get("away_slug") or "")
+                and f.get("id") != fid
+            ]
+            scores = []
+            for f in past[-3:]:
+                is_home = slug == (f.get("home_slug") or "")
+                gf = int(f.get("home_score", 0) if is_home else f.get("away_score", 0))
+                ga = int(f.get("away_score", 0) if is_home else f.get("home_score", 0))
+                sc = GutFeelingEngine._calc_match_score(gf, ga, 0.0)
+                scores.append(sc)
+            while len(scores) < 3:
+                scores.insert(0, 0.5)
+            f_raw = 0.5 * scores[2] + 0.3 * scores[1] + 0.2 * scores[0]
+            z_f = (f_raw - 0.5) / 0.15
+            return f_raw, z_f
+
+        form_raw_h, z_form_h = _calc_team_form(h_slug)
+        form_raw_a, z_form_a = _calc_team_form(a_slug)
+
+        s_h, s_a, gap = self.gut_engine.compute_strength_gap(z_elo_h, z_form_h, z_elo_a, z_form_a)
+        h_xg, a_xg = self.gut_engine.convert_strength_to_xg(gap, 1.51, 1.24)
+        match_seed = (int(fid) * 1664525 + 1013904223) % (2**31 - 1)
+        p_h, p_d, p_a = self.gut_engine.simulate_probabilities(h_xg, a_xg, match_seed=match_seed)
+        conf, verdict_str = self.gut_engine.label_confidence(p_h, p_d, p_a)
+
+        odd_h = round(1.0 / max(0.01, p_h), 2)
+        odd_d = round(1.0 / max(0.01, p_d), 2)
+        odd_a = round(1.0 / max(0.01, p_a), 2)
+
+        return {
+            "method": "gut_feeling_10k_monte_carlo",
+            "home_win_pct": round(p_h * 100.0, 1),
+            "draw_pct": round(p_d * 100.0, 1),
+            "away_win_pct": round(p_a * 100.0, 1),
+            "fair_odds": {"home": odd_h, "draw": odd_d, "away": odd_a},
+            "projected_xg": {"home": round(h_xg, 2), "away": round(a_xg, 2)},
+            "strength_gap": round(gap, 3),
+            "confidence": round(conf, 3),
+            "confidence_verdict": verdict_str,
+            "elo_ratings": {"home": h_elo, "away": a_elo},
+            "form_scores": {"home": round(form_raw_h, 3), "away": round(form_raw_a, 3)},
+        }
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -208,6 +290,11 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     a_pos = detail.get("away_team", {}).get("position") or 10
                     detail["tactical_clash"] = ClubTacticsRegistry.evaluate_tactical_clash(h_slug, a_slug, h_pos, a_pos)
                     detail["forecast"] = self.simulation_engine.monte_carlo_forecast(detail)
+
+                    engine_param = query.get("engine", ["gut"])[0].lower()
+                    active_engine = "dixon" if engine_param in ("old", "dixon", "classic", "bivariate") else "gut"
+                    detail["active_engine"] = active_engine
+                    detail["gut_feeling"] = self._compute_gut_feeling(detail)
                     self._send_json(detail)
                 else:
                     self._send_error(f"Match with ID {fid} not found", status=404)
@@ -245,8 +332,16 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if not detail:
                     self._send_error(f"Match with ID {fid} not found", status=404)
                     return
-                forecast = self.simulation_engine.monte_carlo_forecast(detail)
-                self._send_json(forecast)
+                engine_param = query.get("engine", ["gut"])[0].lower()
+                dixon_forecast = self.simulation_engine.monte_carlo_forecast(detail)
+                if engine_param in ("old", "dixon", "classic", "bivariate"):
+                    dixon_forecast["engine"] = "dixon"
+                    self._send_json(dixon_forecast)
+                else:
+                    gf_forecast = self._compute_gut_feeling(detail)
+                    gf_forecast["engine"] = "gut"
+                    gf_forecast["dixon_forecast"] = dixon_forecast
+                    self._send_json(gf_forecast)
             except ValueError:
                 self._send_error("Invalid fixture ID", status=400)
             return

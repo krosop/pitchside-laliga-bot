@@ -1,0 +1,6 @@
+Model / Reference Benchmark,Accuracy,Log Loss,Ranked Probability Score (RPS),RPS Difference vs Algo (ΔRPS),95% Bootstrap CI Lower,95% Bootstrap CI Upper,Statistically Superior to Reference?
+Gut Feeling Algorithm,54.82%,0.9705,0.2002,—,—,—,Baseline
+Base Rate (Historical),45.09%,1.062,0.2326,-0.0324,-0.0386,-0.0261,Yes (Algo Better)
+Elo Anchor Only (1.0/0.0),54.91%,0.9693,0.1999,+0.0003,-0.0003,+0.0010,No (Statistically Indistinguishable)
+3-Match Form Only (0.0/1.0),48.68%,1.0295,0.2206,-0.0204,-0.0262,-0.0144,Yes (Algo Better)
+Bookmaker (Pinnacle Closing),56.58%,0.9427,0.1913,+0.0089,+0.0056,+0.0121,No (Reference Better)

@@ -91,3 +91,155 @@ def test_gut_feeling_view_and_command():
 def test_send_photo_method():
     bot = _get_bot()
     assert hasattr(bot, "send_photo"), "send_photo method should exist on bot"
+
+def test_engine_selection_preference():
+    bot = _get_bot()
+    chat_id = 998877
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+
+    assert bot.set_chat_prediction_engine(chat_id, "dixon") == "dixon"
+    assert bot.get_chat_prediction_engine(chat_id) == "dixon"
+
+    assert bot.set_chat_prediction_engine(chat_id, "old") == "dixon"
+    assert bot.get_chat_prediction_engine(chat_id) == "dixon"
+
+    assert bot.set_chat_prediction_engine(chat_id, "gut") == "gut"
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+
+    assert bot.set_chat_prediction_engine(chat_id, "new") == "gut"
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+
+def test_engine_switcher_view():
+    bot = _get_bot()
+    chat_id = 998877
+    text, markup = bot.render_engine_switcher(chat_id)
+    assert "PREDICTION ENGINE SELECTOR" in text
+    assert "NEW ENGINE: GUT FEELING 10,000-DRAW SIMULATION" in text
+    assert "OLD ENGINE: CLASSIC DIXON-COLES" in text
+    assert "(Active ✅)" in text
+
+    buttons = [b["text"] for row in markup.get("inline_keyboard", []) for b in row]
+    cbs = [b.get("callback_data") for row in markup.get("inline_keyboard", []) for b in row if b.get("callback_data")]
+    assert any("New Engine" in b for b in buttons)
+    assert any("Old Engine" in b for b in buttons)
+    assert "engine:gut" in cbs
+    assert "engine:dixon" in cbs
+    assert "menu:mode" in cbs
+    assert "menu:home" in cbs
+
+def test_engine_command_and_shortcuts():
+    bot = _get_bot()
+    chat_id = 998877
+
+    # /engine opens switcher
+    txt, _ = bot.handle_command_or_text("/engine", chat_id=chat_id)
+    assert "PREDICTION ENGINE SELECTOR" in txt
+
+    # /engine old sets to dixon
+    bot.handle_command_or_text("/engine old", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "dixon"
+
+    # /engine new sets to gut
+    bot.handle_command_or_text("/engine new", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+
+    # /oldengine shortcut
+    bot.handle_command_or_text("/oldengine", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "dixon"
+
+    # /newengine shortcut
+    bot.handle_command_or_text("/newengine", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+
+def test_engine_toggle_on_simulation_cards():
+    bot = _get_bot()
+    fixtures = bot._get_all_fixtures()
+    fid = fixtures[0]["id"]
+    chat_id = 998877
+
+    # Simple mode - New Engine (Gut)
+    txt_s_gut, mk_s_gut = bot.render_match_simulation_simple(fid, engine="gut")
+    assert "GUT FEELING 10,000-DRAW SIMULATION" in txt_s_gut
+    cbs_s_gut = [b.get("callback_data") for row in mk_s_gut.get("inline_keyboard", []) for b in row]
+    assert f"simengine:dixon:{fid}" in cbs_s_gut
+
+    # Simple mode - Old Engine (Dixon)
+    txt_s_dix, mk_s_dix = bot.render_match_simulation_simple(fid, engine="dixon")
+    assert "CLASSIC DIXON-COLES ENGINE (OLD)" in txt_s_dix
+    cbs_s_dix = [b.get("callback_data") for row in mk_s_dix.get("inline_keyboard", []) for b in row]
+    assert f"simengine:gut:{fid}" in cbs_s_dix
+
+    # Advanced mode - New Engine (Gut)
+    txt_a_gut, mk_a_gut = bot.render_match_simulation_advanced(fid, engine="gut")
+    assert "GUT FEELING ENGINE" in txt_a_gut
+    cbs_a_gut = [b.get("callback_data") for row in mk_a_gut.get("inline_keyboard", []) for b in row]
+    assert f"simengine:dixon:{fid}" in cbs_a_gut
+
+    # Advanced mode - Old Engine (Dixon)
+    txt_a_dix, mk_a_dix = bot.render_match_simulation_advanced(fid, engine="dixon")
+    assert "DIXON-COLES ENGINE (OLD)" in txt_a_dix
+    cbs_a_dix = [b.get("callback_data") for row in mk_a_dix.get("inline_keyboard", []) for b in row]
+    assert f"simengine:gut:{fid}" in cbs_a_dix
+
+def test_engine_callbacks_and_mode_switcher_integration():
+    bot = _get_bot()
+    chat_id = 998877
+    fixtures = bot._get_all_fixtures()
+    fid = fixtures[0]["id"]
+
+    # Callback engine:dixon
+    txt, mk, toast = bot.handle_callback_data("engine:dixon", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "dixon"
+    assert "Old Engine" in toast
+
+    # Callback engine:gut
+    txt2, mk2, toast2 = bot.handle_callback_data("engine:gut", chat_id=chat_id)
+    assert bot.get_chat_prediction_engine(chat_id) == "gut"
+    assert "New Engine" in toast2
+
+    # Callback simengine:dixon:<fid>
+    sim_dix, _, toast_sim_dix = bot.handle_callback_data(f"simengine:dixon:{fid}", chat_id=chat_id)
+    assert "CLASSIC DIXON-COLES ENGINE (OLD)" in sim_dix
+    assert "Old Engine" in toast_sim_dix
+
+    # Callback simengine:gut:<fid>
+    sim_gut, _, toast_sim_gut = bot.handle_callback_data(f"simengine:gut:{fid}", chat_id=chat_id)
+    assert "GUT FEELING 10,000-DRAW SIMULATION" in sim_gut
+    assert "New Engine" in toast_sim_gut
+
+    # menu:engine callback
+    m_txt, m_mk, _ = bot.handle_callback_data("menu:engine", chat_id=chat_id)
+    assert "PREDICTION ENGINE SELECTOR" in m_txt
+
+    # Mode switcher view includes prediction engine indicator
+    mode_txt, mode_mk = bot.render_mode_switcher(chat_id)
+    assert "Active Prediction Engine:" in mode_txt
+    mode_cbs = [b.get("callback_data") for row in mode_mk.get("inline_keyboard", []) for b in row]
+    assert "menu:engine" in mode_cbs
+
+def test_server_engine_switching():
+    from src.server import ProfilerHTTPRequestHandler
+    from gut_feeling.model import GutFeelingEngine
+    from src.simulation_engine import SimulationEngine
+    db = Database()
+    fixtures = db.get_fixtures()
+    assert len(fixtures) > 0
+    fid = fixtures[0]["id"]
+    detail = db.get_match_detail(fid)
+    assert detail is not None
+
+    handler = ProfilerHTTPRequestHandler.__new__(ProfilerHTTPRequestHandler)
+    handler.db = db
+    handler.simulation_engine = SimulationEngine(db)
+    handler.gut_engine = GutFeelingEngine(
+        w_elo=0.9, w_form=0.1, k_goal=0.35, sigma_noise=0.05, n_sim=10000
+    )
+
+    gf = handler._compute_gut_feeling(detail)
+    assert gf["method"] == "gut_feeling_10k_monte_carlo"
+    assert "home_win_pct" in gf
+    assert "fair_odds" in gf
+    assert "projected_xg" in gf
+    assert "confidence_verdict" in gf
+
+
