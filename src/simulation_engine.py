@@ -19,6 +19,8 @@ import random
 import math
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
+from collections import Counter
+import numpy as np
 from .club_tactics import ClubTacticsRegistry
 from .ratings import RatingsEngine
 from .momentum import team_momentum, compute_momentum
@@ -1058,29 +1060,21 @@ class SimulationEngine:
         # Calibrated Engine Selection: Gut Feeling 10k-Draw vs Dixon-Coles Bivariate Poisson
         is_gut = (engine or "dixon").lower() in ("gut", "new", "gut_feeling")
         if is_gut:
-            # 1. Elo ratings
-            h_elo = 1500.0
-            a_elo = 1500.0
-            if hs.get("elo_info") and hs["elo_info"].get("elo"):
-                h_elo = float(hs["elo_info"]["elo"])
-            elif match_detail_data.get("forecast", {}).get("elo_analysis"):
-                elo_an = match_detail_data["forecast"]["elo_analysis"]
-                h_dict = elo_an.get("home") if isinstance(elo_an.get("home"), dict) else {}
-                if h_dict.get("elo") is not None:
-                    h_elo = float(h_dict["elo"])
+            # 1. Authentic Elo ratings from database or model
+            r_h = RatingsEngine.get_or_none(self.db, home.get("slug", "")) if self.db else None
+            r_a = RatingsEngine.get_or_none(self.db, away.get("slug", "")) if self.db else None
+            h_elo = float(r_h["elo"]) if r_h and r_h.get("elo") is not None else 1500.0
+            a_elo = float(r_a["elo"]) if r_a and r_a.get("elo") is not None else 1500.0
 
-            if as_.get("elo_info") and as_["elo_info"].get("elo"):
-                a_elo = float(as_["elo_info"]["elo"])
-            elif match_detail_data.get("forecast", {}).get("elo_analysis"):
-                elo_an = match_detail_data["forecast"]["elo_analysis"]
-                a_dict = elo_an.get("away") if isinstance(elo_an.get("away"), dict) else {}
-                if a_dict.get("elo") is not None:
-                    a_elo = float(a_dict["elo"])
+            if h_elo == 1500.0 and hs.get("elo") and isinstance(hs["elo"], dict) and hs["elo"].get("elo"):
+                h_elo = float(hs["elo"]["elo"])
+            if a_elo == 1500.0 and as_.get("elo") and isinstance(as_["elo"], dict) and as_["elo"].get("elo"):
+                a_elo = float(as_["elo"]["elo"])
 
             z_elo_h = (h_elo - 1500.0) / 120.0
             z_elo_a = (a_elo - 1500.0) / 120.0
 
-            # 2. 3-Game Weighted Form from DB or team dict
+            # 2. 3-Game Weighted Form from DB
             h_slug = home.get("slug") or ""
             a_slug = away.get("slug") or ""
 
@@ -1124,45 +1118,49 @@ class SimulationEngine:
                 random_seed=seed_val,
             )
             s_h, s_a, gap = gf_engine.compute_strength_gap(z_elo_h, z_form_h, z_elo_a, z_form_a)
-            lambda_h_gf, lambda_a_gf = gf_engine.convert_strength_to_xg(gap, 1.51, 1.24)
-
-            # 4. Stochastic Poisson sampling with calibrated Lognormal noise (sigma = 0.05)
-            noise_h = rng.lognormvariate(0.0, 0.05)
-            noise_a = rng.lognormvariate(0.0, 0.05)
-            effective_lh = lambda_h_gf * noise_h
-            effective_la = lambda_a_gf * noise_a
-
-            def _sample_poisson(lam: float, r: random.Random) -> int:
-                if lam <= 0:
-                    return 0
-                L = math.exp(-lam)
-                k = 0
-                p = 1.0
-                while p > L:
-                    k += 1
-                    p *= r.random()
-                return k - 1
-
-            home_goals = min(_sample_poisson(effective_lh, rng), 6)
-            away_goals = min(_sample_poisson(effective_la, rng), 5)
-            lambda_h = lambda_h_gf
-            lambda_a = lambda_a_gf
+            lambda_h_gf = max(0.45, min(3.8, lambda_h * math.exp(0.18 * gap)))
+            lambda_a_gf = max(0.35, min(3.4, lambda_a * math.exp(-0.18 * gap)))
 
             p_h, p_d, p_a = gf_engine.simulate_probabilities(lambda_h_gf, lambda_a_gf, match_seed=seed_val)
             h_win_base = round(p_h * 100.0, 1)
             d_base = round(p_d * 100.0, 1)
             a_win_base = round(p_a * 100.0, 1)
+
+            # 4. Realistic nucleus sampling from 10,000 Monte Carlo draws (eliminates freak tail blowouts)
+            rng_np = np.random.default_rng(seed_val)
+            noise_h = rng_np.lognormal(0.0, 0.05, size=10000)
+            noise_a = rng_np.lognormal(0.0, 0.05, size=10000)
+            sim_gh = rng_np.poisson(lambda_h_gf * noise_h)
+            sim_ga = rng_np.poisson(lambda_a_gf * noise_a)
+            score_counts = Counter(zip(sim_gh.tolist(), sim_ga.tolist()))
+
+            nucleus = []
+            cum = 0
+            for pair, count in score_counts.most_common():
+                nucleus.append((pair, count))
+                cum += count
+                if cum >= 8500:
+                    break
+            items = [x[0] for x in nucleus]
+            weights = [x[1] for x in nucleus]
+            home_goals, away_goals = rng.choices(items, weights=weights, k=1)[0]
+            lambda_h = lambda_h_gf
+            lambda_a = lambda_a_gf
         else:
-            # Calibrated Dixon-Coles score calculation with deterministic distribution sampling
+            # Calibrated Dixon-Coles score calculation with realistic nucleus sampling
             league_rho = model.get("league_rho", -0.078)
             dc_matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=league_rho)
-            items = list(dc_matrix.keys())
-            weights = list(dc_matrix.values())
+            sorted_dc = sorted(dc_matrix.items(), key=lambda x: x[1], reverse=True)
+            nucleus = []
+            cum = 0.0
+            for score, prob in sorted_dc:
+                nucleus.append((score, prob))
+                cum += prob
+                if cum >= 0.85:
+                    break
+            items = [x[0] for x in nucleus]
+            weights = [x[1] for x in nucleus]
             home_goals, away_goals = rng.choices(items, weights=weights, k=1)[0]
-
-            # Cap extreme blowout anomalies
-            home_goals = min(home_goals, 6)
-            away_goals = min(away_goals, 5)
 
             h_win_base = round(sum(p for (x, y), p in dc_matrix.items() if x > y) * 100, 1)
             d_base = round(sum(p for (x, y), p in dc_matrix.items() if x == y) * 100, 1)
@@ -1358,26 +1356,30 @@ class SimulationEngine:
         # Sort all events chronologically by minute
         events.sort(key=lambda x: x["minute"])
 
-        # 3. Match Statistics Calculation based on authentic club tactical possession split
+        # 3. Match Statistics Calculation based on authentic club tactical possession split & realistic xG
         base_h_poss = clash["expected_possession"]["home"]
         home_poss = int(base_h_poss + rng.randint(-2, 2))
         home_poss = max(32, min(68, home_poss))
         away_poss = 100 - home_poss
 
-        home_shots = max(home_goals + 3, int(8 + (home_poss / 50.0) * 4 + home_goals * 2 + rng.randint(0, 2)))
-        away_shots = max(away_goals + 2, int(6 + (away_poss / 50.0) * 4 + away_goals * 2 + rng.randint(0, 2)))
+        # Realistic Match xG: Grounded on the model expected goals with authentic match-day variance
+        h_tempo = rng.uniform(0.92, 1.08)
+        a_tempo = rng.uniform(0.92, 1.08)
+        home_xg = round(max(0.30, min(4.2, (lambda_h * h_tempo) * 0.72 + (home_goals * 0.25) + rng.uniform(0.02, 0.08))), 2)
+        away_xg = round(max(0.25, min(3.8, (lambda_a * a_tempo) * 0.72 + (away_goals * 0.25) + rng.uniform(0.02, 0.08))), 2)
 
-        home_target = max(home_goals, min(home_shots, int(home_goals + (home_shots - home_goals) * 0.35 + rng.randint(1, 2))))
-        away_target = max(away_goals, min(away_shots, int(away_goals + (away_shots - away_goals) * 0.32 + rng.randint(1, 2))))
+        # Realistic European Top-Flight Shots (9 to 16 shots per team)
+        home_shots = max(home_goals + 3, int(6 + home_xg * 4.0 + (home_poss - 50) * 0.10 + rng.randint(-1, 2)))
+        away_shots = max(away_goals + 2, int(5 + away_xg * 4.0 + (away_poss - 50) * 0.10 + rng.randint(-1, 2)))
 
-        home_xg = round(home_goals * 0.72 + (home_target - home_goals) * 0.16 + (home_shots - home_target) * 0.04 + rng.uniform(0.05, 0.18), 2)
-        away_xg = round(away_goals * 0.72 + (away_target - away_goals) * 0.16 + (away_shots - away_target) * 0.04 + rng.uniform(0.05, 0.18), 2)
+        home_target = max(home_goals, min(home_shots - 1, int(home_goals + (home_shots - home_goals) * 0.28 + rng.randint(0, 1))))
+        away_target = max(away_goals, min(away_shots - 1, int(away_goals + (away_shots - away_goals) * 0.26 + rng.randint(0, 1))))
 
-        corners_h = max(2, int(home_shots * 0.45 + rng.randint(0, 2)))
-        corners_a = max(1, int(away_shots * 0.40 + rng.randint(0, 2)))
+        corners_h = max(1, min(11, int(home_shots * 0.36 + rng.randint(-1, 1))))
+        corners_a = max(1, min(10, int(away_shots * 0.32 + rng.randint(-1, 1))))
 
-        fouls_h = rng.randint(8, 14)
-        fouls_a = rng.randint(9, 15)
+        fouls_h = max(7, min(22, rng.randint(10, 15) + (2 if clash["home"].get("defensive_block") == "low_block" else 0)))
+        fouls_a = max(8, min(23, rng.randint(11, 16) + (2 if clash["away"].get("defensive_block") == "low_block" else 0)))
 
         # Verification check: goal events count must strictly match score
         assert len([e for e in events if e["type"] == "goal" and e["team"] == "home"]) == home_goals
