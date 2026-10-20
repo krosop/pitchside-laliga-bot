@@ -36,7 +36,7 @@ def _build_squad_test_db() -> Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 matchday INTEGER, home_team_id INTEGER, away_team_id INTEGER,
                 home_score INTEGER, away_score INTEGER, status TEXT,
-                kickoff_time TEXT, goals_json TEXT, cards_json TEXT, season INTEGER
+                kickoff_time TEXT, goals_json TEXT, cards_json TEXT, season INTEGER, competition TEXT DEFAULT 'laliga', referee TEXT
             )
         """)
         conn.execute(

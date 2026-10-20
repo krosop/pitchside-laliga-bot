@@ -231,6 +231,20 @@ function renderMatchDetail(d) {
     <div class="kv"><span>${esc(a.name)} shape</span><b>${esc(clash.away.tactical_identity || "")}</b></div>
     <div class="kv"><span>Possession split</span><b>${clash.expected_possession.home}% – ${clash.expected_possession.away}%</b></div>
     <p class="sub">${esc(clash.key_battle || clash.verdict || "")}</p>` : "";
+  const ref = d.referee || (fc.referee || {});
+  const refImp = d.referee_impact || (fc.referee_impact || {});
+  const refHtml = ref.name ? `
+    <div class="card" style="margin-top:.9rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <h2 style="margin:0">👨‍⚖️ Match Official · ${esc(ref.name)} <span style="font-size:1.1rem">${ref.badge_emoji || "⚖️"}</span></h2>
+        <span class="chip" style="background:rgba(255,255,255,0.06);font-size:.78rem">${esc(ref.experience_level || "Accredited")}</span>
+      </div>
+      <div class="kv"><span>Archetype</span><b>${esc(ref.archetype || "Match Referee")}</b></div>
+      <div class="kv"><span>Strictness</span><b>${ref.strictness_index || 50}/100 · ${esc(ref.card_hazard || "")}</b></div>
+      <div class="kv"><span>Whistle Tendencies</span><b>${ref.fouls_per_game || 25} FPG · ${ref.yellow_cards_per_game || 4.5} YC · ${ref.penalties_per_game || 0.28} PK/g</b></div>
+      <div class="kv"><span>Home Whistle Bias</span><b>${ref.home_bias_ratio || 1.0}x away/home foul split</b></div>
+      <p class="sub" style="margin-top:.6rem;color:var(--text, #e6edf3)"><b>Tactical Whistle Impact:</b> <i>${esc(refImp.tactical_narrative || ref.bio_summary || "")}</i></p>
+    </div>` : "";
   const lineup = (t) => {
     const xi = (t.tactics || {}).starting_xi || [];
     const dots = xi.map((p) => `<div class="pdot" style="left:${p.x}%;top:${p.y}%" title="${esc(p.name)} · ${p.overall_rating}">${"<i>" + esc(p.shirt_number || "?") + "</i>"}${esc((p.nickname || p.name || "").split(" ").slice(-1))}</div>`).join("");
@@ -271,6 +285,7 @@ function renderMatchDetail(d) {
         <p class="sub">${esc((a.tactics || {}).manager || "")} · ${esc((a.tactics || {}).style || "")}</p>
         <div class="pitch">${la.dots}</div><div class="xi-list">${la.list}</div></div>
     </div>
+    ${refHtml}
     <div class="card" style="margin-top:.9rem"><h2>Match simulation</h2>
       <p class="sub">${isGut ? "Gut Feeling 10,000-draw Monte Carlo engine · Stochastic Lognormal-Poisson" : "Deterministic Dixon-Coles engine · Bivariate Poisson"}</p>
       <div style="display:flex;gap:.6rem;margin:.7rem 0"><button class="btn" id="simBtn">Simulate match</button><span class="mono" id="simScore" style="align-self:center"></span></div>
@@ -289,13 +304,17 @@ async function runSim() {
       `<div class="tl-row ${e.team === "away" ? "away" : ""}"><span class="tl-min">${e.minute}'</span><span>${esc(e.description || (e.scorer ? "Goal: " + e.scorer : e.type))}</span></div>`
     ).join("");
     const st = sim.stats || {};
+    const refSim = sim.referee ? `<div class="kv"><span>Match Official</span><b>${esc(sim.referee.name)} (${sim.referee.strictness_index}/100 strictness)</b></div>` : "";
+    const cardSim = st.yellow_cards ? `<div class="kv"><span>Cards</span><b>🟨 ${st.yellow_cards.home} vs ${st.yellow_cards.away}${st.red_cards && (st.red_cards.home || st.red_cards.away) ? ` · 🟥 ${st.red_cards.home} vs ${st.red_cards.away}` : ""}</b></div>` : "";
     $("#simOut").innerHTML = `<div class="grid2"><div><h3>Timeline</h3><div class="timeline">${ev || "No events"}</div></div>
       <div><h3>Stats</h3>
+      ${refSim}
       <div class="kv"><span>Possession</span><b>${st.possession ? st.possession.home + "% – " + st.possession.away + "%" : "–"}</b></div>
       <div class="kv"><span>xG</span><b>${st.xg ? st.xg.home + " – " + st.xg.away : "–"}</b></div>
       <div class="kv"><span>Shots (on target)</span><b>${st.shots ? st.shots.home + " (" + st.shots_on_target.home + ") – " + st.shots.away + " (" + st.shots_on_target.away + ")" : "–"}</b></div>
       <div class="kv"><span>Corners</span><b>${st.corners ? st.corners.home + " – " + st.corners.away : "–"}</b></div>
-      <div class="kv"><span>Fouls</span><b>${st.fouls ? st.fouls.home + " – " + st.fouls.away : "–"}</b></div></div></div>`;
+      <div class="kv"><span>Fouls</span><b>${st.fouls ? st.fouls.home + " – " + st.fouls.away : "–"}</b></div>
+      ${cardSim}</div></div>`;
   } catch (e) { toast("Simulation failed"); }
   btn.disabled = false; btn.textContent = "Simulate match";
 }

@@ -25,6 +25,7 @@ from .database import Database
 from .comparator import PlayerComparator
 from .simulation_engine import SimulationEngine
 from .club_tactics import ClubTacticsRegistry, CLUB_TACTICAL_DNA
+from .referee_engine import RefereeRegistry, RefereeProfile, RefereeTacticalEvaluator
 from gut_feeling.model import GutFeelingEngine
 
 
@@ -430,6 +431,7 @@ class PitchsideTelegramBot:
             {"command": "clubs", "description": "🛡️ All 20 Club Tactical DNA Dossiers"},
             {"command": "players", "description": "🌟 Leaderboards, Ratings & Player Search"},
             {"command": "compare", "description": "⚔️ Compare 2 Players or Clubs Head-to-Head"},
+            {"command": "referees", "description": "👨‍⚖️ Referee Profiles, Strictness & Card Hazard"},
             {"command": "msgmode", "description": "💬 Toggle New Messages vs In-Place Edits"},
             {"command": "help", "description": "ℹ️ Bot Guide & Features Overview"},
         ]
@@ -1580,7 +1582,8 @@ class PitchsideTelegramBot:
             for g in goal_events:
                 side_ico = "🏠" if g.get("team") == "home" else "✈️"
                 ast = f" <i>(ast. {self._esc(g['assist'])})</i>" if g.get("assist") else ""
-                g_lines.append(f"• <code>{g.get('minute', 0):>2}'</code> ⚽ <b>{self._esc(g.get('scorer'))}</b> {side_ico}{ast}")
+                pen_tag = " <i>(Pen)</i>" if g.get("is_penalty") else ""
+                g_lines.append(f"• <code>{g.get('minute', 0):>2}'</code> ⚽ <b>{self._esc(g.get('scorer'))}</b>{pen_tag} {side_ico}{ast}")
             goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n" + "\n".join(g_lines)
         else:
             goals_block = "⚽ <b>GOALS &amp; SCORERS</b>\n• <i>0'–90' No goals scored. Both backlines held resolute!</i>"
@@ -1642,12 +1645,26 @@ class PitchsideTelegramBot:
             )
             engine_toggle_btn = {"text": "📐 Switch to Old Engine (Dixon-Coles)", "callback_data": f"simengine:dixon:{fixture_id}"}
 
+        ref = sim.get("referee")
+        ref_imp = sim.get("referee_impact") or {}
+        ref_block = ""
+        ref_btn = None
+        if ref:
+            ref_block = (
+                f"\n👨‍⚖️ <b>MATCH OFFICIAL · {self._esc(ref['name'])}</b> {ref.get('badge_emoji', '⚖️')}\n"
+                f"• <b>Strictness:</b> <code>{ref.get('strictness_index', 50)}/100</code> · {ref.get('card_hazard', 'Standard')}\n"
+                f"• <b>Whistle Tendency:</b> <code>{ref.get('fouls_per_game', 25.0):.1f}</code> FPG · <code>{ref.get('yellow_cards_per_game', 4.5):.1f}</code> YC · <code>{ref.get('penalties_per_game', 0.28):.2f}</code> PK/g\n"
+                f"• <b>Officiating Impact:</b> <i>{self._esc(ref_imp.get('tactical_narrative', 'Neutral flow.'))}</i>\n\n"
+            )
+            ref_btn = {"text": f"👨‍⚖️ Referee Dossier ({ref['short_name']})", "callback_data": f"ref:{ref['slug']}:{fixture_id}"}
+
         text = (
             f"{media_hdr}⚡ <b>90' MATCH SIMULATION · SIMPLE MODE</b> 🟢{sub_banner}\n"
             f"{crest_h_link}{h_theme['badge']} <b>{self._esc(h_name)}  {hs} - {as_}  {self._esc(a_name)}</b> {a_theme['badge']}{crest_a_link}\n"
             f"{card}\n"
             f"{winner_line}\n\n"
             f"{goals_block}\n\n"
+            f"{ref_block}"
             f"{pred_block}\n\n"
             f"💬 <i>\"{self._esc(verdict)}\"</i>"
         )
@@ -1663,8 +1680,10 @@ class PitchsideTelegramBot:
         kb = [
             [{"text": "⚙️ Switch to Advanced Tactical Mode", "callback_data": f"simmode:advanced:{fixture_id}"}],
             [engine_toggle_btn],
-            [{"text": "🔄 Re-Simulate Match", "callback_data": f"simmode:simple:{fixture_id}"}],
         ]
+        if ref_btn:
+            kb.append([ref_btn])
+        kb.append([{"text": "🔄 Re-Simulate Match", "callback_data": f"simmode:simple:{fixture_id}"}])
         if crest_row:
             kb.append(crest_row)
         kb.extend([
@@ -1719,11 +1738,16 @@ class PitchsideTelegramBot:
             if etype == "goal":
                 side_ico = "🏠" if ev.get("team") == "home" else "✈️"
                 assist_str = f" <i>(ast. {self._esc(ev['assist'])})</i>" if ev.get("assist") else ""
-                events_lines.append(f"{m_str} ⚽ <b>GOAL! {self._esc(ev.get('scorer'))}</b> {side_ico}{assist_str}")
+                pen_tag = " <i>(Pen)</i>" if ev.get("is_penalty") else ""
+                events_lines.append(f"{m_str} ⚽ <b>GOAL!{pen_tag} {self._esc(ev.get('scorer'))}</b> {side_ico}{assist_str}")
             elif etype == "save":
                 events_lines.append(f"{m_str} 🧤 Save by <b>{self._esc(ev.get('player'))}</b> ({self._esc(ev.get('team_name'))})")
             elif etype == "card":
                 events_lines.append(f"{m_str} 🟨 Yellow Card: <b>{self._esc(ev.get('player'))}</b>")
+            elif etype == "red_card":
+                events_lines.append(f"{m_str} 🟥 <b>RED CARD! {self._esc(ev.get('player'))}</b>")
+            elif etype == "var_review":
+                events_lines.append(f"{m_str} {self._esc(ev.get('description'))}")
             elif etype in ("game_management", "attacking_siege"):
                 events_lines.append(f"{m_str} {self._esc(ev.get('description'))}")
 
@@ -1837,6 +1861,25 @@ class PitchsideTelegramBot:
             )
             engine_toggle_btn = {"text": "📐 Switch to Old Engine (Dixon-Coles)", "callback_data": f"simengine:dixon:{fixture_id}"}
 
+        ref = sim.get("referee")
+        ref_imp = sim.get("referee_impact") or {}
+        ref_block = ""
+        ref_btn = None
+        if ref:
+            yc_h = stats.get('yellow_cards', {}).get('home', 0)
+            yc_a = stats.get('yellow_cards', {}).get('away', 0)
+            rc_h = stats.get('red_cards', {}).get('home', 0)
+            rc_a = stats.get('red_cards', {}).get('away', 0)
+            cards_detail = f" · 🟨 <code>{yc_h}</code> vs <code>{yc_a}</code>" + (f" · 🟥 <code>{rc_h}</code> vs <code>{rc_a}</code>" if (rc_h or rc_a) else "")
+            ref_block = (
+                f"\n👨‍⚖️ <b>MATCH OFFICIAL · {self._esc(ref['name'])}</b> {ref.get('badge_emoji', '⚖️')}\n"
+                f"• <b>Archetype:</b> <b>{self._esc(ref.get('archetype', 'Match Official'))}</b> (Strictness: <code>{ref.get('strictness_index', 50)}/100</code>)\n"
+                f"• <b>Disciplinary Metrics:</b> <code>{ref.get('fouls_per_game', 25.0):.1f}</code> FPG · <code>{ref.get('yellow_cards_per_game', 4.5):.1f}</code> YC · <code>{ref.get('penalties_per_game', 0.28):.2f}</code> PK/g\n"
+                f"• <b>Simulated Match Cards:</b> Fouls <code>{stats['fouls']['home']}</code> vs <code>{stats['fouls']['away']}</code>{cards_detail}\n"
+                f"• <b>Tactical Whistle Impact:</b> <i>{self._esc(ref_imp.get('tactical_narrative', 'Balanced officiating control.'))}</i>\n"
+            )
+            ref_btn = {"text": f"👨‍⚖️ Referee Dossier ({ref['short_name']})", "callback_data": f"ref:{ref['slug']}:{fixture_id}"}
+
         text = (
             f"{media_hdr}⚡ <b>90' FULL-TIME SIMULATION · ADVANCED MODE</b> ⚙️{sub_banner}\n"
             f"{crest_h_link}{h_theme['badge']} <b>{h_theme['code']}  {hs} - {as_}  {a_theme['code']}</b> {a_theme['badge']}{crest_a_link}\n"
@@ -1849,8 +1892,9 @@ class PitchsideTelegramBot:
             f"• <b>Possession:</b> <code>{h_poss}%</code> vs <code>{a_poss}%</code>\n"
             f"• <b>Expected Goals (xG):</b> <code>{h_xg:.2f}</code> vs <code>{a_xg:.2f}</code>\n"
             f"• <b>Total Shots (On Target):</b> <code>{h_sh} ({h_sot})</code> vs <code>{a_sh} ({a_sot})</code>\n"
-            f"• <b>Corners / Fouls:</b> <code>{h_cor}/{stats['fouls']['home']}</code> vs <code>{a_cor}/{stats['fouls']['away']}</code>\n\n"
-            f"🌊 <b>6-PHASE ATTACK MOMENTUM &amp; DOMINANCE</b>\n"
+            f"• <b>Corners / Fouls:</b> <code>{h_cor}/{stats['fouls']['home']}</code> vs <code>{a_cor}/{stats['fouls']['away']}</code>\n"
+            + ref_block
+            + f"\n🌊 <b>6-PHASE ATTACK MOMENTUM &amp; DOMINANCE</b>\n"
             + "\n".join(phase_lines)
             + f"\n\n📈 <b>WIN PROBABILITY EVOLUTION</b>\n"
             + "\n".join(wp_lines)
@@ -1868,6 +1912,10 @@ class PitchsideTelegramBot:
         kb = [
             [{"text": "🟢 Switch to Simple Mode", "callback_data": f"simmode:simple:{fixture_id}"}],
             [engine_toggle_btn],
+        ]
+        if ref_btn:
+            kb.append([ref_btn])
+        kb.extend([
             [
                 {"text": f"🔄 Sub {h_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:h"},
                 {"text": f"🔄 Sub {a_theme['code']} & Re-Sim", "callback_data": f"msub:{fixture_id}:a"},
@@ -1876,7 +1924,7 @@ class PitchsideTelegramBot:
                 {"text": "🎲 Gut Feeling Dossier", "callback_data": f"gut:{fixture_id}"},
                 {"text": "📊 6-Axis Tactical Radar", "callback_data": f"mrad:{fixture_id}"},
             ],
-        ]
+        ])
         if crest_row:
             kb.append(crest_row)
         kb.extend([
@@ -1889,6 +1937,116 @@ class PitchsideTelegramBot:
                 {"text": "🏠 Today's Matches", "callback_data": "day:today"},
             ],
         ])
+        return text, {"inline_keyboard": kb}
+
+
+    # =========================================================================
+    # VIEW: REFEREE DOSSIER & DIRECTORY
+    # =========================================================================
+    def render_referee_dossier(self, ref_slug: str, fixture_id: Optional[int] = None) -> Tuple[str, Dict[str, Any]]:
+        ref = RefereeRegistry.get_by_name(ref_slug) or RefereeRegistry._PROFILES.get(ref_slug)
+        if not ref:
+            return "❌ Referee profile not found.", {"inline_keyboard": [[{"text": "👨‍⚖️ All Referees", "callback_data": "refs:strict"}]]}
+
+        strict_bar = self._progress_bar(ref.strictness_index, 100, width=10)
+        tendencies_str = "\n".join(f"• {self._esc(t)}" for t in ref.key_tendencies)
+
+        synergies = ref.tactical_synergies or {}
+        syn_lines = []
+        if "low_block" in synergies:
+            syn_lines.append(f"• <b>Low Block / Physical Clash:</b> {self._esc(synergies['low_block'])}")
+        if "high_press" in synergies:
+            syn_lines.append(f"• <b>High Press / Transitions:</b> {self._esc(synergies['high_press'])}")
+        if "derby" in synergies:
+            syn_lines.append(f"• <b>Derby Atmosphere:</b> {self._esc(synergies['derby'])}")
+        syn_str = "\n".join(syn_lines) if syn_lines else "• Standard European flow across tactical setups."
+
+        league_label = "🇪🇸 La Liga EA SPORTS" if ref.competition == "laliga" else "🇮🇹 Serie A Enilive"
+
+        text = (
+            f"👨‍⚖️ <b>MATCH OFFICIAL DOSSIER · {self._esc(ref.name)}</b> {ref.badge_emoji}\n\n"
+            f"🏅 <b>Credentials:</b> {self._esc(ref.experience_level)} · {league_label}\n"
+            f"💼 <b>Career Matches Analyzed:</b> <code>{ref.matches_officiated}</code> fixtures\n"
+            f"🎯 <b>Officiating Archetype:</b> <b>{self._esc(ref.archetype)}</b>\n\n"
+            f"⚖️ <b>STRICTNESS &amp; BOOKING THRESHOLD</b>\n"
+            f"<code>[{strict_bar}]</code> <b>{ref.strictness_index}/100</b> · {ref.card_hazard_level}\n"
+            f"• <b>Fouls / Game (FPG):</b> <code>{ref.fouls_per_game:.1f}</code> <i>(League avg: ~24.5)</i>\n"
+            f"• <b>Yellow Cards / Game:</b> <code>{ref.yellow_cards_per_game:.1f}</code> <i>(League avg: ~4.4)</i>\n"
+            f"• <b>Red Cards / Game:</b> <code>{ref.red_cards_per_game:.2f}</code> <i>(League avg: ~0.24)</i>\n"
+            f"• <b>Penalty Rate:</b> <code>{ref.penalties_per_game:.2f}</code> PK/match <i>({int(ref.penalties_per_game*100)}% hazard)</i>\n"
+            f"• <b>Home Whistle Ratio:</b> <code>{ref.home_bias_ratio:.2f}x</code> away/home foul split\n\n"
+            f"🔍 <b>SCOUTING REPORT &amp; KEY BEHAVIORAL TENDENCIES</b>\n"
+            f"{tendencies_str}\n\n"
+            f"⚡ <b>TACTICAL FRICTION &amp; MANAGER SYNERGIES</b>\n"
+            f"{syn_str}\n\n"
+            f"📖 <i>\"{self._esc(ref.bio_summary)}\"</i>"
+        )
+
+        kb = []
+        if fixture_id:
+            kb.append([{"text": "◀ Back to Simulation", "callback_data": f"simmode:simple:{fixture_id}"}])
+        kb.append([
+            {"text": "🟥 Strict", "callback_data": "refs:strict"},
+            {"text": "🕊️ Lenient", "callback_data": "refs:lenient"},
+            {"text": "🎯 Penalties", "callback_data": "refs:penalties"},
+        ])
+        kb.append([
+            {"text": "🇪🇸 La Liga Refs", "callback_data": "refs:comp:laliga"},
+            {"text": "🇮🇹 Serie A Refs", "callback_data": "refs:comp:serie_a"},
+        ])
+        kb.append([{"text": "🏠 Main Menu", "callback_data": "menu:home"}])
+        return text, {"inline_keyboard": kb}
+
+    def render_referees_directory(
+        self,
+        category: str = "strict",
+        competition: Optional[str] = None,
+        chat_id: Optional[int] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        comp = competition or self.get_chat_league(chat_id)
+        if category == "lenient":
+            refs = RefereeRegistry.get_most_lenient(limit=10, competition=comp)
+            hdr = "🕊️ <b>MOST LENIENT MATCH OFFICIALS</b>"
+            sub = "Referees who let the game flow with high contact tolerance & low card counts."
+        elif category == "penalties":
+            refs = RefereeRegistry.get_penalty_magnets(limit=10, competition=comp)
+            hdr = "🎯 <b>PENALTY MAGNET REFEREES</b>"
+            sub = "Officials with the highest penalty-box spot kick award rates."
+        elif category in ("comp", "all"):
+            refs = RefereeRegistry.get_all(competition=comp)
+            hdr = f"👨‍⚖️ <b>ALL OFFICIALS ({'🇪🇸 La Liga' if comp == 'laliga' else '🇮🇹 Serie A'})</b>"
+            sub = "Complete directory of accredited domestic match referees."
+        else:
+            category = "strict"
+            refs = RefereeRegistry.get_top_strict(limit=10, competition=comp)
+            hdr = "🟥 <b>HIGHEST STRICTNESS &amp; CARD HAZARD REFEREES</b>"
+            sub = "Strict disciplinarians with low tolerance for cynical fouls & dissent."
+
+        lines = [hdr, f"<i>{sub}</i>\n"]
+        for idx, r in enumerate(refs, 1):
+            bar = self._progress_bar(r.strictness_index, 100, width=6)
+            lines.append(
+                f"<b>{idx}. {r.badge_emoji} {self._esc(r.short_name)}</b> (<code>{r.strictness_index}/100</code>)\n"
+                f"   <code>[{bar}]</code> {r.card_hazard_level}\n"
+                f"   • <code>{r.fouls_per_game:.1f}</code> FPG · <code>{r.yellow_cards_per_game:.1f}</code> YC · <code>{r.penalties_per_game:.2f}</code> PK/g\n"
+            )
+
+        text = "\n".join(lines)
+
+        ref_btns = []
+        for r in refs[:8]:
+            ref_btns.append({"text": f"{r.badge_emoji} {r.short_name}", "callback_data": f"ref:{r.slug}"})
+        kb = [ref_btns[i:i+2] for i in range(0, len(ref_btns), 2)]
+        kb.append([
+            {"text": f"{'🔘 ' if category == 'strict' else ''}🟥 Strict", "callback_data": f"refs:strict:{comp}"},
+            {"text": f"{'🔘 ' if category == 'lenient' else ''}🕊️ Lenient", "callback_data": f"refs:lenient:{comp}"},
+            {"text": f"{'🔘 ' if category == 'penalties' else ''}🎯 Penalties", "callback_data": f"refs:penalties:{comp}"},
+        ])
+        kb.append([
+            {"text": f"{'🔘 ' if comp == 'laliga' else ''}🇪🇸 La Liga", "callback_data": f"refs:{category}:laliga"},
+            {"text": f"{'🔘 ' if comp == 'serie_a' else ''}🇮🇹 Serie A", "callback_data": f"refs:{category}:serie_a"},
+        ])
+        kb.append([{"text": "🏠 Main Menu", "callback_data": "menu:home"}])
         return text, {"inline_keyboard": kb}
 
     # =========================================================================
@@ -2918,6 +3076,8 @@ class PitchsideTelegramBot:
             return self.render_welcome_text()
         if cmd in ("/today", "/menu"):
             return self.render_home_view(arg if arg else "today", chat_id=chat_id)
+        if cmd in ("/referees", "/refs", "/ref", "/whistle"):
+            return self.render_referees_directory(category="strict", chat_id=chat_id)
         if cmd in ("/league", "/competition", "/switcher"):
             if arg:
                 norm = self.set_chat_league(chat_id or 0, arg)
@@ -3025,6 +3185,14 @@ class PitchsideTelegramBot:
         parts = (data or "").split(":")
         prefix = parts[0]
 
+        if prefix == "ref" and len(parts) >= 2:
+            slug = parts[1]
+            back_fid = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else None
+            return (*self.render_referee_dossier(slug, fixture_id=back_fid), "👨‍⚖️ Referee Dossier")
+        if prefix == "refs":
+            cat = parts[1] if len(parts) >= 2 else "strict"
+            comp = parts[2] if len(parts) >= 3 else None
+            return (*self.render_referees_directory(category=cat, competition=comp, chat_id=chat_id), "👨‍⚖️ Match Officials")
         if prefix == "simengine" and len(parts) >= 3:
             target_engine = parts[1]
             fid = int(parts[2])

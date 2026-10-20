@@ -24,6 +24,7 @@ import numpy as np
 from .club_tactics import ClubTacticsRegistry
 from .ratings import RatingsEngine
 from .momentum import team_momentum, compute_momentum
+from .referee_engine import RefereeRegistry, RefereeTacticalEvaluator, RefereeProfile
 from gut_feeling.model import GutFeelingEngine
 
 
@@ -607,6 +608,10 @@ class SimulationEngine:
         home, away = model["home"], model["away"]
         clash, h_fatigue, a_fatigue = model["clash"], model["fatigue"]["home"], model["fatigue"]["away"]
         lambda_h, lambda_a = model["lambda_h"], model["lambda_a"]
+        f_fx = match_detail_data.get("fixture", {})
+        comp_name = f_fx.get("competition") or "laliga"
+        ref_prof = RefereeRegistry.get_for_fixture(f_fx, fallback_comp=comp_name)
+        ref_impact = RefereeTacticalEvaluator.evaluate(ref_prof, clash, home, away)
 
         matrix = self.calculate_dixon_coles_matrix(lambda_h, lambda_a, rho=-0.08)
         probs = self._outcome_probabilities(matrix)
@@ -666,6 +671,8 @@ class SimulationEngine:
                 "away_absence_penalty": as_["absence_penalty"],
             },
             "model_components": model.get("components"),
+            "referee": ref_prof.to_dict(),
+            "referee_impact": ref_impact,
             "fatigue_analysis": {
                 "home": h_fatigue,
                 "away": a_fatigue
@@ -1025,6 +1032,10 @@ class SimulationEngine:
         model = self._match_strength_model(model_input)
         clash = model["clash"]
         lambda_h, lambda_a = model["lambda_h"], model["lambda_a"]
+        f_fx = match_detail_data.get("fixture", {})
+        comp_name = f_fx.get("competition") or "laliga"
+        ref_prof = RefereeRegistry.get_for_fixture(f_fx, fallback_comp=comp_name)
+        ref_impact = RefereeTacticalEvaluator.evaluate(ref_prof, clash, home, away)
         h_fatigue = model["fatigue"]["home"]
         a_fatigue = model["fatigue"]["away"]
         hs, as_ = model["home_strength"], model["away_strength"]
@@ -1229,12 +1240,21 @@ class SimulationEngine:
 
             return scorer, assister
 
-        # Generate Home Goals (Exact count match)
+        # Generate Home Goals (Exact count match, incorporating referee penalty propensity)
+        home_pen_scored = False
         for _ in range(home_goals):
             min_val = pick_minute()
             scorer, assister = select_scorer(h_starters, home["name"])
             s_name = scorer.get("name") or scorer.get("nickname") or f"{home['name']} Striker"
             a_name = (assister.get("name") or assister.get("nickname")) if assister else None
+            is_pen = False
+            if not home_pen_scored and rng.random() < (ref_impact.get("penalty_chance", 0.28) * 0.65):
+                is_pen = True
+                home_pen_scored = True
+                a_name = None
+                desc = f"⚽ GOAL! (Penalty) {s_name} converts from the spot! Awarded by {ref_prof.short_name}."
+            else:
+                desc = f"⚽ GOAL! {s_name} scores for {home['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
             events.append({
                 "type": "goal",
                 "team": "home",
@@ -1244,15 +1264,25 @@ class SimulationEngine:
                 "scorer_id": scorer.get("id"),
                 "scorer_slug": scorer.get("slug"),
                 "assist": a_name,
-                "description": f"⚽ GOAL! {s_name} scores for {home['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
+                "is_penalty": is_pen,
+                "description": desc
             })
 
-        # Generate Away Goals (Exact count match)
+        # Generate Away Goals (Exact count match, incorporating referee penalty propensity)
+        away_pen_scored = False
         for _ in range(away_goals):
             min_val = pick_minute()
             scorer, assister = select_scorer(a_starters, away["name"])
             s_name = scorer.get("name") or scorer.get("nickname") or f"{away['name']} Striker"
             a_name = (assister.get("name") or assister.get("nickname")) if assister else None
+            is_pen = False
+            if not away_pen_scored and rng.random() < (ref_impact.get("penalty_chance", 0.28) * 0.65):
+                is_pen = True
+                away_pen_scored = True
+                a_name = None
+                desc = f"⚽ GOAL! (Penalty) {s_name} converts from the spot! Awarded by {ref_prof.short_name}."
+            else:
+                desc = f"⚽ GOAL! {s_name} scores for {away['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
             events.append({
                 "type": "goal",
                 "team": "away",
@@ -1262,35 +1292,89 @@ class SimulationEngine:
                 "scorer_id": scorer.get("id"),
                 "scorer_slug": scorer.get("slug"),
                 "assist": a_name,
-                "description": f"⚽ GOAL! {s_name} scores for {away['name']}!{(' (Assist: ' + a_name + ')') if a_name else ''}"
+                "is_penalty": is_pen,
+                "description": desc
             })
 
-        # Add 2-3 non-goal match events (saves, cards)
-        if h_starters:
-            h_defenders = [p for p in h_starters if "defender" in (p.get("position") or "").lower() or "midfielder" in (p.get("position") or "").lower()]
-            if h_defenders and rng.random() < 0.85:
-                card_player = rng.choice(h_defenders)
-                events.append({
-                    "type": "card",
-                    "team": "home",
-                    "team_name": home["name"],
-                    "minute": pick_minute(),
-                    "player": card_player["name"],
-                    "description": f"🟨 Yellow Card: {card_player['name']} ({home['name']}) - Tactical foul"
-                })
+        # Referee Calibrated Cautions & Disciplinary Events
+        yc_h_count = max(0, min(5, int(round((ref_prof.yellow_cards_per_game * 0.48) * ref_impact.get("card_multiplier", 1.0) + rng.uniform(-0.5, 0.5)))))
+        yc_a_count = max(0, min(5, int(round((ref_prof.yellow_cards_per_game * 0.52) * ref_impact.get("card_multiplier", 1.0) + rng.uniform(-0.5, 0.5)))))
+        if ref_prof.home_bias_ratio > 1.25:
+            yc_a_count = max(yc_a_count, yc_h_count + 1)
 
-        if a_starters:
-            a_defenders = [p for p in a_starters if "defender" in (p.get("position") or "").lower() or "midfielder" in (p.get("position") or "").lower()]
-            if a_defenders and rng.random() < 0.85:
-                card_player = rng.choice(a_defenders)
+        if h_starters and yc_h_count > 0:
+            h_cands = [p for p in h_starters if "goalkeeper" not in (p.get("position") or "").lower()]
+            if h_cands:
+                for card_p in rng.sample(h_cands, k=min(len(h_cands), min(2, yc_h_count))):
+                    c_name = card_p.get("name") or card_p.get("nickname") or f"{home['name']} Player"
+                    events.append({
+                        "type": "card",
+                        "team": "home",
+                        "team_name": home["name"],
+                        "minute": pick_minute(),
+                        "player": c_name,
+                        "description": f"🟨 Yellow Card: {c_name} ({home['name']}) cautioned by {ref_prof.short_name}"
+                    })
+
+        if a_starters and yc_a_count > 0:
+            a_cands = [p for p in a_starters if "goalkeeper" not in (p.get("position") or "").lower()]
+            if a_cands:
+                for card_p in rng.sample(a_cands, k=min(len(a_cands), min(2, yc_a_count))):
+                    c_name = card_p.get("name") or card_p.get("nickname") or f"{away['name']} Player"
+                    events.append({
+                        "type": "card",
+                        "team": "away",
+                        "team_name": away["name"],
+                        "minute": pick_minute(),
+                        "player": c_name,
+                        "description": f"🟨 Yellow Card: {c_name} ({away['name']}) cautioned by {ref_prof.short_name}"
+                    })
+
+        # Red Card Event (straight red or second yellow based on referee strictness)
+        rc_h = 0
+        rc_a = 0
+        if rng.random() < ref_impact.get("red_card_chance", 0.12):
+            red_side = "away" if (ref_prof.home_bias_ratio >= 1.05 or rng.random() < 0.55) else "home"
+            red_starters = a_starters if red_side == "away" else h_starters
+            red_tname = away["name"] if red_side == "away" else home["name"]
+            red_cands = [p for p in red_starters if "goalkeeper" not in (p.get("position") or "").lower()]
+            if red_cands:
+                rc_p = rng.choice(red_cands)
+                rc_name = rc_p.get("name") or rc_p.get("nickname") or f"{red_tname} Player"
+                rc_min = pick_minute()
+                rc_offense = rng.choice([
+                    "denial of goal-scoring opportunity",
+                    "reckless studs-up challenge",
+                    "second yellow card",
+                    "violent conduct"
+                ])
                 events.append({
-                    "type": "card",
-                    "team": "away",
-                    "team_name": away["name"],
-                    "minute": pick_minute(),
-                    "player": card_player["name"],
-                    "description": f"🟨 Yellow Card: {card_player['name']} ({away['name']}) - Reckless challenge"
+                    "type": "red_card",
+                    "team": red_side,
+                    "team_name": red_tname,
+                    "minute": rc_min,
+                    "player": rc_name,
+                    "description": f"🟥 RED CARD! {rc_name} ({red_tname}) sent off by {ref_prof.short_name} ({rc_offense})!"
                 })
+                if red_side == "home":
+                    rc_h += 1
+                else:
+                    rc_a += 1
+
+        # Pitchside VAR Review Event
+        if rng.random() < 0.28:
+            var_min = pick_minute()
+            var_desc = rng.choice([
+                f"📺 VAR Review: {ref_prof.short_name} checks pitchside monitor for possible penalty — Ruling confirmed.",
+                f"📺 VAR Confirmation: Tight offside call reviewed and confirmed by {ref_prof.short_name}.",
+                f"📺 VAR Check: Possible straight red card reviewed by {ref_prof.short_name} — Initial card stands.",
+            ])
+            events.append({
+                "type": "var_review",
+                "team": "neutral",
+                "minute": var_min,
+                "description": var_desc
+            })
 
         # Key Goalkeeper Saves
         h_gk = next((p for p in h_starters if "goalkeeper" in (p.get("position") or "").lower()), None)
@@ -1362,9 +1446,10 @@ class SimulationEngine:
         home_poss = max(32, min(68, home_poss))
         away_poss = 100 - home_poss
 
-        # Realistic Match xG: Grounded on the model expected goals with authentic match-day variance
-        h_tempo = rng.uniform(0.92, 1.08)
-        a_tempo = rng.uniform(0.92, 1.08)
+        # Realistic Match xG: Grounded on model expected goals with authentic match-day variance and referee tempo factor
+        ref_tempo = ref_impact.get("tempo_factor", 1.0)
+        h_tempo = rng.uniform(0.92, 1.08) * ref_tempo
+        a_tempo = rng.uniform(0.92, 1.08) * ref_tempo
         home_xg = round(max(0.30, min(4.2, (lambda_h * h_tempo) * 0.72 + (home_goals * 0.25) + rng.uniform(0.02, 0.08))), 2)
         away_xg = round(max(0.25, min(3.8, (lambda_a * a_tempo) * 0.72 + (away_goals * 0.25) + rng.uniform(0.02, 0.08))), 2)
 
@@ -1378,8 +1463,11 @@ class SimulationEngine:
         corners_h = max(1, min(11, int(home_shots * 0.36 + rng.randint(-1, 1))))
         corners_a = max(1, min(10, int(away_shots * 0.32 + rng.randint(-1, 1))))
 
-        fouls_h = max(7, min(22, rng.randint(10, 15) + (2 if clash["home"].get("defensive_block") == "low_block" else 0)))
-        fouls_a = max(8, min(23, rng.randint(11, 16) + (2 if clash["away"].get("defensive_block") == "low_block" else 0)))
+        # Fouls scaled by referee foul multiplier
+        base_f_h = rng.randint(10, 15) + (2 if clash["home"].get("defensive_block") == "low_block" else 0)
+        base_f_a = rng.randint(11, 16) + (2 if clash["away"].get("defensive_block") == "low_block" else 0)
+        fouls_h = max(7, min(26, int(round(base_f_h * ref_impact.get("foul_multiplier", 1.0)))))
+        fouls_a = max(8, min(27, int(round(base_f_a * ref_impact.get("foul_multiplier", 1.0)))))
 
         # Verification check: goal events count must strictly match score
         assert len([e for e in events if e["type"] == "goal" and e["team"] == "home"]) == home_goals
@@ -1423,8 +1511,12 @@ class SimulationEngine:
                 "shots": {"home": home_shots, "away": away_shots},
                 "shots_on_target": {"home": home_target, "away": away_target},
                 "corners": {"home": corners_h, "away": corners_a},
-                "fouls": {"home": fouls_h, "away": fouls_a}
+                "fouls": {"home": fouls_h, "away": fouls_a},
+                "yellow_cards": {"home": yc_h_count, "away": yc_a_count},
+                "red_cards": {"home": rc_h, "away": rc_a}
             },
+            "referee": ref_prof.to_dict(),
+            "referee_impact": ref_impact,
             "expected_goals_lambda": {
                 "home": round(lambda_h, 2),
                 "away": round(lambda_a, 2)

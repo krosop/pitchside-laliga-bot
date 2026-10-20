@@ -23,6 +23,7 @@ from .api_football import APIFootballClient
 from .simulation_engine import SimulationEngine
 from .club_tactics import ClubTacticsRegistry
 from .live_sync import LiveSyncEngine
+from .referee_engine import RefereeRegistry, RefereeProfile, RefereeTacticalEvaluator
 from gut_feeling.model import GutFeelingEngine
 
 # TTL cache for expensive match-detail payloads (lineup building runs two
@@ -290,6 +291,8 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     a_pos = detail.get("away_team", {}).get("position") or 10
                     detail["tactical_clash"] = ClubTacticsRegistry.evaluate_tactical_clash(h_slug, a_slug, h_pos, a_pos)
                     detail["forecast"] = self.simulation_engine.monte_carlo_forecast(detail)
+                    detail["referee"] = detail["forecast"].get("referee")
+                    detail["referee_impact"] = detail["forecast"].get("referee_impact")
 
                     engine_param = query.get("engine", ["gut"])[0].lower()
                     active_engine = "dixon" if engine_param in ("old", "dixon", "classic", "bivariate") else "gut"
@@ -361,6 +364,36 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self._send_json(sim_result)
             except ValueError:
                 self._send_error("Invalid fixture ID", status=400)
+            return
+
+        # API: Match Officials & Referees Directory (/api/referees)
+        if path == "/api/referees":
+            comp = query.get("competition", [None])[0]
+            sort_by = query.get("sort", ["strict"])[0]
+            if sort_by == "strict":
+                profs = RefereeRegistry.get_top_strict(limit=30, competition=comp)
+            elif sort_by == "lenient":
+                profs = RefereeRegistry.get_most_lenient(limit=30, competition=comp)
+            elif sort_by == "penalties":
+                profs = RefereeRegistry.get_penalty_magnets(limit=30, competition=comp)
+            else:
+                profs = RefereeRegistry.get_all(competition=comp)
+            self._send_json({
+                "count": len(profs),
+                "competition": comp,
+                "sort": sort_by,
+                "referees": [p.to_dict() for p in profs]
+            })
+            return
+
+        # API: Single Referee Profile (/api/referee/<slug>)
+        if path.startswith("/api/referee/"):
+            slug = path[len("/api/referee/"):]
+            p = RefereeRegistry.get_by_name(slug) or RefereeRegistry._PROFILES.get(slug)
+            if p:
+                self._send_json(p.to_dict())
+            else:
+                self._send_error(f"Referee '{slug}' not found", status=404)
             return
 
         # 3. API: All Teams / Clubs

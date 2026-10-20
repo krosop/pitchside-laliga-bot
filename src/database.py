@@ -202,6 +202,8 @@ class Database:
                 CREATE TABLE IF NOT EXISTS match_team_stats (
                     fixture_id INTEGER PRIMARY KEY,
                     season INTEGER,
+                    competition TEXT DEFAULT 'laliga',
+                    referee TEXT,
                     home_shots INTEGER, home_sot INTEGER, home_corners INTEGER,
                     home_fouls INTEGER, home_yellows INTEGER, home_reds INTEGER,
                     away_shots INTEGER, away_sot INTEGER, away_corners INTEGER,
@@ -217,6 +219,8 @@ class Database:
                     player_name TEXT,
                     club_slug TEXT,
                     season INTEGER,
+                    competition TEXT DEFAULT 'laliga',
+                    referee TEXT,
                     fixture_date TEXT,
                     opponent_slug TEXT,
                     is_home INTEGER,
@@ -258,7 +262,9 @@ class Database:
                     kickoff_time TEXT,
                     goals_json TEXT,
                     cards_json TEXT,
-                    season INTEGER
+                    season INTEGER,
+                    competition TEXT DEFAULT 'laliga',
+                    referee TEXT
                 )
             """)
             # season & cards_json columns on fixtures (legacy rows backfilled to 2024).
@@ -277,6 +283,10 @@ class Database:
                 pass
             try:
                 cursor.execute("ALTER TABLE fixtures ADD COLUMN competition TEXT DEFAULT 'laliga'")
+            except sqlite3.OperationalError:
+                pass
+            try:
+                cursor.execute("ALTER TABLE fixtures ADD COLUMN referee TEXT")
             except sqlite3.OperationalError:
                 pass
             for col_name, col_type in [
@@ -938,7 +948,7 @@ class Database:
             
             query = '''
                 SELECT 
-                    f.id, f.matchday, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json, f.season,
+                    f.id, f.matchday, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json, f.season, f.competition, f.referee,
                     h.id as home_id, h.name as home_name, h.nickname as home_nickname, h.shield_url as home_shield, h.slug as home_slug,
                     a.id as away_id, a.name as away_name, a.nickname as away_nickname, a.shield_url as away_shield, a.slug as away_slug
                 FROM fixtures f
@@ -1313,7 +1323,7 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT 
-                    f.id, f.matchday, f.season, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json,
+                    f.id, f.matchday, f.season, f.home_score, f.away_score, f.status, f.kickoff_time, f.goals_json, f.cards_json, f.competition, f.referee,
                     h.id as home_id, h.name as home_name, h.nickname as home_nickname, h.shield_url as home_shield, h.slug as home_slug,
                     h.stadium as home_stadium, h.stadium_name as home_stadium_name, h.position as home_position,
                     a.id as away_id, a.name as away_name, a.nickname as away_nickname, a.shield_url as away_shield, a.slug as away_slug,
