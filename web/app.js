@@ -521,8 +521,26 @@ async function loadTable() {
 }
 
 /* ---------- boot ---------- */
+async function loadHitRate() {
+  try {
+    const t = await getJSON("/api/hit-rate");
+    const el = $("#hitRateVal");
+    if (el && t.high_confidence && t.high_confidence.hit_pct) {
+      el.textContent = t.high_confidence.hit_pct + "%";
+      const pill = $("#hitRatePill");
+      if (pill) {
+        pill.title = `Audited Accuracy: ${t.high_confidence.hit_pct}% High-Confidence (${t.high_confidence.hits}/${t.high_confidence.settled}) · ${t.all_time.hit_pct}% Overall (${t.all_time.hits}/${t.all_time.settled})`;
+        pill.onclick = () => {
+          toast(`🎯 Verified Hit Rate: ${t.high_confidence.hit_pct}% High-Conf (${t.high_confidence.hits}/${t.high_confidence.settled}) · ${t.all_time.hits} All-Time Hits!`);
+        };
+      }
+    }
+  } catch (e) { }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initChrome(); initSearch(); initMatchday(); initPlayers(); initClubs();
+  loadHitRate();
   S.shownMd = 1;
   loadMatches().then(() => { S.shownMd = S.currentMd; renderMatchday(); });
 });

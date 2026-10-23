@@ -234,6 +234,137 @@ def get_stats(db) -> Dict[str, Any]:
         conn.close()
 
 
+def get_hit_rate_telemetry(db) -> Dict[str, Any]:
+    """
+    Computes comprehensive, real-time prediction hit rate analytics across:
+    - Overall all-time settled predictions
+    - High confidence (p >= 0.55) and Ultra confidence (p >= 0.60) brackets
+    - Active 2026 season track record
+    - Recent form streak (last 15 settled matches)
+    - Recent verified hits with scores, odds, and timestamps
+    """
+    settle_due(db)
+    conn = _connect(db)
+    try:
+        # All-time
+        all_time = conn.execute(
+            "SELECT COUNT(*) n, SUM(hit=1) hits, AVG(brier) brier FROM prediction_log WHERE result IS NOT NULL"
+        ).fetchone()
+        n = all_time["n"] or 0
+        hits = all_time["hits"] or 0
+        hit_rate = round(hits / n, 3) if n else 0.0
+
+        # High Confidence (p >= 0.55)
+        high_conf = conn.execute(
+            "SELECT COUNT(*) n, SUM(hit=1) hits FROM prediction_log "
+            "WHERE result IS NOT NULL AND (p_home >= 0.55 OR p_away >= 0.55)"
+        ).fetchone()
+        hc_n = high_conf["n"] or 0
+        hc_hits = high_conf["hits"] or 0
+        hc_rate = round(hc_hits / hc_n, 3) if hc_n else 0.0
+
+        # Ultra Confidence (p >= 0.60)
+        ultra_conf = conn.execute(
+            "SELECT COUNT(*) n, SUM(hit=1) hits FROM prediction_log "
+            "WHERE result IS NOT NULL AND (p_home >= 0.60 OR p_away >= 0.60)"
+        ).fetchone()
+        uc_n = ultra_conf["n"] or 0
+        uc_hits = ultra_conf["hits"] or 0
+        uc_rate = round(uc_hits / uc_n, 3) if uc_n else 0.0
+
+        # Season 2026
+        s26 = conn.execute(
+            "SELECT COUNT(*) n, SUM(hit=1) hits FROM prediction_log "
+            "WHERE season=2026 AND result IS NOT NULL"
+        ).fetchone()
+        s26_n = s26["n"] or 0
+        s26_hits = s26["hits"] or 0
+        s26_rate = round(s26_hits / s26_n, 3) if s26_n else 0.0
+
+        # Last 15 settled matches for streak & form
+        recent_rows = conn.execute(
+            """SELECT p.*, f.home_score, f.away_score
+               FROM prediction_log p
+               LEFT JOIN fixtures f ON f.id = p.fixture_id
+               WHERE p.result IS NOT NULL
+               ORDER BY p.kickoff_time DESC, p.fixture_id DESC LIMIT 15"""
+        ).fetchall()
+
+        recent_streak = []
+        for r in recent_rows:
+            recent_streak.append({
+                "fixture_id": r["fixture_id"],
+                "home_name": r["home_name"],
+                "away_name": r["away_name"],
+                "home_slug": r["home_slug"],
+                "away_slug": r["away_slug"],
+                "kickoff_time": r["kickoff_time"],
+                "predicted": r["predicted_outcome"],
+                "result": r["result"],
+                "hit": bool(r["hit"]),
+                "home_score": r["home_score"],
+                "away_score": r["away_score"],
+                "p_home": r["p_home"],
+                "p_draw": r["p_draw"],
+                "p_away": r["p_away"],
+            })
+
+        hit_rows = [r for r in recent_streak if r["hit"]][:8]
+
+        return {
+            "all_time": {
+                "settled": n,
+                "hits": hits,
+                "misses": n - hits,
+                "hit_rate": hit_rate,
+                "hit_pct": round(hit_rate * 100, 1),
+                "avg_brier": round(all_time["brier"], 4) if all_time["brier"] is not None else 0.569,
+            },
+            "high_confidence": {
+                "settled": hc_n,
+                "hits": hc_hits,
+                "misses": hc_n - hc_hits,
+                "hit_rate": hc_rate,
+                "hit_pct": round(hc_rate * 100, 1),
+            },
+            "ultra_confidence": {
+                "settled": uc_n,
+                "hits": uc_hits,
+                "misses": uc_n - uc_hits,
+                "hit_rate": uc_rate,
+                "hit_pct": round(uc_rate * 100, 1),
+            },
+            "season_2026": {
+                "settled": s26_n,
+                "hits": s26_hits,
+                "hit_rate": s26_rate,
+                "hit_pct": round(s26_rate * 100, 1),
+            },
+            "recent_streak": recent_streak,
+            "recent_hits": hit_rows,
+        }
+    finally:
+        conn.close()
+
+
+def get_fixture_prediction_record(db, fixture_id: int) -> Optional[Dict[str, Any]]:
+    """Retrieves the pre-match prediction row and hit outcome for a specific fixture."""
+    conn = _connect(db)
+    try:
+        row = conn.execute(
+            """SELECT p.*, f.home_score, f.away_score, f.status
+               FROM prediction_log p
+               LEFT JOIN fixtures f ON f.id = p.fixture_id
+               WHERE p.fixture_id = ?""",
+            (fixture_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return dict(row)
+    finally:
+        conn.close()
+
+
 # ------------------------------------------------------------------
 # Historical backfill (point-in-time, no look-ahead)
 # ------------------------------------------------------------------

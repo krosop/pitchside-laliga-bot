@@ -101,6 +101,12 @@ h3 { font-size: .95rem; margin: 0 0 .5rem; }
 }
 .livepill .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: blink 1.2s infinite; }
 @keyframes blink { 50% { opacity: .3; } }
+.hitrate-pill {
+  display: inline-flex; align-items: center; gap: .3rem; font-size: .75rem; font-weight: 700;
+  color: #04281d; background: var(--acc, #00e699); border-radius: 999px; padding: .25rem .65rem;
+  box-shadow: 0 0 10px rgba(0, 230, 153, 0.25); cursor: pointer; text-decoration: none;
+}
+.hitrate-pill strong { font-weight: 900; }
 .clock { font-size: .8rem; color: var(--mut); }
 .iconbtn {
   background: var(--card); border: 1px solid var(--line); color: var(--txt);

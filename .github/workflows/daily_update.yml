@@ -21,10 +21,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pytest
 
       - name: Run Simulation & Availability Test Suite
         run: |
-          python -m tests.run_all
+          pytest tests/ -v
 
       - name: Refresh Daily La Liga Fixtures, Standings, Elo & Broadcast Today's Matches
         env:

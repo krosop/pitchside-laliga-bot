@@ -319,12 +319,19 @@ class ProfilerHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # API: Prediction ledger — hit-or-miss feed (/api/predictions?status=hits|misses|upcoming|all&limit=120)
         if path == "/api/predictions":
-            from .predictions import get_feed, get_stats
+            from .predictions import get_feed, get_stats, get_hit_rate_telemetry
             status = query.get("status", ["all"])[0]
             limit = int(query.get("limit", [120])[0])
             feed = get_feed(self.db, status=status, limit=limit)
             feed["stats"] = get_stats(self.db)
+            feed["telemetry"] = get_hit_rate_telemetry(self.db)
             self._send_json(feed)
+            return
+
+        # API: Verified Hit Rate & Telemetry (/api/hit-rate)
+        if path == "/api/hit-rate":
+            from .predictions import get_hit_rate_telemetry
+            self._send_json(get_hit_rate_telemetry(self.db))
             return
 
         # API: Pre-Match Probability Forecast (/api/forecast/<fixture_id>)
